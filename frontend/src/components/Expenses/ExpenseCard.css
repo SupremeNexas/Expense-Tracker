@@ -1,0 +1,124 @@
+.expense-card {
+  display: flex;
+  padding: var(--space-md);
+  gap: var(--space-md);
+  position: relative;
+}
+
+.expense-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.expense-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.expense-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.expense-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: var(--space-md);
+}
+
+.expense-card__amount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.expense-card__meta {
+  display: flex;
+  gap: var(--space-lg);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.expense-card__notes {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.expense-card__actions-wrapper {
+  position: relative;
+}
+
+.expense-card__actions-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  min-width: 120px;
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  backdrop-filter: blur(12px);
+  transform-origin: top right;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.menu-item:hover {
+  background: var(--bg-input);
+}
+
+.menu-item.text-danger {
+  color: var(--danger);
+}
+
+.menu-item.text-danger:hover {
+  background: rgba(248, 113, 113, 0.1);
+}
+
+@media (max-width: 480px) {
+  .expense-card__meta {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

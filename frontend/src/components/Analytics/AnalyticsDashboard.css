@@ -1,0 +1,33 @@
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.analytics-charts {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-md);
+}
+
+.chart-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-container .section-title {
+  padding: var(--space-lg) var(--space-lg) 0;
+  margin-bottom: 0;
+}
+
+.chart-body {
+  flex: 1;
+  min-height: 300px;
+  position: relative;
+}
+
+@media (max-width: 1024px) {
+  .analytics-charts {
+    grid-template-columns: 1fr;
+  }
+}

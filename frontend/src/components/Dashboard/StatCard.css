@@ -1,0 +1,91 @@
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  height: 100%;
+}
+
+.stat-card__icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: rgba(78, 205, 196, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-teal);
+}
+
+.stat-card:nth-child(2) .stat-card__icon-wrapper {
+  background: rgba(167, 139, 250, 0.1);
+  color: var(--accent-purple);
+}
+
+.stat-card:nth-child(3) .stat-card__icon-wrapper {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--accent-coral);
+}
+
+.stat-card:nth-child(4) .stat-card__icon-wrapper {
+  background: rgba(255, 217, 61, 0.1);
+  color: var(--accent-gold);
+}
+
+.stat-card__content {
+  flex: 1;
+}
+
+.stat-card__title {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.stat-card__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-card__trend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.stat-card__trend.positive { color: var(--success); }
+.stat-card__trend.negative { color: var(--danger); }
+
+/* Skeleton */
+.skeleton .skeleton-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--bg-input);
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton .skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-title {
+  height: 14px;
+  width: 60%;
+  background: var(--bg-input);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-value {
+  height: 24px;
+  width: 80%;
+  background: var(--bg-input);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
