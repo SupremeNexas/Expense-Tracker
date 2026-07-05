@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import * as Icons from 'lucide-react';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 import { EmptyState } from '../UI/EmptyState';
+import { formatCurrency } from '../../utils/currency';
 import './CategoryManager.css';
 
 export const CategoryManager = ({ categories, loading, onAdd, onEdit, onDelete }) => {
@@ -75,7 +76,7 @@ export const CategoryManager = ({ categories, loading, onAdd, onEdit, onDelete }
                 <span className="stat-value">{category.expense_count || 0}</span> expenses
               </div>
               <div className="category-total">
-                ${(category.total_spent || 0).toFixed(2)}
+                {formatCurrency(category.total_spent || 0)}
               </div>
             </div>
           </div>

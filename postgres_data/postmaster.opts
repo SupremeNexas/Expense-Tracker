@@ -1,0 +1,1 @@
+/Library/PostgreSQL/15/bin/postgres "-D" "/Users/supryo/Desktop/Expense-Tracker/postgres_data" "-p" "5433"

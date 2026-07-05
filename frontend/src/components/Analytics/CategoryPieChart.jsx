@@ -34,7 +34,7 @@ export const CategoryPieChart = ({ data, loading }) => {
       return (
         <div className="glass-card" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
           <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{data.name}</div>
-          <div style={{ color: data.color }}>${data.total.toFixed(2)}</div>
+          <div style={{ color: data.color }}>₹{data.total.toFixed(2)}</div>
         </div>
       );
     }

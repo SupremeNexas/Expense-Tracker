@@ -54,7 +54,7 @@ export const RecentExpenses = ({ expenses, loading }) => {
                   </div>
                 </div>
                 <div className="expense-amount">
-                  ${expense.amount.toFixed(2)}
+                  ₹{expense.amount.toFixed(2)}
                 </div>
               </div>
             );

@@ -114,15 +114,15 @@ export const BudgetManager = ({ budgets, loading, month, year, onAdd, onEdit, on
                 <div className="budget-card__footer">
                   <div className="budget-status">
                     {budget.spent > budget.amount ? (
-                      <span className="text-danger">Over budget by ${(budget.spent - budget.amount).toFixed(2)}</span>
+                      <span className="text-danger">Over budget by ₹{(budget.spent - budget.amount).toFixed(2)}</span>
                     ) : (
-                      <span className="text-success">${(budget.amount - budget.spent).toFixed(2)} left</span>
+                      <span className="text-success">₹{(budget.amount - budget.spent).toFixed(2)} left</span>
                     )}
                   </div>
                   <div className="budget-amounts">
-                    <span className="spent">${budget.spent.toFixed(2)}</span>
+                    <span className="spent">₹{budget.spent.toFixed(2)}</span>
                     <span className="divider">/</span>
-                    <span className="total">${budget.amount.toFixed(2)}</span>
+                    <span className="total">₹{budget.amount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

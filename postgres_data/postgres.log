@@ -1,0 +1,14 @@
+2026-07-05 18:02:41.000 IST [77203] LOG:  starting PostgreSQL 15.4 on x86_64-apple-darwin20.6.0, compiled by Apple clang version 12.0.5 (clang-1205.0.22.9), 64-bit
+2026-07-05 18:02:41.001 IST [77203] LOG:  listening on IPv6 address "::1", port 5433
+2026-07-05 18:02:41.001 IST [77203] LOG:  listening on IPv4 address "127.0.0.1", port 5433
+2026-07-05 18:02:41.001 IST [77203] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5433"
+2026-07-05 18:02:41.003 IST [77206] LOG:  database system was shut down at 2026-07-05 18:02:33 IST
+2026-07-05 18:02:41.005 IST [77203] LOG:  database system is ready to accept connections
+2026-07-05 18:03:47.818 IST [77833] LOG:  could not receive data from client: Connection reset by peer
+2026-07-05 18:05:04.728 IST [78387] LOG:  could not receive data from client: Connection reset by peer
+2026-07-05 18:07:41.005 IST [77204] LOG:  checkpoint starting: time
+2026-07-05 18:09:27.731 IST [77204] LOG:  checkpoint complete: wrote 1057 buffers (6.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=106.699 s, sync=0.018 s, total=106.726 s; sync files=392, longest=0.001 s, average=0.001 s; distance=5143 kB, estimate=5143 kB
+2026-07-05 18:22:41.745 IST [77204] LOG:  checkpoint starting: time
+2026-07-05 18:22:44.591 IST [77204] LOG:  checkpoint complete: wrote 29 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.839 s, sync=0.003 s, total=2.846 s; sync files=25, longest=0.001 s, average=0.001 s; distance=44 kB, estimate=4633 kB
+2026-07-05 18:27:41.592 IST [77204] LOG:  checkpoint starting: time
+2026-07-05 18:27:43.019 IST [77204] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.421 s, sync=0.004 s, total=1.427 s; sync files=10, longest=0.002 s, average=0.001 s; distance=43 kB, estimate=4174 kB

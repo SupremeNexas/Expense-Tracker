@@ -54,7 +54,7 @@ export const SpendingChart = ({ data, loading }) => {
                 axisLine={false} 
                 tickLine={false} 
                 tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `₹${value}`}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -65,7 +65,7 @@ export const SpendingChart = ({ data, loading }) => {
                   color: 'var(--text-primary)'
                 }}
                 itemStyle={{ color: 'var(--accent-teal)' }}
-                formatter={(value) => [`$${value}`, 'Spent']}
+                formatter={(value) => [`₹${value}`, 'Spent']}
               />
               <Area 
                 type="monotone" 

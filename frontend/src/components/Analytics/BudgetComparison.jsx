@@ -35,12 +35,12 @@ export const BudgetComparison = ({ data, loading }) => {
           {payload.map((entry, index) => (
             <div key={index} style={{ color: entry.color, display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '0.875rem', marginBottom: '4px' }}>
               <span>{entry.name}:</span>
-              <span style={{ fontWeight: 600 }}>${entry.value.toFixed(2)}</span>
+              <span style={{ fontWeight: 600 }}>₹{entry.value.toFixed(2)}</span>
             </div>
           ))}
           {isOverBudget && (
             <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '8px', fontWeight: 600 }}>
-              Over budget by ${payload[0].payload.remaining.toString().replace('-', '')}
+              Over budget by ₹{payload[0].payload.remaining.toString().replace('-', '')}
             </div>
           )}
         </div>
@@ -71,7 +71,7 @@ export const BudgetComparison = ({ data, loading }) => {
             axisLine={false} 
             tickLine={false} 
             tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `₹${value}`}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-input)' }} />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />

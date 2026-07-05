@@ -119,4 +119,21 @@ router.put('/currency', require('../middleware/auth').authenticate, [
   }
 });
 
+router.post('/seed', require('../middleware/auth').authenticate, async (req, res) => {
+  try {
+    // Check if categories exist, if not seed them first
+    const Category = require('../models/Category');
+    const catCount = await Category.countDocuments({ user: req.user.id });
+    if (catCount === 0) {
+      await seedCategoriesForUser(req.user.id);
+    }
+    
+    await seedSampleDataForUser(req.user.id);
+    res.json({ message: 'Demo data seeded successfully' });
+  } catch (err) {
+    console.error('Seeding error:', err);
+    res.status(500).json({ error: 'Failed to seed demo data' });
+  }
+});
+
 module.exports = router;

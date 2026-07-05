@@ -35,7 +35,7 @@ export const TrendLineChart = ({ data, loading }) => {
       return (
         <div className="glass-card" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '4px' }}>{label}</div>
-          <div style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>${payload[0].value.toFixed(2)}</div>
+          <div style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>₹{payload[0].value.toFixed(2)}</div>
         </div>
       );
     }
@@ -64,7 +64,7 @@ export const TrendLineChart = ({ data, loading }) => {
             axisLine={false} 
             tickLine={false} 
             tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `₹${value}`}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area 
