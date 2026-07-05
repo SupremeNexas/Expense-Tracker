@@ -9,8 +9,26 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// ── CORS — only allow our configured frontend origin ──────────────────────────
+const ALLOWED_ORIGINS = [
+  process.env.CLIENT_URL || 'http://localhost:5173',
+  'http://localhost:5173',  // Always allow dev
+  'http://localhost:4173',  // Vite preview
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. Postman, mobile apps)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: Origin ${origin} is not allowed`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

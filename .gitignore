@@ -1,0 +1,16 @@
+# Environment
+.env
+*.env
+
+# Dependencies
+node_modules/
+
+# PostgreSQL
+postgres_data/
+*.log
+
+# Prisma generated client (if applicable)
+.prisma/
+
+# macOS
+.DS_Store

@@ -1,4 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_URL as string) || '/api';
+const API_BASE = `${(import.meta.env.VITE_API_URL as string) || 'http://localhost:5002'}/api`;
 
 function getToken(): string | null {
   return localStorage.getItem('fintech_token');
@@ -55,7 +55,7 @@ export const api = {
   // Auth
   login: (data: any) => request('/auth/login', { method: 'POST', body: data }),
   register: (data: any) => request('/auth/register', { method: 'POST', body: data }),
-  googleLogin: (data: any) => request('/auth/google', { method: 'POST', body: data }),
+  googleLogin: (idToken: string) => request('/auth/google', { method: 'POST', body: { idToken } }),
   getMe: () => request('/auth/me'),
   updateCurrency: (currency: string) => request('/auth/currency', { method: 'PUT', body: { currency } }),
 

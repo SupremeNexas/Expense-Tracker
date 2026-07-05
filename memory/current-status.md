@@ -16,6 +16,7 @@ The fintech expense tracker codebase is fully operational and configured for pro
 
 ### Backend APIs (`/api`)
 * [x] **Authentication**: Password salting, register, login, profile check, and refresh token validations.
+* [x] **Google OAuth**: Real GSI-based sign-in with server-side ID token verification via `google-auth-library`. Requires `GOOGLE_CLIENT_ID` in `backend/.env`.
 * [x] **Expenses**: Full CRUD with auto-wallet increments/decrements.
 * [x] **Categories**: Grid classification CRUD with in-use protection shields.
 * [x] **Budgets**: Threshold setups and spent queries.
