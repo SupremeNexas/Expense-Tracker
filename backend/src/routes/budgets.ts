@@ -1,9 +1,10 @@
 import { Router, Response } from 'express';
 import { body } from 'express-validator';
 import { prisma } from '../db/prisma';
-import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
 import { Prisma } from '@prisma/client';
 import { validate } from '../middleware/validation';
+import { logAction } from '../services/audit/log';
 
 const router = Router();
 
@@ -16,9 +17,9 @@ const budgetRules = [
 ];
 
 // GET /api/budgets
-router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { month, year } = req.query;
 
     const now = new Date();
@@ -30,7 +31,7 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) =
 
     const budgets = await prisma.budget.findMany({
       where: {
-        userId: req.user.id,
+        workspaceId: req.workspaceId,
         startDate: { gte: start },
         endDate: { lte: end }
       },
@@ -38,15 +39,42 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) =
     });
 
     const result = await Promise.all(budgets.map(async (b) => {
-      // Calculate spent amount
+      // Calculate shared spent amount inside this workspace
       const spentSum = await prisma.transaction.aggregate({
         where: {
-          userId: req.user!.id,
+          workspaceId: req.workspaceId,
           categoryId: b.categoryId,
           type: 'EXPENSE',
           date: { gte: b.startDate, lte: b.endDate }
         },
         _sum: { amount: true }
+      });
+
+      // Get contribution totals per member
+      const memberSplits = await prisma.transaction.groupBy({
+        by: ['userId'],
+        where: {
+          workspaceId: req.workspaceId,
+          categoryId: b.categoryId,
+          type: 'EXPENSE',
+          date: { gte: b.startDate, lte: b.endDate }
+        },
+        _sum: { amount: true }
+      });
+
+      // Map member details
+      const userList = await prisma.user.findMany({
+        where: { id: { in: memberSplits.map(s => s.userId) } },
+        select: { id: true, name: true, email: true }
+      });
+
+      const contributions = memberSplits.map(split => {
+        const u = userList.find(user => user.id === split.userId);
+        return {
+          userName: u?.name || 'Unknown',
+          userEmail: u?.email || '',
+          amount: Number(split._sum.amount || 0)
+        };
       });
 
       return {
@@ -59,7 +87,8 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) =
         period: b.period.toLowerCase(),
         month: filterMonth,
         year: filterYear,
-        spent: Number(spentSum._sum.amount || 0)
+        spent: Number(spentSum._sum.amount || 0),
+        contributions
       };
     }));
 
@@ -71,15 +100,19 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) =
 });
 
 // POST /api/budgets
-router.post('/', authenticate, budgetRules, validate, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), budgetRules, validate, async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { category_id, amount, month, year, period = 'MONTHLY' } = req.body;
 
     const category = await prisma.category.findFirst({
       where: {
         id: category_id,
-        OR: [{ userId: req.user.id }, { userId: null }]
+        OR: [
+          { userId: req.user.id }, 
+          { userId: null },
+          { workspaceId: req.workspaceId }
+        ]
       }
     });
 
@@ -90,10 +123,10 @@ router.post('/', authenticate, budgetRules, validate, async (req: AuthenticatedR
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59);
 
-    // Upsert budget using findFirst / update or create
+    // Scopes check by workspaceId
     const existing = await prisma.budget.findFirst({
       where: {
-        userId: req.user.id,
+        workspaceId: req.workspaceId,
         categoryId: category_id,
         startDate: start,
         endDate: end
@@ -107,10 +140,12 @@ router.post('/', authenticate, budgetRules, validate, async (req: AuthenticatedR
         data: { amount: new Prisma.Decimal(Number(amount)), period: period.toUpperCase() },
         include: { category: true }
       });
+      await logAction(req.user.id, req.workspaceId, 'BUDGET_UPDATE', 'Budget', budget.id, existing, budget);
     } else {
       budget = await prisma.budget.create({
         data: {
           userId: req.user.id,
+          workspaceId: req.workspaceId,
           categoryId: category_id,
           amount: new Prisma.Decimal(Number(amount)),
           period: period.toUpperCase(),
@@ -119,11 +154,12 @@ router.post('/', authenticate, budgetRules, validate, async (req: AuthenticatedR
         },
         include: { category: true }
       });
+      await logAction(req.user.id, req.workspaceId, 'BUDGET_CREATE', 'Budget', budget.id, null, budget);
     }
 
     const spentSum = await prisma.transaction.aggregate({
       where: {
-        userId: req.user.id,
+        workspaceId: req.workspaceId,
         categoryId: category_id,
         type: 'EXPENSE',
         date: { gte: start, lte: end }
@@ -150,12 +186,12 @@ router.post('/', authenticate, budgetRules, validate, async (req: AuthenticatedR
 });
 
 // DELETE /api/budgets/:id
-router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
     const budget = await prisma.budget.findFirst({
-      where: { id: req.params.id as string, userId: req.user.id as string }
+      where: { id: req.params.id as string, workspaceId: req.workspaceId }
     });
 
     if (!budget) {
@@ -163,6 +199,8 @@ router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Respo
     }
 
     await prisma.budget.delete({ where: { id: req.params.id as string } });
+    await logAction(req.user.id, req.workspaceId, 'BUDGET_DELETE', 'Budget', budget.id, budget, null);
+
     res.json({ message: 'Budget deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete budget' });

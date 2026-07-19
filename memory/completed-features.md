@@ -5,6 +5,46 @@ A history of completed features in the Expense Tracker codebase.
 
 ---
 
+## 🏗️ Phase 6 — Engineering Excellence, DevOps & Open Source Readiness (v1.4.0)
+*   **GitHub Actions CI Pipeline**: Dual-job workflow (backend + frontend) with `npm ci`, TypeScript compile checks, ESLint lint scan, and Vite production build verification on every push and PR.
+*   **Root DX Package**: One-command `npm run setup` and `npm run typecheck` across both workspaces from the project root.
+*   **MIT License**: Added `LICENSE` file to the repository root.
+*   **Contributor Covenant**: Added `CODE_OF_CONDUCT.md` to promote an inclusive community.
+*   **Contribution Guidelines**: Added `CONTRIBUTING.md` covering branch naming, commit conventions, security scoping rules, and testing expectations.
+*   **Security Reporting**: Added `SECURITY.md` with private disclosure instructions and version support table.
+*   **Product Roadmap**: Added `ROADMAP.md` documenting all completed milestones and future integration plans.
+*   **CHANGELOG.md**: Full history changelog following Keep a Changelog conventions covering all four phases.
+*   **GitHub Templates**: PR template with security checklist, bug report, feature request, and security vulnerability issue templates.
+*   **CODEOWNERS**: Automatic reviewer assignment on all pull requests.
+*   **VS Code DX Config**: `.vscode/extensions.json` and `.vscode/settings.json` for consistent formatting, ESLint, and Prisma editor support.
+*   **Architecture Diagrams**: Mermaid sequence and ER diagrams in `wiki/architecture-diagrams.md`.
+*   **Developer Onboarding Guide**: Step-by-step contributor setup guide in `wiki/developer-onboarding.md`.
+*   **Audit Reports**: Created `security_audit_report.md`, `performance_audit_report.md`, and `repository_health_report.md` artifacts.
+*   **TypeScript Bug Fixes**: Fixed `Badge` prop usage (`label` → `children`), `activeTab` → `activeSubTab` typo, and invalid `"secondary"` variant across `WorkspaceSettings.tsx` and `CopilotPage.tsx`.
+
+## 🤝 Phase 5 — Enterprise Features, Automation & Platform Scaling (v1.3.0)
+*   **Multi-User Workspaces**: Introduced PERSONAL, FAMILY, BUSINESS, and PROJECT workspaces. Integrated dynamic scoping via incoming header keys with seamless personal fallback support.
+*   **Role-Based Access Control (RBAC)**: Enforced OWNER, ADMIN, EDITOR, and VIEWER privilege checks across database writes, deletes, and invitations.
+*   **Shared Wallets & Budgets**: Shared wallets map multiple transactions tracking creators and last editors. Shared budgets analyze combined expenditures and detail member split contributions.
+*   **Rule Automation Engine**: Rule-based trigger-action manager allowing automatic tag appending, alert notifications, and goal savings diversion calculations.
+*   **Scheduled Background Cron**: Simulated daily runner performing budgets rollovers, subscription auto-debits, and progress logging.
+*   **Immutable Audit Logs**: Writes change histories (previous vs new values, actors, actions) to database logs.
+*   **Data Export System**: Developed client-side CSV spreadsheet and JSON structured data backup exporters.
+*   **Multi-Currency Support**: Added per-wallet currency fields and automated conversion managers.
+*   **API Versioning v1**: Remapped routing mounts under versioned `/api/v1` and compatibility `/api` paths.
+*   **Workspace Control Dashboard**: Designed a management settings UI (`WorkspaceSettings.tsx`) that controls access roles, invitations, automation rules, logs audits, and exports.
+
+## 🤖 Phase 4 — AI Financial Copilot (v1.2.0)
+*   **Modular AI Provider Abstraction**: Integrated Gemini, OpenAI, Claude, OpenRouter, and Ollama providers behind a unified factory. Implemented rule-based Mock fallback for local offline execution.
+*   **Retrieval-Augmented Generation (RAG)**: Built a secure two-step pipeline that extracts intent filters, queries Prisma DB scoped by user ID, and provides conversational advice.
+*   **Receipt Scanning OCR Processor**: Hooked up multimodal scanners to parse receipts, map categories, edit metadata, and auto-insert transactions.
+*   **Subscription Detector**: Implemented transaction scanners to identify recurring services, monthly/yearly spend volumes, and cancellation warnings.
+*   **Budget Recommendations**: Created budget recommendation modules analyzing rolling spends to suggest category limits.
+*   **Spending Forecasts**: Developed month-end spending, expected savings, and budget overrun prediction engines.
+*   **Financial Health Scoring**: Created scoring metrics integrating programmatically computed data (savings rates, budget violations) with LLM advice.
+*   **AI Memory Preferences**: Tracks common merchant category preferences and payment habits to prevent unnecessary remote LLM API requests.
+*   **Unified Copilot Dashboard Page**: Created a premium Bento grid interface consolidating score gauges, forecasts, subscriptions lists, insights, receipt scanner, and full-screen chat.
+
 ## 🎨 Phase 2 — UI/UX Refinement & Product Experience (v1.1.0)
 *   **Design Tokens & CSS Variables**: Defined unified HSL color tokens for dark and light modes, along with volcanic shimmers (`.shimmer`) and smooth transitions (`.interactive-hover`).
 *   **Reusable Component Library Primitives**: Created highly customizable design primitives for `Button`, `Input`, `Select`, `Badge`, and `ProgressBar`.

@@ -8,7 +8,7 @@ import { errorHandler } from './src/middleware/error';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
 // ── CORS — only allow our configured frontend origin ──────────────────────────
 const ALLOWED_ORIGINS = [
@@ -28,7 +28,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-workspace-id'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -53,25 +53,46 @@ import insightsRouter from './src/routes/insights';
 import groupsRouter from './src/routes/groups';
 import aiRouter from './src/routes/ai';
 
-// Public routes
-app.use('/api/auth', authRouter);
+// Enterprise & Platform Scaling (Phase 5)
+import workspacesRouter from './src/routes/workspaces';
+import automationsRouter from './src/routes/automations';
+import searchRouter from './src/routes/search';
 
-// Protected routes
-app.use('/api/expenses', authenticate, expensesRouter);
-app.use('/api/categories', authenticate, categoriesRouter);
-app.use('/api/budgets', authenticate, budgetsRouter);
-app.use('/api/credit_cards', authenticate, creditCardsRouter);
-app.use('/api/bills', authenticate, billsRouter);
-app.use('/api/goals', authenticate, goalsRouter);
-app.use('/api/subscriptions', authenticate, subscriptionsRouter);
-app.use('/api/analytics', authenticate, analyticsRouter);
-app.use('/api/insights', authenticate, insightsRouter);
-app.use('/api/groups', authenticate, groupsRouter);
-app.use('/api/ai', authenticate, aiRouter);
+// Helper to register API endpoints under versioned namespaces
+const mountRoutes = (prefix: string) => {
+  // Public Auth
+  app.use(`${prefix}/auth`, authRouter);
+
+  // Scoped Workspace Resources
+  app.use(`${prefix}/expenses`, authenticate, expensesRouter);
+  app.use(`${prefix}/categories`, authenticate, categoriesRouter);
+  app.use(`${prefix}/budgets`, authenticate, budgetsRouter);
+  app.use(`${prefix}/credit_cards`, authenticate, creditCardsRouter);
+  app.use(`${prefix}/bills`, authenticate, billsRouter);
+  app.use(`${prefix}/goals`, authenticate, goalsRouter);
+  app.use(`${prefix}/subscriptions`, authenticate, subscriptionsRouter);
+  app.use(`${prefix}/analytics`, authenticate, analyticsRouter);
+  app.use(`${prefix}/insights`, authenticate, insightsRouter);
+  app.use(`${prefix}/groups`, authenticate, groupsRouter);
+  app.use(`${prefix}/ai`, authenticate, aiRouter);
+
+  // Workspace Collaboration, Rules & Auditing
+  app.use(`${prefix}/workspaces`, authenticate, workspacesRouter);
+  app.use(`${prefix}/automations`, authenticate, automationsRouter);
+  app.use(`${prefix}/search`, authenticate, searchRouter);
+};
+
+// Mount versioned v1 and backward-compatible paths
+mountRoutes('/api/v1');
+mountRoutes('/api');
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/v1/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', apiVersion: 'v1', timestamp: new Date().toISOString() });
 });
 
 // 404 handler
@@ -82,7 +103,15 @@ app.use('/api/*', (req: Request, res: Response) => {
 // Error handler
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Fintech Expense Tracker API running at http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health\n`);
+import { ensureDefaultWorkspaces } from './src/services/db/init';
+import { startSchedulerJobs } from './src/services/jobs/scheduler';
+
+ensureDefaultWorkspaces().then(() => {
+  // Start background jobs cron simulator (runs accounting checks every 24 hours)
+  startSchedulerJobs(24 * 60 * 60 * 1000);
+
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Fintech Expense Tracker API running at http://localhost:${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health\n`);
+  });
 });

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../api/client';
 import { 
   LayoutDashboard, Receipt, Repeat, CreditCard, CalendarClock, Users, 
-  Wallet, Tags, PieChart, Settings, LogOut, ChevronLeft, ChevronRight
+  Wallet, Tags, PieChart, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
@@ -15,6 +17,7 @@ interface SidebarProps {
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/copilot', label: 'AI Copilot', icon: Sparkles },
   { path: '/expenses', label: 'Transactions', icon: Receipt },
   { path: '/subscriptions', label: 'Subscriptions', icon: Repeat },
   { path: '/credit-cards', label: 'Credit Cards', icon: CreditCard },
@@ -23,11 +26,34 @@ const navItems = [
   { path: '/budgets', label: 'Budgets', icon: Wallet },
   { path: '/goals', label: 'Savings Goals', icon: PieChart },
   { path: '/categories', label: 'Categories', icon: Tags },
+  { path: '/workspace-settings', label: 'Workspace Settings', icon: Settings },
 ];
 
 export function Sidebar({ mobileOpen, setMobileOpen, collapsed, setCollapsed }: SidebarProps) {
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const { data: workspaces = [] } = useQuery<any[]>({
+    queryKey: ['workspaces'],
+    queryFn: () => api.request('/workspaces'),
+    enabled: !!user
+  });
+
+  const activeWsId = localStorage.getItem('fintech_workspace_id') || '';
+
+  // Trigger default selection on mount if none set
+  React.useEffect(() => {
+    if (workspaces.length > 0 && !activeWsId) {
+      localStorage.setItem('fintech_workspace_id', workspaces[0].id);
+      queryClient.invalidateQueries();
+    }
+  }, [workspaces, activeWsId, queryClient]);
+
+  const handleWorkspaceChange = (wsId: string) => {
+    localStorage.setItem('fintech_workspace_id', wsId);
+    queryClient.invalidateQueries();
+  };
 
   const toggleSidebar = () => setCollapsed(!collapsed);
 
@@ -67,6 +93,26 @@ export function Sidebar({ mobileOpen, setMobileOpen, collapsed, setCollapsed }: 
               {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </button>
           </div>
+
+          {/* Workspace Switcher Selector */}
+          {!collapsed && workspaces.length > 0 && (
+            <div className="px-3 mt-4 text-left">
+              <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1 mb-1">
+                Active Workspace
+              </div>
+              <select
+                value={activeWsId}
+                onChange={(e) => handleWorkspaceChange(e.target.value)}
+                className="w-full bg-black/[0.03] dark:bg-white/[0.03] border border-border px-3 py-2 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-gray-700 dark:text-gray-300"
+              >
+                {workspaces.map((w: any) => (
+                  <option key={w.id} value={w.id} className="bg-card text-text">
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Navigation Links */}
           <nav className="mt-4 px-3 space-y-1">

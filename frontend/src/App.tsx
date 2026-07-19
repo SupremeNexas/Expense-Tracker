@@ -15,6 +15,8 @@ import SubscriptionsPage from './pages/SubscriptionsPage';
 import CreditCardsPage from './pages/CreditCardsPage';
 import BillsPage from './pages/BillsPage';
 import GroupsPage from './pages/GroupsPage';
+import CopilotPage from './pages/CopilotPage';
+import WorkspaceSettings from './pages/WorkspaceSettings';
 import Nexova404Page from './pages/Nexova404Page';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -66,6 +68,8 @@ function AppRoutes() {
       <Route path="/credit-cards" element={<ProtectedRoute><CreditCardsPage /></ProtectedRoute>} />
       <Route path="/bills" element={<ProtectedRoute><BillsPage /></ProtectedRoute>} />
       <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+      <Route path="/copilot" element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
+      <Route path="/workspace-settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
 
       {/* Nexova 404 Pages */}
       <Route path="/404" element={<Nexova404Page />} />

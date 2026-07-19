@@ -2,26 +2,177 @@ import { Router, Response } from 'express';
 import { prisma } from '../db/prisma';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import multer from 'multer';
-import { GoogleGenAI } from '@google/genai';
 import { Prisma } from '@prisma/client';
+import {
+  getAIProvider,
+  executeRAGQuery,
+  getUserMemoryProfile,
+  generateSpendingInsights,
+  detectSubscriptions,
+  generateBudgetRecommendations,
+  generateSpendingForecast,
+  calculateFinancialHealthScore,
+  CategorizationResult,
+  ReceiptResult
+} from '../services/ai';
+import {
+  CATEGORIZE_SYSTEM_INSTRUCTION,
+  getCategorizePrompt
+} from '../services/ai/prompts';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper to initialize Google Gen AI client
-function getGenAI() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  try {
-    return new GoogleGenAI({ apiKey });
-  } catch (e) {
-    console.error('Failed to initialize GoogleGenAI client:', e);
-    return null;
+// In-memory cache to save remote token consumption
+const cache: Record<string, { data: any; expiry: number }> = {};
+
+function getCached(key: string): any | null {
+  const item = cache[key];
+  if (item && item.expiry > Date.now()) {
+    return item.data;
   }
+  return null;
 }
 
-// POST /api/ai/scan-receipt
-router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
+function setCached(key: string, data: any, ttlMs: number = 10 * 60 * 1000) { // 10 minutes cache TTL
+  cache[key] = { data, expiry: Date.now() + ttlMs };
+}
+
+// POST /api/ai/chat
+router.post('/chat', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { message, history = [] } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message is required' });
+
+    const reply = await executeRAGQuery(req.user.id, message, history);
+    res.json({ reply });
+  } catch (err) {
+    console.error('AI chat endpoint error:', err);
+    res.status(500).json({ error: 'AI Assistant failed to reply' });
+  }
+});
+
+// POST /api/ai/categorize
+router.post('/categorize', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { merchant } = req.body;
+    if (!merchant) return res.status(400).json({ error: 'Merchant is required' });
+
+    // 1. Memory Check: Look up spending preferences first to prevent calling remote LLMs
+    const memory = await getUserMemoryProfile(req.user.id);
+    const mLower = merchant.toLowerCase();
+    const matched = memory.commonMerchants.find(m => mLower.includes(m.merchant) || m.merchant.includes(mLower));
+
+    if (matched) {
+      return res.json({
+        category: matched.preferredCategory,
+        confidence: 1.0,
+        reasoning: `Habit memory matching: identified category preference from your transaction ledger.`
+      });
+    }
+
+    // 2. Query LLM provider if merchant is unrecognized
+    const provider = getAIProvider();
+    const prompt = getCategorizePrompt(merchant);
+    const result = await provider.generateJSON<CategorizationResult>(
+      prompt,
+      CATEGORIZE_SYSTEM_INSTRUCTION
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.error('Categorize endpoint error:', err);
+    res.status(500).json({ error: 'Failed to categorize merchant' });
+  }
+});
+
+// POST /api/ai/analyze
+router.post('/analyze', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const cacheKey = `analyze:${req.user.id}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+
+    const [score, forecast, recommendations, insights] = await Promise.all([
+      calculateFinancialHealthScore(req.user.id),
+      generateSpendingForecast(req.user.id),
+      generateBudgetRecommendations(req.user.id),
+      generateSpendingInsights(req.user.id)
+    ]);
+
+    const reportFeed = { score, forecast, recommendations, insights };
+    setCached(cacheKey, reportFeed);
+
+    res.json(reportFeed);
+  } catch (err) {
+    console.error('AI analyze endpoint error:', err);
+    res.status(500).json({ error: 'AI analysis failed' });
+  }
+});
+
+// POST /api/ai/forecast
+router.post('/forecast', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const cacheKey = `forecast:${req.user.id}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+
+    const forecast = await generateSpendingForecast(req.user.id);
+    setCached(cacheKey, forecast);
+
+    res.json(forecast);
+  } catch (err) {
+    console.error('AI forecast endpoint error:', err);
+    res.status(500).json({ error: 'AI forecasting failed' });
+  }
+});
+
+// POST /api/ai/subscriptions
+router.post('/subscriptions', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const cacheKey = `subscriptions:${req.user.id}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+
+    const subscriptions = await detectSubscriptions(req.user.id);
+    setCached(cacheKey, subscriptions);
+
+    res.json(subscriptions);
+  } catch (err) {
+    console.error('AI subscriptions endpoint error:', err);
+    res.status(500).json({ error: 'AI subscriptions scan failed' });
+  }
+});
+
+// POST /api/ai/insights
+router.post('/insights', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const cacheKey = `insights:${req.user.id}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+
+    const insights = await generateSpendingInsights(req.user.id);
+    setCached(cacheKey, insights);
+
+    res.json(insights);
+  } catch (err) {
+    console.error('AI insights endpoint error:', err);
+    res.status(500).json({ error: 'AI insights generation failed' });
+  }
+});
+
+// POST /api/ai/receipt (Legacy `/scan-receipt` refactored and duplicated here for compatibility)
+router.post('/receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const file = req.file;
@@ -29,7 +180,7 @@ router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req:
       return res.status(400).json({ error: 'No receipt file uploaded' });
     }
 
-    let ocrResult = {
+    let ocrResult: ReceiptResult = {
       merchant: 'McDonalds Bistro',
       amount: 680.00,
       tax: 34.00,
@@ -39,45 +190,54 @@ router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req:
       confidence: 0.96
     };
 
-    const ai = getGenAI();
-    if (ai) {
+    const provider = getAIProvider();
+    
+    // If provider is not a MockProvider, scan using model
+    if (provider.name !== 'Offline Mock Engine') {
       try {
-        console.log('Scanning receipt using Gemini API...');
-        // Standard call to Gemini 2.5 Flash for multimodal processing
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: [
-            {
-              inlineData: {
-                data: file.buffer.toString('base64'),
-                mimeType: file.mimetype
-              }
-            },
-            'You are an expert financial receipt scanner. Extract the following fields from this receipt image as JSON: merchant, amount (total including tax, as number), tax (as number), date (YYYY-MM-DD format), category (one of: Food, Travel, Fuel, Shopping, Bills, Health, Education, Entertainment, Salary, Investment, Gift, Other), items (list of string items), confidence (estimate from 0 to 1). Return ONLY the raw JSON block without markdown formatting or code blocks.'
-          ]
-        });
-
-        const text = response.text || '';
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(cleanText);
-        if (parsed.merchant && parsed.amount) {
-          ocrResult = {
-            merchant: parsed.merchant,
-            amount: Number(parsed.amount),
-            tax: Number(parsed.tax || 0),
-            date: parsed.date || new Date().toISOString().split('T')[0],
-            category: parsed.category || 'Other',
-            items: parsed.items || [],
-            confidence: Number(parsed.confidence || 0.9)
-          };
+        console.log(`Processing receipt using AI Provider: ${provider.name}...`);
+        
+        // Multi-modal calls require Gemini provider
+        if (provider.name === 'Google Gemini') {
+          const ai = (provider as any).client;
+          const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+              {
+                inlineData: {
+                  data: file.buffer.toString('base64'),
+                  mimeType: file.mimetype
+                }
+              },
+              'You are an expert financial receipt scanner. Extract the following fields from this receipt image as JSON: merchant, amount (total including tax, as number), tax (as number), date (YYYY-MM-DD format), category (one of: Food, Travel, Fuel, Shopping, Bills, Health, Education, Entertainment, Salary, Investment, Gift, Other), items (list of string items), confidence (estimate from 0 to 1). Return ONLY the raw JSON block without markdown formatting or code blocks.'
+            ]
+          });
+          const text = response.text || '';
+          const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanText);
+          if (parsed.merchant && parsed.amount) {
+            ocrResult = {
+              merchant: parsed.merchant,
+              amount: Number(parsed.amount),
+              tax: Number(parsed.tax || 0),
+              date: parsed.date || new Date().toISOString().split('T')[0],
+              category: parsed.category || 'Other',
+              items: parsed.items || [],
+              confidence: Number(parsed.confidence || 0.9)
+            };
+          }
+        } else {
+          // Other models don't support multi-modal buffers directly in our lightweight client, 
+          // but we can parse metadata or simulate a high-quality analysis.
+          console.warn('Multimodal scans are optimized for Gemini. Simulating provider metadata extraction.');
         }
       } catch (geminiErr) {
-        console.warn('Gemini OCR failed or API key invalid. Falling back to high-fidelity mock values.', geminiErr);
+        console.warn('OCR processing failed. Falling back to local values.', geminiErr);
       }
     } else {
-      console.log('No GEMINI_API_KEY provided. Using local high-fidelity mock OCR parser.');
-      // Make mock data slightly dynamic based on file details
-      if (file.originalname.toLowerCase().includes('uber') || file.originalname.toLowerCase().includes('ola')) {
+      // Mock scanner based on filename
+      const name = file.originalname.toLowerCase();
+      if (name.includes('uber') || name.includes('ola')) {
         ocrResult = {
           merchant: 'Uber Rides Inc',
           amount: 450.00,
@@ -87,7 +247,7 @@ router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req:
           items: ['Ride Trip share'],
           confidence: 0.98
         };
-      } else if (file.originalname.toLowerCase().includes('amazon') || file.originalname.toLowerCase().includes('zara')) {
+      } else if (name.includes('amazon') || name.includes('zara')) {
         ocrResult = {
           merchant: 'Zara Delhi NCR',
           amount: 4299.00,
@@ -100,20 +260,18 @@ router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req:
       }
     }
 
-    // Automatically create transaction
+    // Auto-resolve categories and default wallets
     const categories = await prisma.category.findMany({
       where: {
         OR: [{ userId: req.user.id }, { userId: null }]
       }
     });
 
-    // Match category
     let category = categories.find(c => c.name.toLowerCase() === ocrResult.category.toLowerCase());
     if (!category) {
       category = categories.find(c => c.name === 'Other') || categories[0];
     }
 
-    // Get default wallet
     const wallet = await prisma.wallet.findFirst({
       where: { userId: req.user.id }
     }) || await prisma.wallet.create({
@@ -142,18 +300,16 @@ router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req:
       include: { category: true }
     });
 
-    // Update Wallet Balance
     await prisma.wallet.update({
       where: { id: wallet.id },
       data: { balance: { decrement: ocrResult.amount } }
     });
 
-    // Log the receipt record
     await prisma.receipt.create({
       data: {
         userId: req.user.id,
         transactionId: transaction.id,
-        imageUrl: file.originalname, // Save filename as mockup URL
+        imageUrl: file.originalname,
         merchant: ocrResult.merchant,
         amount: new Prisma.Decimal(ocrResult.amount),
         tax: new Prisma.Decimal(ocrResult.tax),
@@ -184,156 +340,18 @@ router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req:
   }
 });
 
-// POST /api/ai/chat
-router.post('/chat', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const { message, history = [] } = req.body;
-
-    if (!message) return res.status(400).json({ error: 'Message is required' });
-
-    // Fetch user recent transactions to inject as context
-    const transactions = await prisma.transaction.findMany({
-      where: { userId: req.user.id },
-      include: { category: true },
-      orderBy: { date: 'desc' },
-      take: 50
-    });
-
-    const userProfile = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { settings: true }
-    });
-
-    const recentData = transactions.map(t => ({
-      title: t.title,
-      amount: Number(t.amount),
-      type: t.type,
-      category: t.category.name,
-      date: t.date.toISOString().split('T')[0],
-      pm: t.paymentMethod
-    }));
-
-    const context = `You are AI Finance Assistant, a premium, minimal, state-of-the-art AI financial adviser.
-User Profile:
-- Name: ${userProfile?.name}
-- Currency: ${userProfile?.baseCurrency}
-
-User's 50 most recent transactions:
-${JSON.stringify(recentData, null, 2)}
-
-Provide clear, professional, and actionable advice to the user's questions based on this data. Highlight categories or specific spends. Keep responses short and premium (Notion/Linear style). Use bold words and lists for readability.`;
-
-    const ai = getGenAI();
-    if (ai) {
-      try {
-        console.log('Sending message to Gemini...');
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: [
-            { role: 'user', parts: [{ text: context }] },
-            ...history.map((h: any) => ({
-              role: h.role === 'user' ? 'user' : 'model',
-              parts: [{ text: h.content }]
-            })),
-            { role: 'user', parts: [{ text: message }] }
-          ]
-        });
-
-        return res.json({ reply: response.text });
-      } catch (geminiErr) {
-        console.warn('Gemini chat failed. Falling back to offline engine.', geminiErr);
-      }
-    }
-
-    // Local smart rule-based chatbot fallback
-    let reply = `Based on your recent transactions, you have spent standard amounts this month. I'm currently running in local offline mode, but I can see you have transactions like **${transactions[0]?.title || 'direct spends'}** in your history.`;
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('restaurant') || lowerMessage.includes('food') || lowerMessage.includes('eat')) {
-      const foodSpends = transactions.filter(t => t.category.name.toLowerCase().includes('food'));
-      const total = foodSpends.reduce((sum, f) => sum + Number(f.amount), 0);
-      reply = `You spent a total of **INR ${total.toFixed(2)}** on **Food & Dining** across **${foodSpends.length}** transactions. Your largest transaction was **"${foodSpends[0]?.title}"** costing **INR ${Number(foodSpends[0]?.amount).toFixed(2)}**.`;
-    } else if (lowerMessage.includes('most') || lowerMessage.includes('highest') || lowerMessage.includes('expensive')) {
-      const maxTrans = transactions.reduce((max, t) => Number(t.amount) > Number(max.amount) ? t : max, transactions[0]);
-      if (maxTrans) {
-        reply = `Your single largest expense was **INR ${Number(maxTrans.amount).toFixed(2)}** on **"${maxTrans.title}"** (Category: **${maxTrans.category.name}**) dated **${maxTrans.date.toISOString().split('T')[0]}**.`;
-      }
-    } else if (lowerMessage.includes('save') || lowerMessage.includes('saving')) {
-      const incomes = transactions.filter(t => t.type === 'INCOME').reduce((sum, i) => sum + Number(i.amount), 0);
-      const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((sum, e) => sum + Number(e.amount), 0);
-      const saved = incomes - expenses;
-      const rate = incomes > 0 ? (saved / incomes) * 100 : 0;
-      reply = `Based on your logged data, you had total credits of **INR ${incomes.toFixed(2)}** and debits of **INR ${expenses.toFixed(2)}**. You saved **INR ${saved.toFixed(2)}** (Savings Rate: **${rate.toFixed(0)}%**).`;
-    }
-
-    res.json({ reply });
-  } catch (err) {
-    console.error('Chat error:', err);
-    res.status(500).json({ error: 'Chat assistant error' });
-  }
+// Map legacy routes/scan-receipt to receipt scanner
+router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
+  // Redirect to standard receipt endpoint
+  res.redirect(307, '/api/ai/receipt');
 });
 
-// GET /api/ai/coach
+// Map legacy GET coach
 router.get('/coach', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    // Gather transaction data for summaries
-    const transactions = await prisma.transaction.findMany({
-      where: { userId: req.user.id },
-      include: { category: true },
-      orderBy: { date: 'desc' },
-      take: 100
-    });
-
-    const now = new Date();
-    const currStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-
-    const currentSpends = transactions.filter(t => t.type === 'EXPENSE' && t.date >= currStart);
-    const prevSpends = transactions.filter(t => t.type === 'EXPENSE' && t.date >= prevStart && t.date <= prevEnd);
-
-    const currTotal = currentSpends.reduce((sum, t) => sum + Number(t.amount), 0);
-    const prevTotal = prevSpends.reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const tips = [
-      `Your fuel expenses dropped by 12% compared to last month. Good job using carpools.`,
-      `You spent 34% more on restaurants. Cooking at home 2 more times a week could save INR 4,500.`,
-      `Your monthly subscriptions make up 8% of your expenses. You have a Spotify and Netflix subscription running.`,
-      `Predictions: You'll likely exceed your shopping budget by the 24th if current trends continue.`
-    ];
-
-    const ai = getGenAI();
-    if (ai && transactions.length > 0) {
-      try {
-        console.log('Generating coach report using Gemini...');
-        const prompt = `You are a premium AI financial coach. Analyze the following budget stats for user:
-- Spent this month: INR ${currTotal.toFixed(2)}
-- Spent last month: INR ${prevTotal.toFixed(2)}
-- 10 most recent transactions: ${JSON.stringify(transactions.slice(0, 10).map(t => ({ title: t.title, amount: Number(t.amount), cat: t.category.name })), null, 2)}
-
-Provide 3 highly specific, short financial tips or predictions (in bullet points) for this user. Keep them very concise, structured, and premium. Format it directly as text list.`;
-
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt
-        });
-
-        const lines = (response.text || '')
-          .split('\n')
-          .map(l => l.replace(/^\*|-|\d\./, '').trim())
-          .filter(l => l.length > 10);
-
-        if (lines.length >= 2) {
-          return res.json({ tips: lines });
-        }
-      } catch (geminiErr) {
-        console.warn('Gemini coach failed. Falling back to offline tips.', geminiErr);
-      }
-    }
-
+    const insights = await generateSpendingInsights(req.user.id);
+    const tips = insights.slice(0, 3).map(i => `${i.title}: ${i.text}`);
     res.json({ tips });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch financial coach advice' });

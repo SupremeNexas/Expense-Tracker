@@ -1,18 +1,18 @@
 import { Router, Response } from 'express';
 import { prisma } from '../db/prisma';
-import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
 import { Prisma } from '@prisma/client';
 
 const router = Router();
 
-// GET /api/analytics/summary
-router.get('/summary', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+// GET /api/analytics/summary - Workspace scoped spending summary
+router.get('/summary', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { month, year } = req.query;
 
     const whereClause: Prisma.TransactionWhereInput = {
-      userId: req.user.id,
+      workspaceId: req.workspaceId,
       type: 'EXPENSE'
     };
 
@@ -63,9 +63,9 @@ router.get('/summary', authenticate, async (req: AuthenticatedRequest, res: Resp
 });
 
 // GET /api/analytics/by-category
-router.get('/by-category', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/by-category', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { month, year } = req.query;
 
     const dateFilter: Prisma.TransactionWhereInput = {};
@@ -82,12 +82,13 @@ router.get('/by-category', authenticate, async (req: AuthenticatedRequest, res: 
       dateFilter.date = { gte: start, lte: end };
     }
 
-    // Fetch user categories
+    // Fetch system and workspace categories
     const categories = await prisma.category.findMany({
       where: {
         OR: [
           { userId: req.user.id },
-          { userId: null }
+          { userId: null },
+          { workspaceId: req.workspaceId }
         ]
       }
     });
@@ -95,7 +96,7 @@ router.get('/by-category', authenticate, async (req: AuthenticatedRequest, res: 
     const breakdown = await Promise.all(categories.map(async (cat) => {
       const agg = await prisma.transaction.aggregate({
         where: {
-          userId: req.user!.id,
+          workspaceId: req.workspaceId,
           categoryId: cat.id,
           type: 'EXPENSE',
           ...dateFilter
@@ -114,10 +115,11 @@ router.get('/by-category', authenticate, async (req: AuthenticatedRequest, res: 
       };
     }));
 
-    // Sort by total descending
+    // Sort by total descending and filter out zero spends to keep analytics clean
     breakdown.sort((a, b) => b.total - a.total);
+    const activeBreakdown = breakdown.filter(b => b.total > 0);
 
-    res.json(breakdown);
+    res.json(activeBreakdown.length > 0 ? activeBreakdown : breakdown.slice(0, 5));
   } catch (err) {
     console.error('Error fetching category breakdown:', err);
     res.status(500).json({ error: 'Failed to fetch category breakdown' });
@@ -125,9 +127,9 @@ router.get('/by-category', authenticate, async (req: AuthenticatedRequest, res: 
 });
 
 // GET /api/analytics/trend (6 months historical)
-router.get('/trend', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/trend', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
     const trend = [];
     const now = new Date();
@@ -144,7 +146,7 @@ router.get('/trend', authenticate, async (req: AuthenticatedRequest, res: Respon
       // Sum Expenses
       const expenseAgg = await prisma.transaction.aggregate({
         where: {
-          userId: req.user.id,
+          workspaceId: req.workspaceId,
           type: 'EXPENSE',
           date: { gte: start, lte: end }
         },
@@ -155,7 +157,7 @@ router.get('/trend', authenticate, async (req: AuthenticatedRequest, res: Respon
       // Sum Incomes
       const incomeAgg = await prisma.transaction.aggregate({
         where: {
-          userId: req.user.id,
+          workspaceId: req.workspaceId,
           type: 'INCOME',
           date: { gte: start, lte: end }
         },
@@ -180,9 +182,9 @@ router.get('/trend', authenticate, async (req: AuthenticatedRequest, res: Respon
 });
 
 // GET /api/analytics/budget-status
-router.get('/budget-status', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/budget-status', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
     const now = new Date();
     const month = req.query.month ? parseInt(req.query.month as string) : now.getMonth() + 1;
@@ -193,7 +195,7 @@ router.get('/budget-status', authenticate, async (req: AuthenticatedRequest, res
 
     const budgets = await prisma.budget.findMany({
       where: {
-        userId: req.user.id,
+        workspaceId: req.workspaceId,
         startDate: { gte: start },
         endDate: { lte: end }
       },
@@ -203,7 +205,7 @@ router.get('/budget-status', authenticate, async (req: AuthenticatedRequest, res
     const result = await Promise.all(budgets.map(async (b) => {
       const expenseAgg = await prisma.transaction.aggregate({
         where: {
-          userId: req.user!.id,
+          workspaceId: req.workspaceId,
           categoryId: b.categoryId,
           type: 'EXPENSE',
           date: { gte: b.startDate, lte: b.endDate }

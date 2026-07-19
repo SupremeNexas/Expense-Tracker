@@ -1,0 +1,21 @@
+# CODEOWNERS
+# This file defines code ownership for automatic review assignment on pull requests.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: all changes require a review from the project maintainers
+*                       @SupremeNexas
+
+# Backend Express API & Prisma Schema
+backend/                @SupremeNexas
+backend/prisma/         @SupremeNexas
+
+# Frontend React & Design System
+frontend/               @SupremeNexas
+
+# Documentation — anyone can contribute without strict review
+*.md                    @SupremeNexas
+wiki/                   @SupremeNexas
+memory/                 @SupremeNexas
+
+# CI/CD pipelines — require maintainer sign-off
+.github/workflows/      @SupremeNexas

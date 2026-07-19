@@ -1,0 +1,26 @@
+{
+  "name": "expense-tracker-root",
+  "version": "1.3.0",
+  "private": true,
+  "description": "Enterprise-grade Personal Finance and Expense Tracker platform root workspace",
+  "scripts": {
+    "setup": "npm install --prefix backend && npm install --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "db:start": "./run_db.sh start",
+    "db:stop": "./run_db.sh stop",
+    "db:seed": "npm run db:seed --prefix backend",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "typecheck": "npx --prefix backend tsc --project backend/tsconfig.json --noEmit && npx --prefix frontend tsc --project frontend/tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "personal-finance",
+    "expense-tracker",
+    "ai-assistant",
+    "enterprise",
+    "collaborative",
+    "devops"
+  ],
+  "author": "Antigravity Devs",
+  "license": "MIT"
+}

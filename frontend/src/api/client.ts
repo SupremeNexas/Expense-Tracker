@@ -17,14 +17,21 @@ export function setToken(token: string | null): void {
 async function request(endpoint: string, options: any = {}): Promise<any> {
   const url = `${API_BASE}${endpoint}`;
   const token = getToken();
+  const workspaceId = localStorage.getItem('fintech_workspace_id');
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...(workspaceId ? { 'x-workspace-id': workspaceId } : {}),
     ...(options.headers as Record<string, string>),
   };
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  // If body is FormData, delete Content-Type to let fetch set it with the boundary
+  if (options.body && options.body instanceof FormData) {
+    delete headers['Content-Type'];
   }
 
   const config: any = {

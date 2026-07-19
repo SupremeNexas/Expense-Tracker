@@ -1,9 +1,12 @@
 import { Router, Response } from 'express';
 import { body } from 'express-validator';
 import { prisma } from '../db/prisma';
-import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
 import { Prisma } from '@prisma/client';
 import { validate } from '../middleware/validation';
+import { logAction } from '../services/audit/log';
+import { triggerAutomations } from '../services/automation/engine';
+import { convertCurrency } from '../services/currency/converter';
 
 const router = Router();
 
@@ -17,10 +20,10 @@ const expenseRules = [
   body('wallet_id').optional().trim(),
 ];
 
-// Helper to get or create a default wallet for a user
-async function getOrCreateWallet(userId: string, paymentMethod?: string, walletId?: string) {
+// Helper to get or create a default wallet for a workspace
+async function getOrCreateWorkspaceWallet(userId: string, workspaceId: string, paymentMethod?: string, walletId?: string) {
   if (walletId) {
-    const w = await prisma.wallet.findFirst({ where: { id: walletId, userId } });
+    const w = await prisma.wallet.findFirst({ where: { id: walletId, workspaceId } });
     if (w) return w;
   }
 
@@ -40,12 +43,12 @@ async function getOrCreateWallet(userId: string, paymentMethod?: string, walletI
 
   // Find existing wallet of this type
   let wallet = await prisma.wallet.findFirst({
-    where: { userId, type }
+    where: { workspaceId, type }
   });
 
   if (!wallet) {
     // Check if any wallet exists, if so return first
-    wallet = await prisma.wallet.findFirst({ where: { userId } });
+    wallet = await prisma.wallet.findFirst({ where: { workspaceId } });
   }
 
   if (!wallet) {
@@ -53,6 +56,7 @@ async function getOrCreateWallet(userId: string, paymentMethod?: string, walletI
     wallet = await prisma.wallet.create({
       data: {
         userId,
+        workspaceId,
         name,
         type,
         balance: 10000.00,
@@ -65,18 +69,19 @@ async function getOrCreateWallet(userId: string, paymentMethod?: string, walletI
 }
 
 // GET /api/expenses/wallets
-router.get('/wallets', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/wallets', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
     let wallets = await prisma.wallet.findMany({
-      where: { userId: req.user.id }
+      where: { workspaceId: req.workspaceId }
     });
 
     if (wallets.length === 0) {
       const defaultWallet = await prisma.wallet.create({
         data: {
           userId: req.user.id,
+          workspaceId: req.workspaceId,
           name: 'Cash Wallet',
           type: 'CASH',
           balance: 10000
@@ -92,15 +97,15 @@ router.get('/wallets', authenticate, async (req: AuthenticatedRequest, res: Resp
   }
 });
 
-// GET /api/expenses
-router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+// GET /api/expenses - List transactions scoped by workspace
+router.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
     const { month, year, category_id, search, sort = 'date', order = 'desc' } = req.query;
 
     const whereClause: Prisma.TransactionWhereInput = {
-      userId: req.user.id
+      workspaceId: req.workspaceId
     };
 
     if (month && year) {
@@ -125,14 +130,17 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) =
       whereClause.OR = [
         { title: { contains: s, mode: 'insensitive' } },
         { notes: { contains: s, mode: 'insensitive' } },
-        { tags: { has: s } } // Check if array has the term
+        { tags: { has: s } }
       ];
     }
 
     const sortField = sort === 'category' ? 'categoryId' : (sort as string);
     const transactions = await prisma.transaction.findMany({
       where: whereClause,
-      include: { category: true },
+      include: { 
+        category: true,
+        user: { select: { name: true, email: true } }
+      },
       orderBy: { [sortField]: order === 'asc' ? 'asc' : 'desc' }
     });
 
@@ -153,7 +161,8 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) =
       location: t.location,
       attachment_url: t.attachmentUrl,
       receipt_url: t.receiptUrl,
-      is_recurring: t.isRecurring
+      is_recurring: t.isRecurring,
+      creator: t.user?.name || 'Unknown'
     }));
 
     res.json(mapped);
@@ -164,12 +173,12 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) =
 });
 
 // GET /api/expenses/:id
-router.get('/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const t: any = await prisma.transaction.findFirst({
-      where: { id: req.params.id as string, userId: req.user.id as string },
+    const t = await prisma.transaction.findFirst({
+      where: { id: req.params.id as string, workspaceId: req.workspaceId },
       include: { category: true }
     });
 
@@ -200,10 +209,10 @@ router.get('/:id', authenticate, async (req: AuthenticatedRequest, res: Response
   }
 });
 
-// POST /api/expenses
-router.post('/', authenticate, expenseRules, validate, async (req: AuthenticatedRequest, res: Response) => {
+// POST /api/expenses - Create transaction
+router.post('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), expenseRules, validate, async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { title, amount, category_id, date, notes = '', payment_method = 'Card', tags = [], wallet_id, type = 'EXPENSE' } = req.body;
 
     const category = await prisma.category.findFirst({
@@ -211,7 +220,8 @@ router.post('/', authenticate, expenseRules, validate, async (req: Authenticated
         id: category_id,
         OR: [
           { userId: req.user.id },
-          { userId: null }
+          { userId: null },
+          { workspaceId: req.workspaceId }
         ]
       }
     });
@@ -220,14 +230,20 @@ router.post('/', authenticate, expenseRules, validate, async (req: Authenticated
       return res.status(400).json({ error: 'Category not found' });
     }
 
-    const wallet = await getOrCreateWallet(req.user.id, payment_method, wallet_id);
+    const wallet = await getOrCreateWorkspaceWallet(req.user.id, req.workspaceId, payment_method, wallet_id);
+
+    // Multi-currency conversion: Convert wallet currency to workspace base currency if different
+    const userSettings = await prisma.settings.findFirst({ where: { userId: req.user.id } });
+    const baseCurrency = userSettings?.currency || 'USD';
+    const finalAmount = await convertCurrency(Number(amount), wallet.currency, baseCurrency);
 
     const transaction = await prisma.transaction.create({
       data: {
         userId: req.user.id,
+        workspaceId: req.workspaceId,
         title,
-        amount: new Prisma.Decimal(Number(amount)),
-        type: type,
+        amount: new Prisma.Decimal(finalAmount),
+        type,
         categoryId: category_id,
         walletId: wallet.id,
         paymentMethod: payment_method,
@@ -245,6 +261,20 @@ router.post('/', authenticate, expenseRules, validate, async (req: Authenticated
       where: { id: wallet.id },
       data: { balance: { increment: balanceChange } }
     });
+
+    // 1. Immutable Audit Logging
+    await logAction(
+      req.user.id,
+      req.workspaceId,
+      'TRANSACTION_CREATE',
+      'Transaction',
+      transaction.id,
+      null,
+      transaction
+    );
+
+    // 2. Trigger Automations Engine
+    await triggerAutomations(req.workspaceId, 'TRANSACTION_CREATED', transaction);
 
     res.status(201).json({
       id: transaction.id,
@@ -266,14 +296,14 @@ router.post('/', authenticate, expenseRules, validate, async (req: Authenticated
   }
 });
 
-// PUT /api/expenses/:id
-router.put('/:id', authenticate, expenseRules, validate, async (req: AuthenticatedRequest, res: Response) => {
+// PUT /api/expenses/:id - Edit transaction
+router.put('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), expenseRules, validate, async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { title, amount, category_id, date, notes = '', payment_method = 'Card', tags = [], wallet_id, type = 'EXPENSE' } = req.body;
 
     const transaction = await prisma.transaction.findFirst({
-      where: { id: req.params.id as string, userId: req.user.id as string }
+      where: { id: req.params.id as string, workspaceId: req.workspaceId }
     });
 
     if (!transaction) {
@@ -285,7 +315,8 @@ router.put('/:id', authenticate, expenseRules, validate, async (req: Authenticat
         id: category_id,
         OR: [
           { userId: req.user.id },
-          { userId: null }
+          { userId: null },
+          { workspaceId: req.workspaceId }
         ]
       }
     });
@@ -303,15 +334,20 @@ router.put('/:id', authenticate, expenseRules, validate, async (req: Authenticat
     });
 
     // Apply new wallet balance
-    const wallet = await getOrCreateWallet(req.user.id, payment_method, wallet_id);
+    const wallet = await getOrCreateWorkspaceWallet(req.user.id, req.workspaceId, payment_method, wallet_id);
     const newAmount = Number(amount);
     const newBalanceChange = type === 'EXPENSE' ? -newAmount : newAmount;
+
+    // Convert currency if needed
+    const userSettings = await prisma.settings.findFirst({ where: { userId: req.user.id } });
+    const baseCurrency = userSettings?.currency || 'USD';
+    const finalAmount = await convertCurrency(newAmount, wallet.currency, baseCurrency);
     
-    const updated: any = await prisma.transaction.update({
+    const updated = await prisma.transaction.update({
       where: { id: req.params.id as string },
       data: {
         title,
-        amount: new Prisma.Decimal(newAmount),
+        amount: new Prisma.Decimal(finalAmount),
         type,
         categoryId: category_id,
         walletId: wallet.id,
@@ -319,6 +355,7 @@ router.put('/:id', authenticate, expenseRules, validate, async (req: Authenticat
         tags: Array.isArray(tags) ? tags : [],
         notes,
         date: new Date(date),
+        lastEditorId: req.user.id
       },
       include: { category: true }
     });
@@ -327,6 +364,17 @@ router.put('/:id', authenticate, expenseRules, validate, async (req: Authenticat
       where: { id: wallet.id },
       data: { balance: { increment: newBalanceChange } }
     });
+
+    // Audit Logging
+    await logAction(
+      req.user.id,
+      req.workspaceId,
+      'TRANSACTION_UPDATE',
+      'Transaction',
+      updated.id,
+      transaction,
+      updated
+    );
 
     res.json({
       id: updated.id,
@@ -349,12 +397,12 @@ router.put('/:id', authenticate, expenseRules, validate, async (req: Authenticat
 });
 
 // DELETE /api/expenses/:id
-router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
     const transaction = await prisma.transaction.findFirst({
-      where: { id: req.params.id as string, userId: req.user.id as string }
+      where: { id: req.params.id as string, workspaceId: req.workspaceId }
     });
 
     if (!transaction) {
@@ -372,6 +420,17 @@ router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Respo
     await prisma.transaction.delete({
       where: { id: req.params.id as string }
     });
+
+    // Audit Logging
+    await logAction(
+      req.user.id,
+      req.workspaceId,
+      'TRANSACTION_DELETE',
+      'Transaction',
+      transaction.id,
+      transaction,
+      null
+    );
 
     res.json({ message: 'Expense deleted successfully' });
   } catch (err) {
