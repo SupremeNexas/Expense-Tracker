@@ -1,6 +1,6 @@
 # 💸 Expense Tracker
 
-> A modern, AI-native personal finance management platform built with **React, TypeScript, Node.js, Express, PostgreSQL, and Prisma**. Track expenses, manage budgets, monitor recurring bills, analyze spending habits, and visualize your financial health through an elegant, production-ready interface.
+> A modern, AI-native personal finance management platform built with **React, TypeScript, Node.js, Express, PostgreSQL, and Prisma**. Track expenses, manage budgets, monitor recurring bills, analyze spending habits, and visualize your financial health through an elegant, production-ready interface. 
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)
