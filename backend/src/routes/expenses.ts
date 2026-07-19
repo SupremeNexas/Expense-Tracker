@@ -1,24 +1,11 @@
 import { Router, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { prisma } from '../db/prisma';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { Prisma } from '@prisma/client';
+import { validate } from '../middleware/validation';
 
 const router = Router();
-
-const validate = (req: any, res: Response, next: any) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: errors.array().map((e: any) => ({
-        field: e.path,
-        message: e.msg,
-      })),
-    });
-  }
-  next();
-};
 
 const expenseRules = [
   body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 200 }),
@@ -76,6 +63,34 @@ async function getOrCreateWallet(userId: string, paymentMethod?: string, walletI
 
   return wallet;
 }
+
+// GET /api/expenses/wallets
+router.get('/wallets', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    let wallets = await prisma.wallet.findMany({
+      where: { userId: req.user.id }
+    });
+
+    if (wallets.length === 0) {
+      const defaultWallet = await prisma.wallet.create({
+        data: {
+          userId: req.user.id,
+          name: 'Cash Wallet',
+          type: 'CASH',
+          balance: 10000
+        }
+      });
+      wallets = [defaultWallet];
+    }
+
+    res.json(wallets);
+  } catch (err) {
+    console.error('Error fetching wallets:', err);
+    res.status(500).json({ error: 'Failed to fetch wallets' });
+  }
+});
 
 // GET /api/expenses
 router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) => {

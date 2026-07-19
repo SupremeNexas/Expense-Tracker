@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
+import { SkeletonCard, SkeletonChart } from '../components/UI/Skeleton';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, BarChart, Bar, Legend, Cell, PieChart, Pie 
@@ -129,7 +130,15 @@ export default function AnalyticsPage() {
 
       {/* Numerical Analytics summaries */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="premium-card">
+        {isLoading ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : (
+          <>
+            <div className="premium-card">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Outflow Total</div>
           <div className="text-3xl font-bold mt-2 font-sans">{formatCurrency(summary?.total || 0, user?.baseCurrency)}</div>
           <span className="text-[10px] text-gray-400 font-medium mt-1 inline-block">Summed debited volume</span>
@@ -146,13 +155,18 @@ export default function AnalyticsPage() {
           <div className="text-3xl font-bold mt-2 font-sans">{formatCurrency(summary?.max || 0, user?.baseCurrency)}</div>
           <span className="text-[10px] text-red-500 font-medium mt-1 inline-block">Peak transaction value</span>
         </div>
+          </>
+        )}
       </div>
 
       {/* Grid of charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Trend Area Chart */}
-        <div className="premium-card flex flex-col justify-between min-h-[350px]">
+        {isLoading ? (
+          <SkeletonChart />
+        ) : (
+          <div className="premium-card flex flex-col justify-between min-h-[350px]">
           <div>
             <h3 className="text-base font-bold flex items-center gap-2">
               <BarChart3 className="w-4.5 h-4.5 text-emerald-500" />
@@ -195,9 +209,13 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Budget Comparison Bar Chart */}
-        <div className="premium-card flex flex-col justify-between min-h-[350px]">
+        {isLoading ? (
+          <SkeletonChart />
+        ) : (
+          <div className="premium-card flex flex-col justify-between min-h-[350px]">
           <div>
             <h3 className="text-base font-bold flex items-center gap-2">
               <ShieldCheck className="w-4.5 h-4.5 text-emerald-500" />
@@ -230,9 +248,13 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Donut breakdown */}
-        <div className="premium-card flex flex-col justify-between min-h-[350px] lg:col-span-2">
+        {isLoading ? (
+          <SkeletonChart className="lg:col-span-2" />
+        ) : (
+          <div className="premium-card flex flex-col justify-between min-h-[350px] lg:col-span-2">
           <div>
             <h3 className="text-base font-bold flex items-center gap-2">
               <PieChartIcon className="w-4.5 h-4.5 text-emerald-500" />
@@ -275,6 +297,7 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+        )}
 
       </div>
     </div>

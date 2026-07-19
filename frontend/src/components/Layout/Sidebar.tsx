@@ -9,6 +9,8 @@ import useAuthStore from '../../store/authStore';
 interface SidebarProps {
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
+  collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
 }
 
 const navItems = [
@@ -23,8 +25,7 @@ const navItems = [
   { path: '/categories', label: 'Categories', icon: Tags },
 ];
 
-export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function Sidebar({ mobileOpen, setMobileOpen, collapsed, setCollapsed }: SidebarProps) {
   const location = useLocation();
   const { user, logout } = useAuthStore();
 

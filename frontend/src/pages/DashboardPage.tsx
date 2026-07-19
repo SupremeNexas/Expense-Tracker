@@ -10,6 +10,7 @@ import { api } from '../api/client';
 import useAuthStore from '../store/authStore';
 import { formatCurrency } from '../utils/currency';
 import { useToast } from '../components/UI/Toast';
+import { SkeletonCard, SkeletonChart } from '../components/UI/Skeleton';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, PieChart, Pie, Cell, Legend 
@@ -184,7 +185,16 @@ export default function DashboardPage() {
 
       {/* Bento Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div whileHover={{ y: -2 }} className="premium-card relative overflow-hidden">
+        {summaryLoading ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : (
+          <>
+            <motion.div whileHover={{ y: -2 }} className="premium-card relative overflow-hidden">
           <div className="flex justify-between items-center text-xs font-semibold text-gray-400 uppercase tracking-wider">
             <span>Net Worth (Est.)</span>
             <TrendingUp className="w-4 h-4 text-emerald-500" />
@@ -219,12 +229,17 @@ export default function DashboardPage() {
           <div className="text-3xl font-bold mt-2 font-sans">{savingsRate}%</div>
           <span className="text-[10px] text-indigo-500 font-medium mt-1 inline-block">Net margin efficiency</span>
         </motion.div>
+          </>
+        )}
       </div>
 
       {/* Main Analysis Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cash Flow Chart */}
-        <div className="premium-card lg:col-span-2 flex flex-col justify-between min-h-[350px]">
+        {trendLoading ? (
+          <SkeletonChart className="lg:col-span-2" />
+        ) : (
+          <div className="premium-card lg:col-span-2 flex flex-col justify-between min-h-[350px]">
           <div>
             <h3 className="text-lg font-bold">Cash Flow Overview</h3>
             <span className="text-xs text-gray-400">Monthly inflow and outflow details (Last 6 Months)</span>
@@ -273,9 +288,13 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Categories Pie Chart Breakdown */}
-        <div className="premium-card flex flex-col justify-between">
+        {summaryLoading ? (
+          <SkeletonChart />
+        ) : (
+          <div className="premium-card flex flex-col justify-between">
           <div>
             <h3 className="text-lg font-bold">Category Distribution</h3>
             <span className="text-xs text-gray-400">Categorical splits for current cycle</span>
@@ -313,6 +332,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* AI coach warnings and Recent transactions row */}

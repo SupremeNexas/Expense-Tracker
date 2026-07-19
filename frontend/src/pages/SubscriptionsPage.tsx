@@ -8,6 +8,8 @@ import { Subscription } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
 import { SubscriptionForm } from '../components/Subscriptions/SubscriptionForm';
+import EmptyState from '../components/UI/EmptyState';
+import { SkeletonList } from '../components/UI/Skeleton';
 
 export default function SubscriptionsPage() {
   const queryClient = useQueryClient();
@@ -136,12 +138,24 @@ export default function SubscriptionsPage() {
       {/* Subscription table */}
       <div className="premium-card p-0 overflow-hidden border-black/[0.05] dark:border-white/[0.05]">
         {isLoading ? (
-          <div className="p-8 text-center text-sm text-gray-400">Loading sub-ledger...</div>
+          <div className="p-6">
+            <SkeletonList count={3} />
+          </div>
         ) : subscriptions.length === 0 ? (
-          <div className="py-20 text-center flex flex-col items-center">
-            <Repeat className="w-12 h-12 text-gray-400 mb-3" />
-            <h3 className="text-base font-semibold">No active subscriptions</h3>
-            <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Add your digital services to monitor recurring monthly outflows.</p>
+          <div className="py-12 px-6">
+            <EmptyState
+              iconName="Repeat"
+              title="No active subscriptions"
+              description="Add your digital services to monitor recurring monthly outflows."
+              action={
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="btn-premium btn-premium-primary text-xs py-1.5 px-4 cursor-pointer"
+                >
+                  Add First Subscription
+                </button>
+              }
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">

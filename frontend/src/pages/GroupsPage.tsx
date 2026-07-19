@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
+import EmptyState from '../components/UI/EmptyState';
 
 export default function GroupsPage() {
   const queryClient = useQueryClient();
@@ -176,7 +177,15 @@ export default function GroupsPage() {
             {groupsLoading ? (
               <div className="text-center text-xs text-gray-400 py-6">Loading groups...</div>
             ) : groups.length === 0 ? (
-              <div className="text-center text-xs text-gray-400 py-10">No active shared workspaces found.</div>
+              <div className="text-center py-8 px-4 border border-dashed border-border rounded-xl my-4 mx-2">
+                <p className="text-xs text-muted">No shared workspaces.</p>
+                <button 
+                  onClick={() => setShowNewGroup(true)}
+                  className="mt-2 text-[11px] text-emerald-500 font-semibold hover:underline cursor-pointer"
+                >
+                  Create Group
+                </button>
+              </div>
             ) : (
               groups.map((g: any) => (
                 <div 
@@ -367,7 +376,13 @@ export default function GroupsPage() {
                   </h3>
                   <div className="overflow-y-auto flex-1 divide-y divide-black/[0.04] dark:divide-white/[0.04] space-y-2">
                     {groupDetails.expenses.length === 0 ? (
-                      <div className="text-center text-xs text-gray-400 py-10">No transactions recorded.</div>
+                      <div className="py-6">
+                        <EmptyState 
+                          iconName="DollarSign"
+                          title="No transactions recorded"
+                          description="Add shared items above to start splitting expenses with your group members."
+                        />
+                      </div>
                     ) : (
                       groupDetails.expenses.map((exp: any) => (
                         <div key={exp.id} className="flex justify-between items-center py-2.5">

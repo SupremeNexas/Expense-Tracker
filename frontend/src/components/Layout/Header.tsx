@@ -5,9 +5,10 @@ import { CurrencySelector } from '../Settings/CurrencySelector';
 
 interface HeaderProps {
   setMobileOpen: (open: boolean) => void;
+  collapsed: boolean;
 }
 
-export function Header({ setMobileOpen }: HeaderProps) {
+export function Header({ setMobileOpen, collapsed }: HeaderProps) {
   const { user, logout } = useAuthStore();
   const [showDropdown, setShowDropdown] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -37,7 +38,9 @@ export function Header({ setMobileOpen }: HeaderProps) {
   if (!user) return null;
 
   return (
-    <header className="fixed top-0 right-0 left-0 md:left-auto md:w-[calc(100%-var(--sidebar-width))] h-16 z-30 bg-[#FAFAFA]/85 dark:bg-[#0C0C0C]/85 backdrop-blur-md border-b border-black/[0.06] dark:border-white/[0.06] px-6 flex items-center justify-between">
+    <header className={`fixed top-0 right-0 left-0 md:left-auto h-16 z-30 bg-[#FAFAFA]/85 dark:bg-[#0C0C0C]/85 backdrop-blur-md border-b border-black/[0.06] dark:border-white/[0.06] px-6 flex items-center justify-between transition-all duration-300
+      ${collapsed ? 'md:w-[calc(100%-4rem)]' : 'md:w-[calc(100%-16rem)]'}
+    `}>
       {/* Left side mobile menu and title */}
       <div className="flex items-center gap-3">
         <button 

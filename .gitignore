@@ -1,16 +1,60 @@
-# Environment
-.env
-*.env
-
-# Dependencies
+# Dependency directories
 node_modules/
+jspm_packages/
+web_modules/
 
-# PostgreSQL
+# Local databases & PostgreSQL files
 postgres_data/
+postgres_data_test/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Build outputs & artifacts
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.server/
+.tsbuildinfo
+
+# Logs & diagnostic files
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Prisma generated client (if applicable)
-.prisma/
+# Environments & secrets
+.env
+.env.production
+.env.development
+.env.local
+.env.*.local
+.env.staging
+*.env
+!.env.example
 
-# macOS
+# IDEs & System files
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing & coverage
+coverage/
+.nyc_output/
+cypress/screenshots/
+cypress/videos/

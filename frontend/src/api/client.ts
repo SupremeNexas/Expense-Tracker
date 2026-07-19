@@ -1,4 +1,6 @@
-const API_BASE = `${(import.meta.env.VITE_API_URL as string) || 'http://localhost:5002'}/api`;
+const API_BASE = import.meta.env.PROD
+  ? '/api'
+  : `${(import.meta.env.VITE_API_URL as string) || 'http://localhost:5002'}/api`;
 
 function getToken(): string | null {
   return localStorage.getItem('fintech_token');

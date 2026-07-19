@@ -1,40 +1,44 @@
-# Initial Status
-Last Updated: 2026-07-05
+# Current Status
+Last Updated: 2026-07-19
 
-The fintech expense tracker codebase is fully operational and configured for production-level TypeScript compile checks. Both backend and frontend servers build without warning.
+The Personal Finance and Expense Tracker repository is fully operational. All Express backend routers, Prisma connectors, and React client pages compile successfully.
 
 ---
 
 ## 🚀 Running Instances
-* **Backend REST API**: Running on port `5002` (listening for JWT logins and AI chats).
-* **Database**: Local PostgreSQL instance active on port `5433` (socket `/tmp`) using trust authentication.
-* **Frontend client**: Vite React 19 dev server listening on port `5173`.
+* **Backend REST API**: Active on port `5002` (listening for token credentials logins and Gemini chats).
+* **Database**: Local PostgreSQL cluster active on port `5433` (socket `/tmp`) using trust authentication.
+* **Frontend client**: Vite React dev server active on port `5173`.
 
 ---
 
 ## 🛠️ Status Overview
 
 ### Backend APIs (`/api`)
-* [x] **Authentication**: Password salting, register, login, profile check, and refresh token validations.
-* [x] **Google OAuth**: Real GSI-based sign-in with server-side ID token verification via `google-auth-library`. Requires `GOOGLE_CLIENT_ID` in `backend/.env`.
-* [x] **Expenses**: Full CRUD with auto-wallet increments/decrements.
-* [x] **Categories**: Grid classification CRUD with in-use protection shields.
-* [x] **Budgets**: Threshold setups and spent queries.
-* [x] **Credit Cards**: Usage meters, risk tags, and due alerts.
-* [x] **Bills**: Calendar timeline of obligations.
-* [x] **Goals**: Milestone saving targets with logs.
-* [x] **Subscriptions**: Automated monthly burn metrics.
-* [x] **Shared Groups**: Multi-user shared ledger splitters and settlement markers.
-* [x] **AI Services**: Receipt multimodal scanning, floating coach dashboard advice, and chat help.
+* [x] **Authentication**: Password hashing, email registers, profiles validation.
+* [x] **Google OAuth**: Verified token validation via `/api/auth/google`.
+* [x] **Expenses**: Full CRUD with auto-wallet balance increments/decrements.
+* [x] **Categories**: Grid classification controls with usage shields.
+* [x] **Budgets**: Spent aggregates calculations and thresholds caps.
+* [x] **Credit Cards**: Cycle records, dues trackers, warning badges.
+* [x] **Bills & Subscriptions**: Obligations calendar and monthly burn rate normalized gauge.
+* [x] **Goals**: Milestone targets and goal contribution logs.
+* [x] **Shared Groups**: Multi-member split ledgers and settlements.
+* [x] **AI Services**: Multimodal receipt vision OCR scanner and conversation coach drawer.
 
-### Frontend Views
-* [x] **Public Landing Page**: Scrolling marquee, pricing grids, testimonials, and FAQs.
-* [x] **Protected Workspace Dashboard**: Area/Pie charts, stats cards, and AI floaters.
-* [x] **Transactions List**: Full table search filtering, CRUD popups, and CSV exports.
+### Frontend Client Pages
+* [x] **SaaS Landing Page**: Features marquee sliders, pricing plans, and FAQs.
+* [x] **Workspace Dashboard**: Renders budget circular progress meters, pie distributions, trend lines, and the AI coach drawer.
+* [x] **Transactions List**: Full table search filtering, tags editing, and CSV downloads.
+
+---
+
+## ⚠️ Known Issues
+* No critical active blockers or unmapped REST endpoints tracked.
 
 ---
 
 ## 🔗 Related Resources
 * Read [[CLAUDE.md]] for commands.
 * Read [[CODEX.md]] for standards.
-* Read [[current-priorities.md]] for what is next.
+* Read [[memory/current-priorities.md]] for roadmap priorities.

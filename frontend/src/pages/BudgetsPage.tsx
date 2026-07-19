@@ -8,6 +8,8 @@ import { Budget, Category } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
 import { BudgetForm } from '../components/Budgets/BudgetForm';
+import EmptyState from '../components/UI/EmptyState';
+import { SkeletonCard } from '../components/UI/Skeleton';
 
 export default function BudgetsPage() {
   const queryClient = useQueryClient();
@@ -128,16 +130,24 @@ export default function BudgetsPage() {
       {/* Grid of budgets with circular progress rings */}
       {budgetsLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="premium-card h-48 animate-pulse border-black/[0.04] dark:border-white/[0.04]" />
-          ))}
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       ) : budgets.length === 0 ? (
-        <div className="premium-card flex flex-col items-center justify-center text-center py-20 border-dashed border-2 border-black/[0.06] dark:border-white/[0.06]">
-          <Calendar className="w-12 h-12 text-gray-400 mb-3" />
-          <h4 className="text-base font-semibold">No budgets configured</h4>
-          <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Set a budget cap for dining, transport, or groceries to monitor spent rates.</p>
-        </div>
+        <EmptyState
+          iconName="Calendar"
+          title="No budgets configured"
+          description="Set a budget cap for dining, transport, or groceries to monitor spent rates."
+          action={
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="btn-premium btn-premium-primary text-xs py-1.5 px-4 cursor-pointer"
+            >
+              Configure First Budget
+            </button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {budgets.map(b => {

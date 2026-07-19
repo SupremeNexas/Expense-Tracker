@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { authenticate } from './src/middleware/auth';
+import { errorHandler } from './src/middleware/error';
 
 // Load environment variables
 dotenv.config();
@@ -79,10 +80,7 @@ app.use('/api/*', (req: Request, res: Response) => {
 });
 
 // Error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`\n🚀 Fintech Expense Tracker API running at http://localhost:${PORT}`);

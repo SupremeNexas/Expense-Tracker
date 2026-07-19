@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, CalendarClock, ShieldCheck, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
 import Modal from '../components/UI/Modal';
@@ -8,6 +8,8 @@ import { Bill } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
 import { BillForm } from '../components/Bills/BillForm';
+import EmptyState from '../components/UI/EmptyState';
+import { SkeletonList } from '../components/UI/Skeleton';
 
 export default function BillsPage() {
   const queryClient = useQueryClient();
@@ -19,25 +21,24 @@ export default function BillsPage() {
   // Queries
   const { data: bills = [], isLoading } = useQuery<Bill[]>({
     queryKey: ['bills'],
-    queryFn: () => api.getBills()
+    queryFn: () => api.request('/bills')
   });
 
-  // Mutations
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.createBill(data),
+    mutationFn: (data: any) => api.request('/bills', { method: 'POST', body: data }),
     onSuccess: () => {
-      showToast('Bill registered in tracker!', 'success');
       queryClient.invalidateQueries({ queryKey: ['bills'] });
+      showToast('Bill scheduled successfully!', 'success');
       setIsModalOpen(false);
     },
     onError: (err: any) => {
-      showToast(err.message || 'Failed to add bill', 'error');
+      showToast(err.message || 'Failed to create bill', 'error');
     }
   });
 
   const togglePaidMutation = useMutation({
     mutationFn: ({ id, isPaid }: { id: string; isPaid: boolean }) => 
-      api.updateBill(id, { isPaid }),
+      api.request(`/bills/${id}/pay`, { method: 'POST' }), // Uses our backend paid endpoint
     onSuccess: () => {
       showToast('Bill status updated!', 'success');
       queryClient.invalidateQueries({ queryKey: ['bills'] });
@@ -48,7 +49,7 @@ export default function BillsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.deleteBill(id),
+    mutationFn: (id: string) => api.request(`/bills/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       showToast('Bill removed from timeline.', 'success');
       queryClient.invalidateQueries({ queryKey: ['bills'] });
@@ -86,7 +87,7 @@ export default function BillsPage() {
       {/* Page Header */}
       <div className="flex justify-between items-center pb-4 border-b border-black/[0.04] dark:border-white/[0.04]">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Recurring Bills</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Utility Bills</h1>
           <p className="text-sm text-gray-400 mt-1">Audit, pay, and schedule your incoming utility obligations.</p>
         </div>
         <button 
@@ -99,13 +100,21 @@ export default function BillsPage() {
 
       {/* Bills display lists */}
       {isLoading ? (
-        <div className="premium-card p-8 text-center text-sm text-gray-400">Loading bills ledger...</div>
+        <SkeletonList count={3} />
       ) : bills.length === 0 ? (
-        <div className="premium-card flex flex-col items-center justify-center text-center py-20 border-dashed border-2 border-black/[0.06] dark:border-white/[0.06]">
-          <CalendarClock className="w-12 h-12 text-gray-400 mb-3" />
-          <h4 className="text-base font-semibold">No bills tracked</h4>
-          <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Add your rent, water, server host, or electricity bills to prevent interest fee overrides.</p>
-        </div>
+        <EmptyState
+          iconName="CalendarClock"
+          title="No bills tracked"
+          description="Add your rent, water, server host, or electricity bills to prevent interest fee overrides."
+          action={
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="btn-premium btn-premium-primary text-xs py-1.5 px-4 cursor-pointer"
+            >
+              Add First Bill
+            </button>
+          }
+        />
       ) : (
         <div className="premium-card p-0 overflow-hidden border-black/[0.05] dark:border-white/[0.05]">
           <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
@@ -167,7 +176,7 @@ export default function BillsPage() {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title=""
+        title="New Recurring Bill"
       >
         <BillForm 
           onSubmit={handleFormSubmit}

@@ -7,7 +7,10 @@ import Modal from '../components/UI/Modal';
 import { Goal } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
-
+import EmptyState from '../components/UI/EmptyState';
+import { SkeletonCard } from '../components/UI/Skeleton';
+import { Input } from '../components/UI/Input';
+import { Button } from '../components/UI/Button';
 export default function GoalsPage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -132,16 +135,23 @@ export default function GoalsPage() {
       {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2].map(i => (
-            <div key={i} className="premium-card h-48 animate-pulse bg-gray-200 dark:bg-gray-800 border-black/[0.04] dark:border-white/[0.04]" />
-          ))}
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       ) : goals.length === 0 ? (
-        <div className="premium-card flex flex-col items-center justify-center text-center py-20 border-dashed border-2 border-black/[0.06] dark:border-white/[0.06]">
-          <Milestone className="w-12 h-12 text-gray-400 mb-3" />
-          <h4 className="text-base font-semibold">No savings goals found</h4>
-          <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Fund a laptop, high-yield deposit, or debt payoff target to track progress.</p>
-        </div>
+        <EmptyState
+          iconName="Milestone"
+          title="No savings goals found"
+          description="Fund a laptop, high-yield deposit, or debt payoff target to track progress."
+          action={
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="btn-premium btn-premium-primary text-xs py-1.5 px-4 cursor-pointer"
+            >
+              Configure First Goal
+            </button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {goals.map(g => {
@@ -209,112 +219,81 @@ export default function GoalsPage() {
         onClose={() => setIsModalOpen(false)}
         title=""
       >
-        <form onSubmit={handleCreateGoal} className="space-y-6 font-sans text-black dark:text-white max-w-full">
+        <form onSubmit={handleCreateGoal} className="space-y-6 font-sans text-text max-w-full">
           {/* Header Info */}
-          <div className="flex items-center gap-3 pb-4 border-b border-black/[0.04] dark:border-white/[0.04]">
+          <div className="flex items-center gap-3 pb-4 border-b border-border">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
               <Target className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold tracking-tight">New Savings Goal</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Define milestone metrics for travel, hardware, or rainy days.</p>
+              <h3 className="text-sm font-semibold tracking-tight">New Savings Goal</h3>
+              <p className="text-xs text-muted font-medium">Define milestone metrics for travel, hardware, or rainy days.</p>
             </div>
           </div>
 
           {/* Section 1: Basic Information */}
           <div className="space-y-4">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 font-sans">
               Goal Information
             </div>
 
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                Goal Name
-              </label>
-              <input 
-                type="text" 
-                value={name} 
-                onChange={e => setName(e.target.value)} 
-                placeholder="e.g. MacBook Pro M4, Europe Trip" 
-                className="w-full px-4 h-[56px] rounded-[18px] bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-sm focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200" 
+            <Input 
+              label="Goal Name"
+              type="text" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="e.g. MacBook Pro M4, Europe Trip" 
+              required
+              autoFocus
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input 
+                label="Target Amount"
+                type="number" 
+                value={targetAmount} 
+                onChange={e => setTargetAmount(e.target.value)} 
+                placeholder="100000" 
+                icon={<span className="text-sm font-semibold text-gray-400 dark:text-gray-500">₹</span>}
                 required
-                autoFocus
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <span className="text-gray-400 font-medium">₹</span> Target Amount
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-gray-400 dark:text-gray-500 text-lg font-medium">₹</span>
-                  <input 
-                    type="number" 
-                    value={targetAmount} 
-                    onChange={e => setTargetAmount(e.target.value)} 
-                    placeholder="100000" 
-                    className="w-full pl-8 pr-4 h-[56px] rounded-[18px] bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-sm focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200" 
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <span className="text-gray-400 font-medium">₹</span> Initial Savings
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-gray-400 dark:text-gray-500 text-lg font-medium">₹</span>
-                  <input 
-                    type="number" 
-                    value={currentAmount} 
-                    onChange={e => setCurrentAmount(e.target.value)} 
-                    placeholder="0" 
-                    className="w-full pl-8 pr-4 h-[56px] rounded-[18px] bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-sm focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200" 
-                  />
-                </div>
-              </div>
+              <Input 
+                label="Initial Savings"
+                type="number" 
+                value={currentAmount} 
+                onChange={e => setCurrentAmount(e.target.value)} 
+                placeholder="0" 
+                icon={<span className="text-sm font-semibold text-gray-400 dark:text-gray-500">₹</span>}
+              />
             </div>
           </div>
 
-          <div className="w-full border-t border-black/[0.04] dark:border-white/[0.04]" />
+          <div className="w-full border-t border-border" />
 
           {/* Section 2: Timeline */}
           <div className="space-y-4">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 font-sans">
               Timeline
             </div>
 
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                Target Date Deadline
-              </label>
-              <input 
-                type="date" 
-                value={deadline} 
-                onChange={e => setDeadline(e.target.value)} 
-                className="w-full px-4 h-[56px] rounded-[18px] bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-sm focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200" 
-                required
-              />
-            </div>
+            <Input 
+              label="Target Date Deadline"
+              type="date" 
+              value={deadline} 
+              onChange={e => setDeadline(e.target.value)} 
+              required
+            />
           </div>
 
           {/* Footer Action Bar */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-black/[0.04] dark:border-white/[0.04]">
-            <button 
-              type="button" 
-              onClick={() => setIsModalOpen(false)}
-              className="px-6 h-[48px] rounded-[14px] text-sm font-medium border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.02] dark:hover:bg-white/[0.02] active:scale-[0.98] transition-all cursor-pointer text-gray-500 dark:text-gray-400" 
-            >
+          <div className="flex justify-end gap-3 pt-6 border-t border-border">
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
               Cancel
-            </button>
-            <button 
-              type="submit" 
-              className="px-6 h-[48px] rounded-[14px] text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer"
-            >
+            </Button>
+            <Button type="submit" variant="primary" className="bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-emerald-500/20">
               Add Goal
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
@@ -325,66 +304,47 @@ export default function GoalsPage() {
         onClose={() => setIsContributeOpen(false)}
         title=""
       >
-        <form onSubmit={handleContributeSubmit} className="space-y-6 font-sans text-black dark:text-white max-w-full">
+        <form onSubmit={handleContributeSubmit} className="space-y-6 font-sans text-text max-w-full">
           {/* Header Info */}
-          <div className="flex items-center gap-3 pb-4 border-b border-black/[0.04] dark:border-white/[0.04]">
+          <div className="flex items-center gap-3 pb-4 border-b border-border">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
               <Coins className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold tracking-tight">Add Savings</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Deposit funds into: {selectedGoal?.name}</p>
+              <h3 className="text-sm font-semibold tracking-tight">Add Savings</h3>
+              <p className="text-xs text-muted font-medium">Deposit funds into: {selectedGoal?.name}</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                Amount to Save
-              </label>
-              <div className="relative flex items-center">
-                <span className="absolute left-4 text-gray-400 dark:text-gray-500 text-lg font-medium">₹</span>
-                <input 
-                  type="number" 
-                  value={contribAmount} 
-                  onChange={e => setContribAmount(e.target.value)} 
-                  placeholder="5000" 
-                  className="w-full pl-8 pr-4 h-[56px] rounded-[18px] bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-sm focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200" 
-                  required
-                  min="1"
-                />
-              </div>
-            </div>
+            <Input 
+              label="Amount to Save"
+              type="number" 
+              value={contribAmount} 
+              onChange={e => setContribAmount(e.target.value)} 
+              placeholder="5000" 
+              icon={<span className="text-sm font-semibold text-gray-400 dark:text-gray-500">₹</span>}
+              required
+              min="1"
+            />
 
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                Memo / Notes
-              </label>
-              <input 
-                type="text" 
-                value={contribNotes} 
-                onChange={e => setContribNotes(e.target.value)} 
-                placeholder="e.g. Transferred from Bank Account" 
-                className="w-full px-4 h-[56px] rounded-[18px] bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-sm focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200" 
-              />
-            </div>
+            <Input 
+              label="Memo / Notes"
+              type="text" 
+              value={contribNotes} 
+              onChange={e => setContribNotes(e.target.value)} 
+              placeholder="e.g. Transferred from Bank Account" 
+            />
           </div>
 
           {/* Footer Action Bar */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-black/[0.04] dark:border-white/[0.04]">
-            <button 
-              type="button" 
-              onClick={() => setIsContributeOpen(false)}
-              className="px-6 h-[48px] rounded-[14px] text-sm font-medium border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.02] dark:hover:bg-white/[0.02] active:scale-[0.98] transition-all cursor-pointer text-gray-500 dark:text-gray-400" 
-            >
+          <div className="flex justify-end gap-3 pt-6 border-t border-border">
+            <Button type="button" variant="secondary" onClick={() => setIsContributeOpen(false)}>
               Cancel
-            </button>
-            <button 
-              type="submit" 
-              className="px-6 h-[48px] rounded-[14px] text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer"
-            >
+            </Button>
+            <Button type="submit" variant="primary" className="bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-emerald-500/20">
               Log Savings
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

@@ -1,7 +1,8 @@
 import { Router, Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
+import { validate } from '../middleware/validation';
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../db/prisma';
 import { JWT_SECRET, authenticate, AuthenticatedRequest } from '../middleware/auth';
@@ -12,14 +13,6 @@ const router = Router();
 // ─── Google OAuth Client ─────────────────────────────────────────────────────
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
-const validate = (req: any, res: Response, next: any) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ error: 'Validation failed', details: errors.array() });
-  }
-  next();
-};
 
 const passwordRules = body('password')
   .isLength({ min: 4 }).withMessage('Password must be at least 4 characters');

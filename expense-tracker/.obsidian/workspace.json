@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "4ce84080f6fc11da",
+        "id": "5e8abc61c3bcf053",
         "type": "tabs",
         "children": [
           {
-            "id": "ffcb9c1d5670f775",
+            "id": "101d24942f3740d5",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -179,7 +179,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "ffcb9c1d5670f775",
+  "active": "101d24942f3740d5",
   "lastOpenFiles": [
     "Untitled.canvas",
     "2026-07-05.md",

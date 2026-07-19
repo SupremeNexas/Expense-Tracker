@@ -1,56 +1,135 @@
 # CODEX.md
 
-This document defines the technical rules, engineering guidelines, and architecture standards for the **antigravity** project.
+This document defines the technical rules, engineering guidelines, backend architectures, and database implementation standards for the **antigravity** project.
 
 ---
 
-## 💻 Backend & API Standards
+## 🏗️ Backend Architecture
+The backend application is built using **Node.js**, **Express**, and **TypeScript**. It maps a set of router services directly to database delegates via the **Prisma Client**.
+* The server listens on Port `5002` (remapped from `5000` to avoid macOS AirPlay port bindings conflict).
+* Cors middleware is configured to only allow requests originating from verified origins (e.g. `http://localhost:5173`).
+* Request parsing is restricted to standard JSON payloads and URL encoded bodies.
 
-### Express Router Conventions
-* All route endpoints must reside in `backend/src/routes/` and be mounted under `/api/` inside `server.ts`.
-* Endpoints must use the `authenticate` middleware from `src/middleware/auth` to protect user-space data.
-* Controllers must validate payloads using `express-validator` rules before database query insertion.
-* All decimal calculations (amounts, costs) must be handled via Prisma's `Prisma.Decimal` class to avoid floating-point math issues.
+---
 
-### Express Request Typecasting
-* Since query parameters (`req.query`) and route param IDs (`req.params.id`) can be parsed as arrays or strings, always cast them using `as string` (e.g. `req.params.id as string`) when feeding them into Prisma where clauses to satisfy type constraints.
-* Cast database return payloads to `any` where needed to allow accessing relation values (like `transaction.category.name`) when direct relational typing gets obscured.
+## 💻 Express Route Conventions
+1. All route controllers reside inside `backend/src/routes/` and are mounted under `/api/` in the main `server.ts` server script.
+2. Route definitions must protect user-space data using the `authenticate` middleware.
+3. Every input payload must be validated using `express-validator` checks before execution.
+4. Route files must export a default router.
 
 ---
 
 ## 🗄️ Database & Prisma Conventions
-* **Engine**: PostgreSQL running locally on port `5433` (Unix socket `/tmp`).
-* **Connection String**: `DATABASE_URL="postgresql://postgres@localhost:5433/expense_tracker?schema=public"`
-* **Prisma Mappings**:
-  * Decimal fields mapped as `@db.Decimal(10, 2)` to match monetary precision.
-  * Relational links defined with cascading structures or protected guards (e.g., category deletions are blocked if transactions or budgets exist for that category).
-* **Seeding**: Always run `npx prisma db seed` to initialize default categories, wallets, and a demo profile (`demo@example.com` / `password123`).
+* **Engine**: PostgreSQL active on port `5433` (socket `/tmp`) using local trust authentication.
+* **Prisma Schema**: Located at `backend/prisma/schema.prisma`.
+* **Prisma Client**: Initialized globally in `backend/src/db/prisma.ts`.
+* **Decimal Mappings**: All financial aggregates and amounts are represented using `@db.Decimal(12, 2)` or `@db.Decimal(10, 2)` inside PostgreSQL. To satisfy TypeScript Prisma models, these are instantiated as `Prisma.Decimal` instances inside routers, and converted to JavaScript `Number` types before returning to the frontend.
+* **Relational Rules**: 
+  - User records cascade delete Settings, Wallets, CreditCards, Transactions, Budgets, Goals, Subscriptions, Bills, and Groups.
+  - Category deletions block cascading deletes if active transactions or budgets are dependent on them.
 
 ---
 
-## ⚛️ Frontend & State Architecture
+## 💻 TypeScript Standards
+* Code must build cleanly with no warnings or errors under `strict: true` type configurations.
+* Cast route parameter IDs (`req.params.id`) and query parameters (`req.query.*`) to `as string` before supplying them to Prisma filters to prevent array type warnings.
+* Keep cast parameters explicit (avoid generic `any` types unless resolving dynamic Prisma inclusion fields).
+* Export types from a central directory or define them clearly in `frontend/src/types/index.ts`.
 
-### React 19 & Compilation
-* Built via Vite and compiled in TypeScript.
-* Use `@tanstack/react-query` (`useQuery`, `useMutation`) for caching server states.
-* Use `zustand` stores for client state management (e.g., sessions and auth checks).
-* Avoid direct CSS styling; use custom classes defined in `src/index.css` (e.g., `.premium-card`, `.btn-premium`, `.input-premium`) for visual aesthetics.
+---
 
-### Zustand Authentication Store (`store/authStore.ts`)
-* Manages the authenticated user object.
-* Stores short-lived JWT tokens in memory, and the `fintech_refresh_token` in `localStorage`.
-* Performs silent token refreshments on initialization errors.
+## 🛡️ Validation Rules
+* Every router must define a set of input validations using `express-validator`.
+* Validations check for empty fields, proper floating-point range limits, valid ISO-8601 timestamps, and correct email layouts.
+* A shared helper validation result inspector (`validate`) returns a standard `400 Bad Request` structure containing error arrays:
+  ```json
+  {
+    "error": "Validation failed",
+    "details": [
+      { "field": "amount", "message": "Amount must be a positive number" }
+    ]
+  }
+  ```
 
 ---
 
 ## 🔒 Security Practices
-* **Passwords**: Hash using `bcryptjs` with a cost factor of `10` before storage.
-* **Tokens**: JWT access tokens are short-lived. Refresh tokens are tracked in the database and exchanged for fresh access tokens via `/api/auth/refresh`.
-* **Database Guards**: Every relational query must be scoped by the authenticated user's ID (`userId: req.user.id`). Never expose cross-user details.
+* **Passwords**: Encrypted using `bcryptjs` with a work load factor of `10` before insertion into the User model.
+* **Access Tokens**: Short-lived JWT tokens (15 minutes lifespan) containing the verified payload `{ id, email }`. Verified via Bearer headers in middleware.
+* **Refresh Tokens**: Long-lived refresh tokens (7 days lifespan) stored as a secure local storage key. Exchanged at `/api/auth/refresh` to rotate JWT tokens.
+* **Google OAuth**: Verified using Google's official `google-auth-library` Client ID checks on the server-side payload, mapping retrieved emails/sub IDs directly to user records.
+
+---
+
+## ❌ Error Handling
+* Wrap controller queries in standard `try-catch` structures.
+* All catches must log error details to the server stdout and return a JSON format response:
+  ```json
+  { "error": "Internal server error details" }
+  ```
+* Standard error status codes must be returned:
+  - `400`: Validation failed / missing parameters.
+  - `401`: Unauthorized / missing token / invalid password.
+  - `403`: Forbidden / scoping rules violated.
+  - `404`: Entity not found.
+  - `500`: System unhandled exception.
+
+---
+
+## 📊 Database Access Patterns (Scoping Rules)
+> [!IMPORTANT]
+> **Strict scoping**: Every single database transaction, search query, update, or deletion MUST scope results by `userId: req.user.id`.
+> Do not query database models globally without this scope, as it will leak other users' private finance details.
+
+Example:
+```typescript
+const budget = await prisma.budget.findFirst({
+  where: {
+    id: req.params.id as string,
+    userId: req.user.id
+  }
+});
+```
+
+---
+
+## 🧪 Testing Strategy
+* Create simple REST test requests to verify controller endpoints.
+* Database seed scripts located at `backend/prisma/seed.ts` run clean seed operations:
+  ```bash
+  npx prisma db seed
+  ```
+* Ensure demo accounts (`demo@example.com` / `password123`) can log in and populate charts before finalizing changes.
+
+---
+
+## 🚀 Deployment Checklist
+1. Verify CORS headers include the target production URL in `server.ts`.
+2. Ensure `DATABASE_URL` uses the correct PostgreSQL connection socket in production.
+3. Validate that environment variables (`GOOGLE_CLIENT_ID`, `JWT_SECRET`) are mapped correctly in the host interface.
+4. Run Vite client compile checks: `npm run build` inside `frontend/`.
+5. Run Express compile checks: `npm run build` or TS compiler runs.
+
+---
+
+## 🌐 Environment Variables Rules
+Every environment configuration must declare:
+* **Backend (`backend/.env`)**:
+  - `PORT` (Port to bind the express app, default: `5002`)
+  - `DATABASE_URL` (PostgreSQL client connection string)
+  - `JWT_SECRET` (Secure JWT hashing key)
+  - `GOOGLE_CLIENT_ID` (Client ID for verified GSI)
+  - `GOOGLE_CLIENT_SECRET` (OAuth client secret key)
+  - `CLIENT_URL` (Frontend client URL for CORS checks)
+  - `GEMINI_API_KEY` (Gemini API key for OCR scanning)
+* **Frontend (`frontend/.env`)**:
+  - `VITE_API_URL` (Backend API target URL, default: `http://localhost:5002`)
+  - `VITE_GOOGLE_CLIENT_ID` (Google Sign-In button Client ID)
 
 ---
 
 ## 🔗 Related Resources
-* Read [[CLAUDE.md]] for project indices and commands.
-* Read [[AGENTS.md]] for code checklists and git commits.
+* Read [[CLAUDE.md]] for commands and structure.
+* Read [[AGENTS.md]] for commit templates and workflows.
 * Visit [[wiki/database]] for Prisma schemas.

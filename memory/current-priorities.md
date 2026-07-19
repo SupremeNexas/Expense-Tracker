@@ -1,24 +1,23 @@
 # Current Priorities
-Last Updated: 2026-07-05
+Last Updated: 2026-07-19
 
-This list defines the current roadmap goals and priority tasks for the tracker repository.
+This document defines the active priorities and roadmap milestones.
 
 ---
 
 ## 🎯 Short-Term Priorities
-1. **Security Audit**: Ensure token validation logic strictly verifies database relationships for all requests.
-2. **AI Model Optimization**: Review Gemini API configuration limits to ensure optimal token performance for receipt scans.
-3. **Obsidian Graph Sync**: Verify Obsidian backlinks match the `wiki/` directory page mappings.
+1. **Security Scoping Audit**: Audit all SQL/Prisma calls to ensure strict scoping (`userId: req.user.id`).
+2. **Receipt Scan Breakdowns**: Support split and category automation for scanned receipt line items.
 
 ---
 
-## 📅 Future Roadmap
-1. **Multi-Currency Conversions**: Support live API conversions between USD, EUR, and local currency selections.
-2. **Plaid Integration**: Create mock endpoints simulating bank transaction synchronizations.
-3. **Advanced Visualizations**: Add dark mode charts to dashboard views using custom HSL themes.
+## 📅 Medium-Term Priorities
+1. **Live Currency Converter**: Connect a real-time exchange rate API.
+2. **Plaid Integration**: Establish mock endpoints that simulate bank transaction synchronizations.
+3. **Advanced Charts Theme**: Add custom Recharts configurations supporting HSL variables for dark mode charting.
 
 ---
 
 ## 🔗 Related Resources
-* Read [[CLAUDE.md]] for commands.
-* Read [[current-status.md]] for codebase status.
+* Read [[CLAUDE.md]] for project overview.
+* Read [[memory/current-status.md]] for active codebase status.

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './Toast.css';
 
 interface Toast {
@@ -36,9 +37,11 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       <div className="toast-container">
-        {toasts.map(toast => (
-          <ToastItem key={toast.id} toast={toast} onRemove={() => removeToast(toast.id)} />
-        ))}
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <ToastItem key={toast.id} toast={toast} onRemove={() => removeToast(toast.id)} />
+          ))}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );
@@ -54,19 +57,25 @@ export const useToast = () => {
 
 const ToastItem = ({ toast, onRemove }: { toast: Toast; onRemove: () => void }) => {
   const icons = {
-    success: <CheckCircle size={20} className="text-emerald-500" />,
-    error: <XCircle size={20} className="text-red-500" />,
-    warning: <AlertCircle size={20} className="text-yellow-500" />,
-    info: <Info size={20} className="text-blue-500" />
+    success: <CheckCircle size={18} className="text-emerald-500 shrink-0" />,
+    error: <XCircle size={18} className="text-red shrink-0" />,
+    warning: <AlertCircle size={18} className="text-yellow-500 shrink-0" />,
+    info: <Info size={18} className="text-blue-500 shrink-0" />
   };
 
   return (
-    <div className={`toast toast--${toast.type} animate-slide-in`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 15, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, y: -10 }}
+      transition={{ type: 'spring', damping: 22, stiffness: 350 }}
+      className={`toast toast--${toast.type} glass-effect`}
+    >
       <div className="toast-icon">{icons[toast.type]}</div>
-      <div className="toast-message">{toast.message}</div>
-      <button className="toast-close cursor-pointer" onClick={onRemove}>
-        <X size={16} />
+      <div className="toast-message font-sans">{toast.message}</div>
+      <button className="toast-close cursor-pointer" onClick={onRemove} aria-label="Close notification">
+        <X size={14} />
       </button>
-    </div>
+    </motion.div>
   );
 };

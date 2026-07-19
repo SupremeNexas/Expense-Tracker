@@ -1,15 +1,10 @@
 import { Router, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { prisma } from '../db/prisma';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { validate } from '../middleware/validation';
 
 const router = Router();
-
-const validate = (req: any, res: Response, next: any) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ error: 'Validation failed', details: errors.array() });
-  next();
-};
 
 const categoryRules = [
   body('name').trim().notEmpty().withMessage('Category name is required'),
