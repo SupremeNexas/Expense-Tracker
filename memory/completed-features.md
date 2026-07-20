@@ -1,11 +1,24 @@
 # Completed Features
-Last Updated: 2026-07-19
+Last Updated: 2026-07-20
 
 A history of completed features in the Expense Tracker codebase.
 
 ---
 
-## 🏗️ Phase 6 — Engineering Excellence, DevOps & Open Source Readiness (v1.4.0)
+## 🤖 Feature: Ask Finance AI (v1.1.0)
+*   **Conversational Assistant Page**: Built a premium ChatGPT-styled full-screen interface (`AIAssistantPage.tsx`) containing session chat history, interactive bubble prompt suggestions, a simulated real-time typewriter stream, quick copy response buttons, and clear conversation triggers.
+*   **Modular AI Pipeline**: Created a clean, decoupled backend service layer under `services/ai/` comprising:
+    - `intent.service.ts`: Classifies user queries into 10 deterministic financial intents (SUMMARY, COMPARISON, BUDGET, CATEGORY, MERCHANT, SUBSCRIPTION, LARGEST_EXPENSE, SAVINGS, FORECAST, SEARCH) with regex/keyword-based fallbacks.
+    - `query.service.ts`: Formulates secure Prisma database queries scoped by `userId` and `workspaceId`.
+    - `analysis.service.ts`: Computes category share distributions, timeframe comparison deltas, budget limits progress, and savings rates.
+    - `response.service.ts`: Grounded explanation writer that generates markdown copy and determines visual charts config (Pie, Bar, Line).
+    - `prompt.service.ts`: Formulates system prompts and templates for intent, response, and chart layouts.
+    - `ai.service.ts`: Coordinates the RAG workflow.
+*   **Recharts Integration**: Dynamically renders visual charts (Pie, Bar, Line) inline within assistant messages based on returned AI stats.
+*   **Inline Supporting Records**: Directly displays a styled references transaction card highlighting the source ledger transactions retrieved by the query planner.
+*   **Dual-Mount Router integration**: Wired the endpoint at `POST /api/ai/chat` utilizing RBAC workspace scoping and fallback matching.
+
+## 🏗️ Phase 6 — Engineering Excellence, DevOps & Open Source Readiness (v1.0.0)
 *   **GitHub Actions CI Pipeline**: Dual-job workflow (backend + frontend) with `npm ci`, TypeScript compile checks, ESLint lint scan, and Vite production build verification on every push and PR.
 *   **Root DX Package**: One-command `npm run setup` and `npm run typecheck` across both workspaces from the project root.
 *   **MIT License**: Added `LICENSE` file to the repository root.

@@ -26,6 +26,7 @@ The Personal Finance and Expense Tracker repository is production-ready and publ
 | Subscriptions | ✅ Complete | Monthly/yearly with renewal dates |
 | Shared Groups | ✅ Complete | Split expenses and settlement tracking |
 | AI Copilot | ✅ Complete | Gemini 2.5 Flash with mock fallback |
+| AI Assistant | ✅ Complete | Grounded RAG with ChatGPT interface, charts, and transaction references |
 | Analytics | ✅ Complete | Category breakdown and trend charts |
 | Workspace Settings | ✅ Complete | Multi-workspace with RBAC foundations |
 

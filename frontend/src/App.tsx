@@ -18,6 +18,7 @@ const BillsPage         = React.lazy(() => import('./pages/BillsPage'));
 const GroupsPage        = React.lazy(() => import('./pages/GroupsPage'));
 const GoalsPage         = React.lazy(() => import('./pages/GoalsPage'));
 const CopilotPage       = React.lazy(() => import('./pages/CopilotPage'));
+const AIAssistantPage   = React.lazy(() => import('./pages/AIAssistantPage'));
 const WorkspaceSettings = React.lazy(() => import('./pages/WorkspaceSettings'));
 const Nexova404Page     = React.lazy(() => import('./pages/Nexova404Page'));
 
@@ -82,6 +83,7 @@ function AppRoutes() {
         <Route path="/groups"             element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
         <Route path="/goals"              element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
         <Route path="/copilot"            element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
+        <Route path="/assistant"          element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
         <Route path="/workspace-settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
 
         {/* 404 */}

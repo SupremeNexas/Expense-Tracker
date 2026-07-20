@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { prisma } from '../db/prisma';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
 import multer from 'multer';
 import { Prisma } from '@prisma/client';
 import {
@@ -13,7 +14,8 @@ import {
   generateSpendingForecast,
   calculateFinancialHealthScore,
   CategorizationResult,
-  ReceiptResult
+  ReceiptResult,
+  AIService
 } from '../services/ai';
 import {
   CATEGORIZE_SYSTEM_INSTRUCTION,
@@ -39,14 +41,20 @@ function setCached(key: string, data: any, ttlMs: number = 10 * 60 * 1000) { // 
 }
 
 // POST /api/ai/chat
-router.post('/chat', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/chat', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const { message, history = [] } = req.body;
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
+    const { message } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
 
-    const reply = await executeRAGQuery(req.user.id, message, history);
-    res.json({ reply });
+    const response = await AIService.processChat(req.user.id, req.workspaceId, message);
+    res.json({
+      reply: response.answer,
+      answer: response.answer,
+      charts: response.charts,
+      transactions: response.transactions,
+      summary: response.summary
+    });
   } catch (err) {
     console.error('AI chat endpoint error:', err);
     res.status(500).json({ error: 'AI Assistant failed to reply' });

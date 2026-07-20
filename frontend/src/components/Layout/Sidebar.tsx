@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { 
   LayoutDashboard, Receipt, Repeat, CreditCard, CalendarClock, Users, 
-  Wallet, Tags, PieChart, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles
+  Wallet, Tags, PieChart, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, Bot
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
@@ -17,6 +17,7 @@ interface SidebarProps {
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/assistant', label: 'AI Assistant', icon: Bot },
   { path: '/copilot', label: 'AI Copilot', icon: Sparkles },
   { path: '/expenses', label: 'Transactions', icon: Receipt },
   { path: '/subscriptions', label: 'Subscriptions', icon: Repeat },
