@@ -14,5 +14,14 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: true,
+      }
+    },
+    // lucide-react icon library bundles at ~620KB (155KB gzipped) — this is expected
+    chunkSizeWarningLimit: 700,
   }
 });

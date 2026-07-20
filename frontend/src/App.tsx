@@ -1,23 +1,34 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
 import { Layout } from './components/Layout/Layout';
 import { ToastProvider } from './components/UI/Toast';
 
-import LandingPage from './pages/LandingPage';
-import AuthPage from './pages/AuthPage';
-import DashboardPage from './pages/DashboardPage';
-import ExpensesPage from './pages/ExpensesPage';
-import CategoriesPage from './pages/CategoriesPage';
-import BudgetsPage from './pages/BudgetsPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import SubscriptionsPage from './pages/SubscriptionsPage';
-import CreditCardsPage from './pages/CreditCardsPage';
-import BillsPage from './pages/BillsPage';
-import GroupsPage from './pages/GroupsPage';
-import CopilotPage from './pages/CopilotPage';
-import WorkspaceSettings from './pages/WorkspaceSettings';
-import Nexova404Page from './pages/Nexova404Page';
+// Lazy-load all page components — each becomes its own JS chunk at build time
+const LandingPage       = React.lazy(() => import('./pages/LandingPage'));
+const AuthPage          = React.lazy(() => import('./pages/AuthPage'));
+const DashboardPage     = React.lazy(() => import('./pages/DashboardPage'));
+const ExpensesPage      = React.lazy(() => import('./pages/ExpensesPage'));
+const CategoriesPage    = React.lazy(() => import('./pages/CategoriesPage'));
+const BudgetsPage       = React.lazy(() => import('./pages/BudgetsPage'));
+const AnalyticsPage     = React.lazy(() => import('./pages/AnalyticsPage'));
+const SubscriptionsPage = React.lazy(() => import('./pages/SubscriptionsPage'));
+const CreditCardsPage   = React.lazy(() => import('./pages/CreditCardsPage'));
+const BillsPage         = React.lazy(() => import('./pages/BillsPage'));
+const GroupsPage        = React.lazy(() => import('./pages/GroupsPage'));
+const GoalsPage         = React.lazy(() => import('./pages/GoalsPage'));
+const CopilotPage       = React.lazy(() => import('./pages/CopilotPage'));
+const WorkspaceSettings = React.lazy(() => import('./pages/WorkspaceSettings'));
+const Nexova404Page     = React.lazy(() => import('./pages/Nexova404Page'));
+
+/** Full-screen spinner shown while a lazy page chunk loads */
+function PageLoader() {
+  return (
+    <div className="h-screen w-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#0C0C0C]">
+      <div className="animate-pulse text-sm text-gray-500 font-medium">Loading…</div>
+    </div>
+  );
+}
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, authLoading } = useAuthStore();
@@ -51,30 +62,33 @@ function AppRoutes() {
   }
 
   return (
-    <Routes>
-      {/* SaaS Landing Page is public at root */}
-      <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
-      
-      {/* Auth page */}
-      <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage />} />
-      
-      {/* Protected Dashboard and sub-views */}
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
-      <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
-      <Route path="/budgets" element={<ProtectedRoute><BudgetsPage /></ProtectedRoute>} />
-      <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-      <Route path="/subscriptions" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
-      <Route path="/credit-cards" element={<ProtectedRoute><CreditCardsPage /></ProtectedRoute>} />
-      <Route path="/bills" element={<ProtectedRoute><BillsPage /></ProtectedRoute>} />
-      <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
-      <Route path="/copilot" element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
-      <Route path="/workspace-settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* SaaS Landing Page is public at root */}
+        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+        
+        {/* Auth page */}
+        <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage />} />
+        
+        {/* Protected Dashboard and sub-views */}
+        <Route path="/dashboard"          element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/expenses"           element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+        <Route path="/categories"         element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
+        <Route path="/budgets"            element={<ProtectedRoute><BudgetsPage /></ProtectedRoute>} />
+        <Route path="/analytics"          element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+        <Route path="/subscriptions"      element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
+        <Route path="/credit-cards"       element={<ProtectedRoute><CreditCardsPage /></ProtectedRoute>} />
+        <Route path="/bills"              element={<ProtectedRoute><BillsPage /></ProtectedRoute>} />
+        <Route path="/groups"             element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+        <Route path="/goals"              element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
+        <Route path="/copilot"            element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
+        <Route path="/workspace-settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
 
-      {/* Nexova 404 Pages */}
-      <Route path="/404" element={<Nexova404Page />} />
-      <Route path="*" element={<Nexova404Page />} />
-    </Routes>
+        {/* 404 */}
+        <Route path="/404" element={<Nexova404Page />} />
+        <Route path="*"    element={<Nexova404Page />} />
+      </Routes>
+    </Suspense>
   );
 }
 

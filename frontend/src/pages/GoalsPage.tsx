@@ -93,8 +93,8 @@ export default function GoalsPage() {
 
     createMutation.mutate({
       name,
-      targetAmount: parseFloat(targetAmount),
-      currentAmount: parseFloat(currentAmount),
+      target_amount: parseFloat(targetAmount),
+      current_amount: parseFloat(currentAmount),
       deadline: new Date(deadline).toISOString()
     });
   };

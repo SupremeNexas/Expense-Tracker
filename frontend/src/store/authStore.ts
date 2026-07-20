@@ -63,6 +63,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       const user = await api.getMe();
       set({ user, authLoading: false });
     } catch (e: any) {
+      // Network error (server down) — don't wipe the user session
+      if (e?.message !== 'UNAUTHORIZED' && !e?.message?.includes('401')) {
+        console.warn('[Auth] Server unreachable, keeping cached session state');
+        set({ authLoading: false });
+        return;
+      }
+
+      // Token expired — attempt silent refresh
       const rt = localStorage.getItem('fintech_refresh_token');
       if (rt) {
         try {

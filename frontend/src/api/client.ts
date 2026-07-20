@@ -46,12 +46,19 @@ async function request(endpoint: string, options: any = {}): Promise<any> {
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    if (response.status === 401) {
+    const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    const message = error.error || error.message || `HTTP ${response.status}`;
+
+    // Only wipe the token + force-logout on 401s from *protected* endpoints.
+    // Auth endpoints (login, register, google) return 401 for "wrong password"
+    // — we must NOT treat that as a session expiry.
+    const isAuthRoute = endpoint.startsWith('/auth/');
+    if (response.status === 401 && !isAuthRoute) {
       setToken(null);
       throw new Error('UNAUTHORIZED');
     }
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+
+    throw new Error(message);
   }
 
   return response.json();

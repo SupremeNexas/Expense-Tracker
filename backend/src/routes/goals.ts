@@ -136,4 +136,49 @@ router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Respo
   }
 });
 
+// POST /api/goals/:id/contribute
+router.post(
+  '/:id/contribute',
+  authenticate,
+  [
+    body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
+    body('notes').optional().isString(),
+  ],
+  validate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const goal = await prisma.goal.findFirst({
+        where: { id: req.params.id as string, userId: req.user.id as string }
+      });
+
+      if (!goal) return res.status(404).json({ error: 'Goal not found' });
+
+      const contributionAmount = new Prisma.Decimal(Number(req.body.amount));
+      const newCurrentAmount = new Prisma.Decimal(Number(goal.currentAmount)).add(contributionAmount);
+
+      const updated = await prisma.goal.update({
+        where: { id: req.params.id as string },
+        data: {
+          currentAmount: newCurrentAmount,
+          contributions: {
+            create: {
+              amount: contributionAmount,
+              notes: req.body.notes || '',
+              date: new Date(),
+            }
+          }
+        },
+        include: { contributions: true }
+      });
+
+      res.status(201).json(mapGoal(updated));
+    } catch (err) {
+      console.error('Error adding contribution:', err);
+      res.status(500).json({ error: 'Failed to add contribution' });
+    }
+  }
+);
+
 export default router;
