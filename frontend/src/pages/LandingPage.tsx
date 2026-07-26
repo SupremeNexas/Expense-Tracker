@@ -25,30 +25,29 @@ function FeatureCard({ title, description, icon: Icon, gradient, delay }: Featur
     >
       {/* Glow Background */}
       <div
-        className="absolute inset-0 opacity-70 rounded-[40px] pointer-events-none transition-all duration-300 group-hover:opacity-95"
+        className="absolute inset-0 opacity-40 rounded-[24px] pointer-events-none transition-all duration-300 group-hover:opacity-75"
         style={{
           background: gradient,
-          filter: "blur(45px)",
+          filter: "blur(30px)",
           width: "100%",
           height: "100%"
         }}
       />
-      {/* Foreground Card with Gradient Border */}
+      {/* Foreground Card with Liquid Glass Finish */}
       <div
-        className="self-stretch h-full rounded-[40px] z-10 overflow-hidden backdrop-blur-md"
+        className="self-stretch h-full rounded-[24px] z-10 overflow-hidden backdrop-blur-2xl border border-white/50 dark:border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_0_rgba(0,0,0,0.1)] transition-all duration-300"
         style={{
-          border: '8px solid transparent',
-          background: `linear-gradient(rgba(26, 26, 28, 0.8), rgba(26, 26, 28, 0.8)) padding-box, ${gradient} border-box`
+          background: 'radial-gradient(120% 120% at 50% 10%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.15) 100%)'
         }}
       >
         {/* Content Inner Layout */}
         <div className="w-full h-full p-7 flex flex-col justify-between">
-          <div className="text-white/90">
+          <div className="text-foreground/90">
             <Icon size={32} strokeWidth={2.5} />
           </div>
           <div>
-            <h3 className="text-white font-medium text-xl mb-3 tracking-tight">{title}</h3>
-            <p className="text-gray-300 text-[14px] leading-[1.6] font-normal selection:bg-white/20">{description}</p>
+            <h3 className="text-foreground font-semibold text-lg mb-2 tracking-tight">{title}</h3>
+            <p className="text-foreground/80 text-[13px] leading-[1.6] font-medium selection:bg-white/20">{description}</p>
           </div>
         </div>
       </div>
@@ -353,11 +352,11 @@ export default function LandingPage() {
               { step: '04', title: 'Behavior Insight', desc: 'Financial coach computes impacts on budgets.' },
               { step: '05', title: 'Dashboard Update', desc: 'Wallets, goals, and metrics sync instantly.' }
             ].map((item, i) => (
-              <div key={i} className="premium-card bg-white/50 dark:bg-[#121214]/60 backdrop-blur-xl p-6 flex flex-col justify-between border-white/30 dark:border-white/[0.05] relative shadow-lg">
-                <span className="text-3xl font-bold text-gray-900/20 dark:text-white/20 font-sans">{item.step}</span>
+              <div key={i} className="premium-card bg-white/20 dark:bg-black/30 backdrop-blur-2xl p-6 flex flex-col justify-between border-white/40 dark:border-white/10 relative shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-white/30 dark:hover:bg-black/40 transition-colors">
+                <span className="text-3xl font-bold text-gray-900/40 dark:text-white/20 font-sans drop-shadow-sm">{item.step}</span>
                 <div className="mt-8">
-                  <h4 className="text-lg font-bold mb-2 text-foreground">{item.title}</h4>
-                  <p className="text-xs text-foreground/70 leading-relaxed font-medium">{item.desc}</p>
+                  <h4 className="text-lg font-bold mb-2 text-foreground drop-shadow-md">{item.title}</h4>
+                  <p className="text-xs text-foreground/80 leading-relaxed font-medium drop-shadow-sm">{item.desc}</p>
                 </div>
               </div>
             ))}
