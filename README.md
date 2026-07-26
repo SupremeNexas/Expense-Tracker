@@ -1,6 +1,6 @@
 # 💸 Expense Tracker
 
-> A premium, AI-native personal finance platform. Track expenses, manage budgets, monitor recurring bills, analyse spending with AI-powered insights, and collaborate on shared group expenses — all in one production-ready application.
+> A premium, AI-native personal finance platform. Track expenses, manage budgets, monitor recurring bills, analyse spending with AI-powered insights, and collaborate on shared group expenses — all in one production-ready application. 
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React 19" />
