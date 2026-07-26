@@ -22,5 +22,8 @@
     "devops"
   ],
   "author": "Antigravity Devs",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^10.0.4"
+  }
 }
