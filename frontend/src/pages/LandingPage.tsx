@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowRight, Play, Cpu, ShieldCheck, CheckCircle2, ChevronDown, 
-  Wallet, PieChart, Sparkles, TrendingUp, Calendar, CreditCard, 
-  ScanLine, HelpCircle, Layers, FileText,
-  Receipt, PiggyBank, Target, RefreshCcw, FileSpreadsheet
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  ArrowRight, Play, CheckCircle2, ChevronDown,
+  Wallet, PieChart, Sparkles, TrendingUp, CreditCard,
+  ScanLine, HelpCircle, Receipt, PiggyBank, Target, RefreshCcw, FileSpreadsheet
 } from 'lucide-react';
 
 interface FeatureCardProps {
@@ -25,9 +24,9 @@ function FeatureCard({ title, description, icon: Icon, gradient, delay }: Featur
       className="relative flex flex-col justify-start items-start w-full max-w-[260px] md:max-w-[300px] group mx-auto h-[260px] md:h-[300px]"
     >
       {/* Glow Background */}
-      <div 
-        className="absolute inset-0 opacity-60 rounded-[40px] pointer-events-none transition-all duration-300 group-hover:opacity-85"
-        style={{ 
+      <div
+        className="absolute inset-0 opacity-70 rounded-[40px] pointer-events-none transition-all duration-300 group-hover:opacity-95"
+        style={{
           background: gradient,
           filter: "blur(45px)",
           width: "100%",
@@ -35,11 +34,11 @@ function FeatureCard({ title, description, icon: Icon, gradient, delay }: Featur
         }}
       />
       {/* Foreground Card with Gradient Border */}
-      <div 
-        className="self-stretch h-full rounded-[40px] z-10 overflow-hidden"
+      <div
+        className="self-stretch h-full rounded-[40px] z-10 overflow-hidden backdrop-blur-md"
         style={{
           border: '8px solid transparent',
-          background: `linear-gradient(#1A1A1C, #1A1A1C) padding-box, ${gradient} border-box`
+          background: `linear-gradient(rgba(26, 26, 28, 0.8), rgba(26, 26, 28, 0.8)) padding-box, ${gradient} border-box`
         }}
       >
         {/* Content Inner Layout */}
@@ -49,7 +48,7 @@ function FeatureCard({ title, description, icon: Icon, gradient, delay }: Featur
           </div>
           <div>
             <h3 className="text-white font-medium text-xl mb-3 tracking-tight">{title}</h3>
-            <p className="text-gray-400 text-[14px] leading-[1.6] font-normal selection:bg-white/20">{description}</p>
+            <p className="text-gray-300 text-[14px] leading-[1.6] font-normal selection:bg-white/20">{description}</p>
           </div>
         </div>
       </div>
@@ -178,358 +177,297 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0C0C0C] selection:bg-emerald-500 selection:text-white transition-colors duration-300">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-50 max-w-7xl mx-auto px-6 py-4 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04] bg-[#FAFAFA]/80 dark:bg-[#0C0C0C]/80 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tight text-black dark:text-white">Expense Tracker</span>
-        </div>
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-500 dark:text-gray-400">
-          <a href="#features" className="hover:text-black dark:hover:text-white transition-colors">Features</a>
-          <a href="#ai" className="hover:text-black dark:hover:text-white transition-colors">AI Module</a>
-          <a href="#pricing" className="hover:text-black dark:hover:text-white transition-colors">Pricing</a>
-          <a href="#faq" className="hover:text-black dark:hover:text-white transition-colors">FAQ</a>
-        </nav>
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/auth')} className="text-sm font-medium hover:text-black dark:hover:text-white transition-colors cursor-pointer">
-            Sign In
-          </button>
-          <button onClick={() => navigate('/auth')} className="btn-premium btn-premium-primary cursor-pointer text-xs md:text-sm">
-            Get Started
-          </button>
-        </div>
-      </header>
+    <div className="min-h-screen relative selection:bg-emerald-500 selection:text-white font-body">
+      {/* 1. Page-Wide Bright Moving Motion Background */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="w-full h-full object-cover scale-105"
+        >
+          <source
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4"
+            type="video/mp4"
+          />
+        </video>
+        {/* Very light, bright translucent layer to maximize background visibility while ensuring crisp contrast */}
+        <div className="absolute inset-0 bg-white/10 dark:bg-black/15 backdrop-brightness-110" />
+      </div>
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-6 pt-16 md:pt-28 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        <div className="lg:col-span-7 space-y-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+      {/* 2. Page Content Layers */}
+      <div className="relative z-10 w-full flex flex-col min-h-screen">
+        {/* Header / Navbar */}
+        <header className="sticky top-0 z-50 w-full px-6 md:px-12 lg:px-20 py-5 bg-white/30 dark:bg-black/30 backdrop-blur-xl border-b border-white/20 dark:border-white/10">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xl font-semibold tracking-tight text-foreground">
+              <span className="text-emerald-500 font-serif text-2xl">antigravity.</span>
+            </div>
+
+            <nav className="hidden md:flex items-center gap-8 text-sm text-foreground/90 font-semibold drop-shadow-sm">
+              <a href="#features" className="hover:text-emerald-500 transition-colors">Features</a>
+              <a href="#ai" className="hover:text-emerald-500 transition-colors">AI Module</a>
+              <a href="#pricing" className="hover:text-emerald-500 transition-colors">Pricing</a>
+              <a href="#faq" className="hover:text-emerald-500 transition-colors">FAQ</a>
+            </nav>
+
+            <div>
+              <Link
+                to="/auth"
+                className="inline-flex items-center justify-center rounded-full bg-foreground text-background px-6 py-2.5 text-sm font-bold hover:opacity-90 transition-colors shadow-md"
+              >
+                Sign In
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        {/* Clean Hero Section (Dashboard Preview removed as requested) */}
+        <section className="w-full flex flex-col items-center justify-center text-center pt-20 md:pt-32 pb-24 md:pb-36 px-6 max-w-4xl mx-auto">
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold"
+            transition={{ duration: 0.5 }}
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/20 backdrop-blur-md px-5 py-2 text-xs md:text-sm font-bold text-emerald-700 dark:text-emerald-300 shadow-sm"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI-Driven Personal Wealth Space</span>
+            <Sparkles className="w-4 h-4 text-emerald-500 animate-spin" />
+            <span>Powered by Gemini AI Vision</span>
           </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+
+          {/* Main Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.1]"
+            className="font-display text-5xl md:text-7xl lg:text-[5.5rem] leading-[0.95] tracking-tight text-foreground drop-shadow-md"
           >
-            Take control of your <span className="serif-brand italic font-normal text-emerald-500">money</span>, one expense at a time.
+            Take control of your <span className="font-display italic text-emerald-500">wealth</span>
           </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
+
+          {/* Subheadline */}
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg md:text-xl text-gray-500 dark:text-gray-400 leading-relaxed max-w-xl"
+            className="mt-6 text-base md:text-xl text-foreground/90 font-medium max-w-2xl leading-relaxed drop-shadow-sm"
           >
-            Track spending, build budgets, analyze habits, and grow your savings with AI-powered financial insights.
+            Track spending, build budgets, analyze habits, and grow your savings with AI-powered financial insights designed for professionals.
           </motion.p>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-wrap gap-4"
+            className="mt-8 flex items-center gap-4"
           >
-            <button onClick={() => navigate('/auth')} className="btn-premium btn-premium-primary gap-2 cursor-pointer py-3 px-6 text-base">
-              Start Tracking Free <ArrowRight className="w-4 h-4" />
+            <Link to="/auth" className="inline-flex h-12 items-center justify-center rounded-full bg-foreground px-8 py-3 text-sm font-bold text-background hover:opacity-90 transition-colors shadow-xl">
+              Start Tracking Free <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
+            <button className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/80 backdrop-blur-md shadow-md hover:bg-muted transition-colors group cursor-pointer">
+              <Play className="h-4 w-4 fill-foreground text-foreground group-hover:scale-110 transition-transform" />
             </button>
-            <a href="#demo" className="btn-premium btn-premium-secondary gap-2 py-3 px-6 text-base">
-              <Play className="w-4 h-4 fill-current" /> Watch Demo
-            </a>
           </motion.div>
-        </div>
+        </section>
 
-        {/* Hero Interactive Floating Preview */}
-        <div className="lg:col-span-5 relative flex justify-center">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-            className="w-full max-w-[420px] aspect-[9/10] premium-card glass-effect relative border border-black/[0.06] dark:border-white/[0.06]"
-          >
-            <div className="flex items-center justify-between pb-6 border-b border-black/[0.04] dark:border-white/[0.04]">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+        {/* Features Bento Section */}
+        <section id="features" className="max-w-7xl mx-auto px-6 py-20 md:py-32 w-full">
+          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Handcrafted tools for personal ledger auditing.</h2>
+            <p className="text-foreground/80 font-medium text-base md:text-lg drop-shadow-sm">No bloat. Simply powerful, beautiful finance mechanics designed to move as fast as you do.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 mt-12 w-full max-w-[936px] mx-auto">
+            {expenseFeatures.map((f, idx) => (
+              <FeatureCard
+                key={idx}
+                title={f.title}
+                description={f.description}
+                icon={f.icon}
+                gradient={f.gradient}
+                delay={f.delay}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Demo Section (Analytics Preview) */}
+        <section id="demo" className="py-20 md:py-32 bg-white/20 dark:bg-black/20 backdrop-blur-xl border-y border-white/20 dark:border-white/10">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              <div className="lg:col-span-5 space-y-6">
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">A dashboard that looks like developer tooling.</h2>
+                <p className="text-foreground/80 leading-relaxed text-sm md:text-base font-medium drop-shadow-sm">Quiet, monochromatic typography stacked against dense layouts. Visualize your cash balances, credit liabilities, and investment earnings instantly without shiny distractions.</p>
+                <button onClick={() => navigate('/auth')} className="btn-premium btn-premium-primary gap-2 cursor-pointer shadow-xl">
+                  Enter Command Center <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
-              <span className="text-xs font-semibold text-gray-400">FINTECH WORKSPACE</span>
-            </div>
-
-            <div className="space-y-6 pt-6">
-              {/* Fake Balance Card */}
-              <div className="p-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/[0.02] dark:border-white/[0.02]">
-                <span className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Total Available Balance</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-bold font-sans">₹1,36,999</span>
-                  <span className="text-xs text-emerald-500 font-medium">+14.2%</span>
-                </div>
-              </div>
-
-              {/* Floating Widgets */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3.5 rounded-xl border border-black/[0.05] dark:border-white/[0.05]">
-                  <span className="text-[10px] text-gray-400 font-medium">Food spends</span>
-                  <div className="text-lg font-semibold mt-0.5">₹14,500</div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div className="bg-emerald-500 h-full w-[58%]" />
+              <div className="lg:col-span-7">
+                <div className="p-4 rounded-3xl border border-white/40 dark:border-white/10 bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                  <div className="h-6 w-full flex gap-1.5 items-center pb-4 border-b border-black/[0.04] dark:border-white/[0.04] mb-4">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                    <span className="text-[10px] text-gray-400 ml-4 font-mono">http://localhost:5173/dashboard</span>
                   </div>
-                </div>
-                <div className="p-3.5 rounded-xl border border-black/[0.05] dark:border-white/[0.05]">
-                  <span className="text-[10px] text-gray-400 font-medium">Goal Status</span>
-                  <div className="text-lg font-semibold mt-0.5">74% Saved</div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div className="bg-indigo-500 h-full w-[74%]" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Transaction */}
-              <div className="space-y-3">
-                <span className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Recent Transactions</span>
-                <div className="flex items-center justify-between p-2.5 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500">
-                      <ShoppingBagIcon className="w-4 h-4" />
+                  <div className="aspect-[16/9] w-full flex flex-col justify-between p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02]">
+                    <div className="flex justify-between items-baseline">
+                      <div>
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase">Cash Flow Trend</div>
+                        <div className="text-2xl font-bold mt-1 text-foreground">₹1,56,800 total credits</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-16 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">+12%</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold">Zara Apparel Store</div>
-                      <div className="text-[10px] text-gray-400">Credit Card • Today</div>
+                    <div className="w-full flex items-end gap-3 h-32 pt-4">
+                      <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[30%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
+                      <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[45%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
+                      <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[60%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
+                      <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[50%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
+                      <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[80%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
+                      <div className="flex-1 bg-emerald-500 h-[95%] rounded-lg" />
                     </div>
-                  </div>
-                  <div className="text-xs font-bold text-red-500">-₹4,299</div>
-                </div>
-
-                <div className="flex items-center justify-between p-2.5 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold">Salary Credit</div>
-                      <div className="text-[10px] text-gray-400">Bank Transfer • 1d ago</div>
-                    </div>
-                  </div>
-                  <div className="text-xs font-bold text-emerald-500">+₹1,25,000</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Visual Decorative Accent */}
-            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -top-4 -left-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Honest Product Statement Section */}
-      <section className="py-12 border-t border-b border-black/[0.04] dark:border-white/[0.04] bg-black/[0.01] dark:bg-white/[0.01] overflow-hidden">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-sm md:text-base font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
-            Open-source personal finance management platform built for individuals who want complete control over their money.
-          </p>
-        </div>
-      </section>
-
-      {/* Bento Grid Features Section */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-20 md:py-32">
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Handcrafted tools for personal ledger auditing.</h2>
-          <p className="text-gray-400 text-base md:text-lg">No bloat. Simply powerful, beautiful finance mechanics designed to move as fast as you do.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-3 lg:gap-3 w-full max-w-[936px] mx-auto mt-12">
-          {expenseFeatures.map((f, idx) => (
-            <FeatureCard 
-              key={idx}
-              title={f.title}
-              description={f.description}
-              icon={f.icon}
-              gradient={f.gradient}
-              delay={f.delay}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Demo Section (Analytics Preview) */}
-      <section id="demo" className="py-20 md:py-32 bg-black/[0.02] dark:bg-white/[0.02] border-t border-b border-black/[0.04] dark:border-white/[0.04]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-16">
-            <div className="lg:col-span-5 space-y-6">
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tight">A dashboard that looks like developer tooling.</h2>
-              <p className="text-gray-500 dark:text-gray-400 leading-relaxed">Quiet, monochromatic typography stacked against dense layouts. Visualize your cash balances, credit liabilities, and investment earnings instantly without shiny distractions.</p>
-              <button onClick={() => navigate('/auth')} className="btn-premium btn-premium-primary gap-2 cursor-pointer">
-                Enter Command Center <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="lg:col-span-7">
-              <div className="p-4 rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] shadow-2xl relative overflow-hidden">
-                <div className="h-6 w-full flex gap-1.5 items-center pb-4 border-b border-black/[0.04] dark:border-white/[0.04] mb-4">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                  <span className="text-[10px] text-gray-400 ml-4 font-mono">http://localhost:5173/dashboard</span>
-                </div>
-                {/* Simulated Chart preview */}
-                <div className="aspect-[16/9] w-full flex flex-col justify-between p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02]">
-                  <div className="flex justify-between items-baseline">
-                    <div>
-                      <div className="text-[10px] font-semibold text-gray-400 uppercase">Cash Flow Trend</div>
-                      <div className="text-2xl font-bold mt-1">₹1,56,800 total credits</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="w-16 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs font-bold">+12%</div>
-                    </div>
-                  </div>
-                  <div className="w-full flex items-end gap-3 h-32 pt-4">
-                    <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[30%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
-                    <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[45%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
-                    <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[60%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
-                    <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[50%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
-                    <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] h-[80%] rounded-lg hover:bg-emerald-500/25 transition-colors cursor-pointer" />
-                    <div className="flex-1 bg-emerald-500 h-[95%] rounded-lg" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* AI Workflow Section */}
-      <section id="ai" className="max-w-7xl mx-auto px-6 py-20 md:py-32">
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Powered by Gemini AI</h2>
-          <p className="text-gray-400 text-base md:text-lg">Upload receipts, ask questions to your chatbot assistant, and receive budget alerts generated in real-time.</p>
-        </div>
+        {/* AI Workflow Section */}
+        <section id="ai" className="max-w-7xl mx-auto px-6 py-20 md:py-32 w-full">
+          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Powered by Gemini AI</h2>
+            <p className="text-foreground/80 text-base md:text-lg font-medium drop-shadow-sm">Upload receipts, ask questions to your chatbot assistant, and receive budget alerts generated in real-time.</p>
+          </div>
 
-        {/* Animated AI flow card steps */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch relative">
-          {[
-            { step: '01', title: 'Receipt Upload', desc: 'Drag receipt PDF or image into interface.' },
-            { step: '02', title: 'OCR Extraction', desc: 'AI reads text, parses details & currency.' },
-            { step: '03', title: 'Smart Categorization', desc: 'Automatically maps to correct spending tags.' },
-            { step: '04', title: 'Behavior Insight', desc: 'Financial coach computes impacts on budgets.' },
-            { step: '05', title: 'Dashboard Update', desc: 'Wallets, goals, and metrics sync instantly.' }
-          ].map((item, i) => (
-            <div key={i} className="premium-card p-6 flex flex-col justify-between border-black/[0.05] dark:border-white/[0.05] relative">
-              <span className="text-3xl font-bold text-black/[0.08] dark:text-white/[0.08] font-sans">{item.step}</span>
-              <div className="mt-8">
-                <h4 className="text-lg font-bold mb-2">{item.title}</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 md:py-32 border-t border-black/[0.04] dark:border-white/[0.04]">
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Pricing aligned with value.</h2>
-          <p className="text-gray-400 text-base md:text-lg">No hidden fees, no credit card lockups. Choose the space that matches your goals.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-          {pricingPlans.map((plan, i) => (
-            <div 
-              key={i} 
-              className={`premium-card p-8 flex flex-col justify-between relative ${plan.popular ? 'border-emerald-500 border-2' : 'border-black/[0.05] dark:border-white/[0.05]'}`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest">
-                  RECOMMENDED
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch relative">
+            {[
+              { step: '01', title: 'Receipt Upload', desc: 'Drag receipt PDF or image into interface.' },
+              { step: '02', title: 'OCR Extraction', desc: 'AI reads text, parses details & currency.' },
+              { step: '03', title: 'Smart Categorization', desc: 'Automatically maps to correct spending tags.' },
+              { step: '04', title: 'Behavior Insight', desc: 'Financial coach computes impacts on budgets.' },
+              { step: '05', title: 'Dashboard Update', desc: 'Wallets, goals, and metrics sync instantly.' }
+            ].map((item, i) => (
+              <div key={i} className="premium-card bg-white/50 dark:bg-[#121214]/60 backdrop-blur-xl p-6 flex flex-col justify-between border-white/30 dark:border-white/[0.05] relative shadow-lg">
+                <span className="text-3xl font-bold text-gray-900/20 dark:text-white/20 font-sans">{item.step}</span>
+                <div className="mt-8">
+                  <h4 className="text-lg font-bold mb-2 text-foreground">{item.title}</h4>
+                  <p className="text-xs text-foreground/70 leading-relaxed font-medium">{item.desc}</p>
                 </div>
-              )}
-              <div>
-                <h3 className="text-2xl font-bold">{plan.name}</h3>
-                <p className="text-sm text-gray-400 mt-2">{plan.desc}</p>
-                <div className="flex items-baseline gap-1 mt-6 mb-8">
-                  <span className="text-4xl font-bold font-sans">₹{plan.price}</span>
-                  {plan.price !== 'Custom' && <span className="text-sm text-gray-400">/ mo</span>}
-                </div>
-                <ul className="space-y-4">
-                  {plan.features.map((feat, idx) => (
-                    <li key={idx} className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      <span>{feat}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
-              <button 
-                onClick={() => navigate('/auth')} 
-                className={`w-full btn-premium mt-8 cursor-pointer py-3 ${plan.popular ? 'btn-premium-primary' : 'btn-premium-secondary'}`}
-              >
-                {plan.cta}
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
 
-      {/* FAQ Section */}
-      <section id="faq" className="max-w-3xl mx-auto px-6 py-20 md:py-32 border-t border-black/[0.04] dark:border-white/[0.04]">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Frequently Asked Questions</h2>
-        </div>
+        {/* Pricing Section */}
+        <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 md:py-32 border-t border-white/20 dark:border-white/10 w-full">
+          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Pricing aligned with value.</h2>
+            <p className="text-foreground/80 text-base md:text-lg font-medium drop-shadow-sm">No hidden fees, no credit card lockups. Choose the space that matches your goals.</p>
+          </div>
 
-        <div className="space-y-4">
-          {faqs.map((faq, i) => (
-            <div key={i} className="premium-card p-0 overflow-hidden border-black/[0.05] dark:border-white/[0.05]">
-              <button 
-                onClick={() => toggleFaq(i)}
-                className="w-full p-6 text-left flex items-center justify-between font-semibold hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch w-full max-w-5xl mx-auto">
+            {pricingPlans.map((plan, i) => (
+              <div
+                key={i}
+                className={`premium-card bg-white/60 dark:bg-[#121214]/70 backdrop-blur-xl p-8 flex flex-col justify-between relative shadow-xl ${plan.popular ? 'border-emerald-500 border-2' : 'border-white/40 dark:border-white/[0.05]'}`}
               >
-                <span className="text-base md:text-lg flex items-center gap-3">
-                  <HelpCircle className="w-5 h-5 text-emerald-500" />
-                  {faq.q}
-                </span>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${activeFaq === i ? 'rotate-180' : ''}`} />
-              </button>
-              <AnimatePresence initial={false}>
-                {activeFaq === i && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  >
-                    <div className="px-6 pb-6 pt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed border-t border-black/[0.02] dark:border-white/[0.02]">
-                      {faq.a}
-                    </div>
-                  </motion.div>
+                {plan.popular && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest">
+                    RECOMMENDED
+                  </div>
                 )}
-              </AnimatePresence>
-            </div>
-          ))}
-        </div>
-      </section>
+                <div>
+                  <h3 className="text-2xl font-bold text-foreground">{plan.name}</h3>
+                  <p className="text-sm text-foreground/70 mt-2 font-medium">{plan.desc}</p>
+                  <div className="flex items-baseline gap-1 mt-6 mb-8">
+                    <span className="text-4xl font-bold font-sans text-foreground">₹{plan.price}</span>
+                    {plan.price !== 'Custom' && <span className="text-sm text-foreground/70 font-medium">/ mo</span>}
+                  </div>
+                  <ul className="space-y-4">
+                    {plan.features.map((feat, idx) => (
+                      <li key={idx} className="flex items-center gap-3 text-sm text-foreground/80 font-medium">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <button
+                  onClick={() => navigate('/auth')}
+                  className={`w-full btn-premium mt-8 cursor-pointer py-3 font-semibold ${plan.popular ? 'btn-premium-primary' : 'btn-premium-secondary'}`}
+                >
+                  {plan.cta}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      {/* Minimalist Footer */}
-      <footer className="border-t border-black/[0.04] dark:border-white/[0.04] py-12 bg-black/[0.01] dark:bg-white/[0.01]">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-gray-400">
-          <div className="flex items-center gap-2">
-            <span className="text-base font-bold tracking-tight text-black dark:text-white">Expense Tracker</span>
+        {/* FAQ Section */}
+        <section id="faq" className="max-w-3xl mx-auto px-6 py-20 md:py-32 border-t border-white/20 dark:border-white/10 w-full">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Frequently Asked Questions</h2>
           </div>
-          <p>© 2026 Expense Tracker Inc. Built with React 19, TypeScript, and Prisma.</p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Terms</a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">GitHub</a>
+
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <div key={i} className="premium-card p-0 overflow-hidden border-white/30 dark:border-white/[0.05] bg-white/50 dark:bg-[#121214]/60 backdrop-blur-xl shadow-md">
+                <button
+                  onClick={() => toggleFaq(i)}
+                  className="w-full p-6 text-left flex items-center justify-between font-semibold text-foreground hover:bg-white/20 dark:hover:bg-white/5 transition-colors"
+                >
+                  <span className="text-base md:text-lg flex items-center gap-3">
+                    <HelpCircle className="w-5 h-5 text-emerald-500" />
+                    {faq.q}
+                  </span>
+                  <ChevronDown className={`w-5 h-5 text-foreground/60 transition-transform ${activeFaq === i ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence initial={false}>
+                  {activeFaq === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    >
+                      <div className="px-6 pb-6 pt-2 text-xs md:text-sm text-foreground/80 leading-relaxed border-t border-white/10 font-medium">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
           </div>
-        </div>
-      </footer>
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-white/20 dark:border-white/10 py-12 bg-white/30 dark:bg-black/30 backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-foreground/70 font-medium">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-bold tracking-tight text-foreground">Expense Tracker</span>
+            </div>
+            <p>© 2026 Expense Tracker Inc. Built with React 19, TypeScript, and Prisma.</p>
+            <div className="flex gap-6">
+              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
+              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
+              <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
+            </div>
+          </div>
+        </footer>
+
+      </div>
     </div>
   );
 }
 
-// Simple placeholder icons to avoid missing imports
+// Simple placeholder icons
 function ShoppingBagIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
