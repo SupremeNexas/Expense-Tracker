@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import useAuthStore from './store/authStore';
 import { Layout } from './components/Layout/Layout';
 import { ToastProvider } from './components/UI/Toast';
+import { SmoothScroll } from './components/UI/SmoothScroll';
 
 // Lazy-load all page components — each becomes its own JS chunk at build time
 const LandingPage       = React.lazy(() => import('./pages/LandingPage'));
@@ -98,7 +99,9 @@ function App() {
   return (
     <Router>
       <ToastProvider>
-        <AppRoutes />
+        <SmoothScroll>
+          <AppRoutes />
+        </SmoothScroll>
       </ToastProvider>
     </Router>
   );
