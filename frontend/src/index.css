@@ -1,39 +1,109 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap');
+/* impeccable-disable overused-font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-display: 'Instrument Serif', serif;
   --font-body: 'Inter', sans-serif;
+  --font-display: 'Inter', sans-serif;
 
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-primary: #fafafa;
-  --color-primary-foreground: #09090b;
-  --color-secondary: #27272a;
-  --color-secondary-foreground: #fafafa;
-  --color-muted: #27272a;
-  --color-muted-foreground: #a1a1aa;
-  --color-accent: #10B981;
-  --color-accent-foreground: #fafafa;
-  --color-border: rgba(255,255,255,0.08);
-  --color-ring: #10B981;
+  --color-background: #f8f9ff;
+  --color-foreground: #0b1c30;
 
+  --color-primary: #000000;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #006a61;
+  --color-secondary-foreground: #ffffff;
+
+  --color-border: #e5eeff;
   --radius: 0.75rem;
-  --shadow-dashboard: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
 }
 
-@layer base {
-  * {
-    border-color: var(--color-border);
+@layer components {
+  /* Premium Buttons */
+  .btn-premium {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    user-select: none;
   }
+  .btn-premium-primary {
+    background-color: #10B981;
+    color: #ffffff;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+  }
+  .btn-premium-primary:hover {
+    background-color: #059669;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  }
+  .btn-premium-secondary {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .btn-premium-secondary:hover {
+    background-color: rgba(16, 185, 129, 0.18);
+  }
+
+  /* Stitch Template Soft Card */
+  .soft-card {
+    background: #ffffff;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5eeff;
+    border-radius: 0.75rem;
+  }
+
+  .status-border-left-purple {
+    border-left: 4px solid #8b5cf6 !important;
+  }
+
+  .status-border-left-green {
+    border-left: 4px solid #10b981 !important;
+  }
+
+  .status-border-left-yellow {
+    border-left: 4px solid #f59e0b !important;
+  }
+
+  .status-border-left-red {
+    border-left: 4px solid #ef4444 !important;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+  }
+}
+
+/* Lenis scroll styles */
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
 }

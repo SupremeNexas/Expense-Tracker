@@ -9,6 +9,7 @@ import {
 import BorderGlow from '../components/UI/BorderGlow';
 import SpotlightCard from '../components/UI/SpotlightCard';
 import GlassSurface from '../components/UI/GlassSurface';
+import CircularGallery from '../components/UI/CircularGallery';
 
 
 const DEMO_PANEL_GLOW_COLORS = ['#0f766e', '#22d3ee', '#34d399'];
@@ -27,7 +28,7 @@ function FeatureCard({ title, description, icon: Icon, gradient, delay }: Featur
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut", delay }}
-      className="relative w-full h-[320px]"
+      className="relative w-full h-[220px]"
     >
       <SpotlightCard className="h-full rounded-[30px] p-0 overflow-hidden border-2 border-emerald-500 shadow-xl transition-all duration-500 group-hover:scale-[1.02]" spotlightColor="rgba(255, 255, 255, 0.15)">
         {/* Intense colored aura right behind the glass */}
@@ -52,26 +53,26 @@ function FeatureCard({ title, description, icon: Icon, gradient, delay }: Featur
           brightness={30}
           borderWidth={0}
           className="relative w-full h-full"
-          style={{ minHeight: '320px' }}
+          style={{ minHeight: '220px' }}
         >
-          <div className="relative h-full flex flex-col justify-between p-8 w-full">
+          <div className="relative h-full flex flex-col justify-between p-6 w-full">
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-[30px]" />
             {/* Apple floating glass button/icon container */}
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110"
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110"
               style={{
                 background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%)',
                 border: '1px solid rgba(255, 255, 255, 0.4)',
                 boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 8px 16px rgba(0,0,0,0.1)'
               }}
             >
-              <Icon size={28} className="text-white drop-shadow-md" />
+              <Icon size={20} className="text-white drop-shadow-md" />
             </div>
 
             {/* Text bottom alignment matches image precisely */}
             <div className="mt-auto z-10">
-              <h3 className="text-white font-bold text-2xl mb-2 tracking-tight drop-shadow-md">{title}</h3>
-              <p className="text-gray-100/90 text-sm leading-relaxed font-semibold drop-shadow-sm line-clamp-3">{description}</p>
+              <h3 className="text-white font-bold text-lg mb-1 tracking-tight drop-shadow-md">{title}</h3>
+              <p className="text-gray-200/90 text-xs leading-relaxed font-semibold drop-shadow-sm line-clamp-3">{description}</p>
             </div>
           </div>
         </GlassSurface>
@@ -357,6 +358,22 @@ export default function LandingPage() {
               <Play className="h-4 w-4 fill-foreground text-foreground group-hover:scale-110 transition-transform" />
             </button>
           </motion.div>
+        </section>
+
+        {/* Circular Gallery Showcase */}
+        <section className="w-full h-[600px] relative overflow-hidden my-12 md:my-20">
+          <CircularGallery
+             items={[
+               { image: "https://picsum.photos/seed/finance1/800/600", text: "Automated Receipts" },
+               { image: "https://picsum.photos/seed/finance2/800/600", text: "Smart Budgeting" },
+               { image: "https://picsum.photos/seed/finance3/800/600", text: "Deep Financial Insights" },
+               { image: "https://picsum.photos/seed/finance4/800/600", text: "Asset Monitoring" }
+             ]}
+             bend={2}
+             textColor="#ffffff"
+             borderRadius={0.05}
+             font="bold 30px Figtree"
+          />
         </section>
 
         {/* Features Bento Section */}

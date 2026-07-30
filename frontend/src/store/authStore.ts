@@ -7,6 +7,8 @@ const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:50
 interface AuthState {
   user: User | null;
   authLoading: boolean;
+  skipAuthChecked?: boolean;
+  setSkipAuth?: (skip: boolean) => void;
   login: (credentials: any) => Promise<void>;
   register: (data: any) => Promise<void>;
   googleLogin: (idToken: string) => Promise<void>;
@@ -18,6 +20,17 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   authLoading: true,
+  skipAuthChecked: false,
+
+  setSkipAuth: (skip: boolean) => {
+    if (skip) {
+      localStorage.setItem('fintech_skip_auth', 'true');
+      set({ user: { id: 'test-user', email: 'test@example.com', name: 'Demo User', baseCurrency: 'USD' } as User });
+    } else {
+      localStorage.removeItem('fintech_skip_auth');
+      set({ user: null });
+    }
+  },
 
   login: async (credentials) => {
     const res = await api.login(credentials);
@@ -50,6 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     setToken(null);
     localStorage.removeItem('fintech_refresh_token');
+    localStorage.removeItem('fintech_skip_auth');
     // Revoke Google session so the picker appears fresh next login
     if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       (window as any).google.accounts.id.disableAutoSelect();
@@ -59,6 +73,26 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   checkAuth: async () => {
     set({ authLoading: true });
+
+    if (localStorage.getItem('fintech_skip_auth') === 'true') {
+      // User is trapped in old fake skip_auth flow. Let's auto log them in with real demo creds.
+      try {
+        const res = await api.login({ email: 'demo@example.com', password: 'password123' });
+        setToken(res.token);
+        if (res.refreshToken) {
+          localStorage.setItem('fintech_refresh_token', res.refreshToken);
+        }
+        set({ user: res.user, authLoading: false });
+        return;
+      } catch (err) {
+        // Fallback if login fails - clear the broken state
+        localStorage.removeItem('fintech_skip_auth');
+        setToken(null);
+        set({ user: null, authLoading: false });
+        return;
+      }
+    }
+
     try {
       const user = await api.getMe();
       set({ user, authLoading: false });
