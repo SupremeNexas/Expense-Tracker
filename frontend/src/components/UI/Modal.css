@@ -17,9 +17,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(9, 9, 11, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(11, 28, 48, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .modal-container-inner {
@@ -33,13 +33,13 @@
 
 .modal-content {
   width: 100%;
-  background: var(--card);
+  background: #ffffff;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border: 1px solid #e5eeff;
   overflow: hidden;
 }
 

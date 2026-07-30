@@ -83,6 +83,11 @@ export function ExpenseForm({ initialData, onSubmit, onCancel }: ExpenseFormProp
       amount: parseFloat(formData.amount),
       tags: parsedTags,
       date: new Date(formData.date).toISOString(),
+      category_id: formData.categoryId,
+      wallet_id: formData.walletId,
+      payment_method: formData.paymentMethod,
+      receipt_url: formData.receiptUrl,
+      is_recurring: formData.isRecurring,
     });
   };
 

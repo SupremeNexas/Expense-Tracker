@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CreditCard as CardIcon, Trash2, AlertTriangle, Sparkles, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, CreditCard as CardIcon } from 'lucide-react';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
 import Modal from '../components/UI/Modal';
-import { CreditCard } from '../types';
+import { CreditCard as CreditCardType } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
 import { CreditCardForm } from '../components/CreditCards/CreditCardForm';
 import EmptyState from '../components/UI/EmptyState';
 import { SkeletonCard } from '../components/UI/Skeleton';
+import { InteractiveCreditCard } from '../components/UI/InteractiveCreditCard';
+import CardSwap, { Card as SwapCard } from '../components/UI/CardSwap';
 
 export default function CreditCardsPage() {
   const queryClient = useQueryClient();
@@ -19,7 +21,7 @@ export default function CreditCardsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Queries
-  const { data: cards = [], isLoading } = useQuery<CreditCard[]>({
+  const { data: cards = [], isLoading } = useQuery<CreditCardType[]>({
     queryKey: ['credit-cards'],
     queryFn: () => api.getCreditCards()
   });
@@ -27,8 +29,15 @@ export default function CreditCardsPage() {
   // Mutations
   const createMutation = useMutation({
     mutationFn: (data: any) => api.createCreditCard(data),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       showToast('Credit card tracker registered!', 'success');
+
+      // Store card credentials locally linked to the generated card ID
+      if (data?.id && tempCardCredentials) {
+        localStorage.setItem(`card_details_${data.id}`, JSON.stringify(tempCardCredentials));
+        setTempCardCredentials(null);
+      }
+
       queryClient.invalidateQueries({ queryKey: ['credit-cards'] });
       setIsModalOpen(false);
     },
@@ -37,10 +46,17 @@ export default function CreditCardsPage() {
     }
   });
 
+  const [tempCardCredentials, setTempCardCredentials] = useState<{
+    cardNumber: string;
+    expiryDate: string;
+    cvv: string;
+  } | null>(null);
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.deleteCreditCard(id),
-    onSuccess: () => {
+    onSuccess: (data, id) => {
       showToast('Credit card removed from ledger.', 'success');
+      localStorage.removeItem(`card_details_${id}`);
       queryClient.invalidateQueries({ queryKey: ['credit-cards'] });
     },
     onError: (err: any) => {
@@ -48,7 +64,21 @@ export default function CreditCardsPage() {
     }
   });
 
-  const handleFormSubmit = (data: { name: string; limit_amount: number; due_date: string }) => {
+  const handleFormSubmit = (data: {
+    name: string;
+    limit_amount: number;
+    due_date: string;
+    cardNumber?: string;
+    expiryDate?: string;
+    cvv?: string;
+  }) => {
+    // Stage credentials temporarily for post-creation hooks
+    setTempCardCredentials({
+      cardNumber: data.cardNumber || '',
+      expiryDate: data.expiryDate || '',
+      cvv: data.cvv || ''
+    });
+
     createMutation.mutate({
       name: data.name,
       limit_amount: data.limit_amount,
@@ -64,23 +94,29 @@ export default function CreditCardsPage() {
     }
   };
 
+  const cardGradients = [
+    { from: 'from-slate-900', to: 'to-indigo-950' },
+    { from: 'from-amber-950', to: 'to-neutral-900' },
+    { from: 'from-emerald-950', to: 'to-teal-950' },
+    { from: 'from-rose-950', to: 'to-red-950' }
+  ];
+
   return (
-    <div className="space-y-6 fade-in-up">
+    <div className="space-y-10 fade-in-up pb-24">
       {/* Page Header */}
-      <div className="flex justify-between items-center pb-4 border-b border-black/[0.04] dark:border-white/[0.04]">
+      <div className="flex justify-between items-center pb-4 border-b border-black/[0.04]">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Credit Liabilities</h1>
-          <p className="text-sm text-gray-400 mt-1">Track limits, credit card balances, and upcoming due cycles.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30]">Credit Liabilities</h1>
+          <p className="text-sm text-gray-500 mt-1">Track limits, credit card balances, and upcoming due cycles.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
-          className="btn-premium btn-premium-primary gap-2 cursor-pointer py-2 text-sm"
+          className="bg-[#0b1c30] text-white hover:opacity-90 gap-2 cursor-pointer py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center shadow-md transition-all"
         >
           <Plus className="w-4 h-4" /> Add Card
         </button>
       </div>
 
-      {/* Grid of Credit cards */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <SkeletonCard />
@@ -92,100 +128,179 @@ export default function CreditCardsPage() {
           title="No credit cards added"
           description="Add your credit accounts to monitor usage percentages and payment calendars."
           action={
-            <button 
+            <button
               onClick={() => setIsModalOpen(true)}
-              className="btn-premium btn-premium-primary text-xs py-1.5 px-4 cursor-pointer"
+              className="bg-[#0b1c30] text-white hover:opacity-90 text-xs py-2 px-5 font-semibold cursor-pointer rounded-xl"
             >
               Add First Card
             </button>
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map(card => {
-            const limit = Number(card.limit_amount || 0);
-            const due = Number(card.total_due || 0);
-            const usage = limit > 0 ? (due / limit) * 100 : 0;
-            const daysLeft = card.days_until_due ?? 0;
-            
-            // Risk assessment based on usage threshold
-            let riskColor = 'bg-emerald-500';
-            let riskText = 'Low Risk';
-            if (usage > 30 && usage <= 60) {
-              riskColor = 'bg-yellow-500';
-              riskText = 'Medium Risk';
-            } else if (usage > 60) {
-              riskColor = 'bg-red-500';
-              riskText = 'High Risk';
-            }
-
-            return (
-              <div key={card.id} className="premium-card relative overflow-hidden flex flex-col justify-between border-black/[0.05] dark:border-white/[0.05]">
-                {/* Risk Line Indicator */}
-                <div className={`absolute top-0 left-0 right-0 h-1.5 ${riskColor}`} />
-
-                <div className="flex justify-between items-start pt-2">
-                  <div>
-                    <h3 className="text-base font-bold">{card.name}</h3>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">CREDIT CARD ACCOUNT</span>
+        <>
+          {/* CardSwap Carousel Showcase for Multiple Cards */}
+          {cards.length > 0 && (
+            <div className="soft-card p-8 rounded-2xl relative overflow-hidden bg-gradient-to-r from-slate-900 to-[#0b1c30] text-white shadow-xl flex flex-col lg:flex-row items-center justify-between min-h-[440px]">
+              <div className="w-full lg:max-w-md z-10 space-y-4 text-left">
+                <span className="text-xs uppercase tracking-[0.25em] font-extrabold text-emerald-400 bg-emerald-950/50 border border-emerald-800/60 px-3 py-1 rounded-full inline-block">
+                  DYNAMIC VAULT DECK
+                </span>
+                <h2 className="text-4xl font-extrabold text-white tracking-tight">
+                  Your Active Liabilities
+                </h2>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Hover over the rotating card vault to freeze transitions, or click any layer to cycle your registered lines of credit and inspect due limits.
+                </p>
+                <div className="flex gap-4 pt-2">
+                  <div className="border-l-2 border-emerald-400 pl-3">
+                    <span className="text-2xl font-bold text-white block">{cards.length}</span>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">REGISTERED CARDS</span>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleDelete(card.id, card.name)}
-                      className="p-1 rounded-lg hover:bg-red-500/10 text-red-500 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Progress usage meter */}
-                <div className="my-6">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-                    <span>Usage: {usage.toFixed(0)}%</span>
-                    <span>Limit: {formatCurrency(limit, user?.baseCurrency)}</span>
-                  </div>
-                  <div className="w-full bg-black/5 dark:bg-white/5 h-2 rounded-full overflow-hidden border border-black/[0.02] dark:border-white/[0.02]">
-                    <div 
-                      className={`h-full ${riskColor}`} 
-                      style={{ width: `${Math.min(usage, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center mt-2.5">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 font-mono">
-                      Due: {formatCurrency(due, user?.baseCurrency)}
+                  <div className="border-l-2 border-indigo-400 pl-3">
+                    <span className="text-2xl font-bold text-white block">
+                      {formatCurrency(cards.reduce((acc, curr) => acc + Number(curr.total_due || 0), 0), user?.baseCurrency)}
                     </span>
-                    <span className="text-[9px] font-bold text-white px-2 py-0.5 rounded-full uppercase tracking-wider bg-black dark:bg-white/[0.08]">
-                      {riskText}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between pt-3 border-t border-black/[0.04] dark:border-white/[0.04]">
-                  <div>
-                    <div className="text-[9px] text-gray-400 uppercase font-semibold">Min Due</div>
-                    <div className="text-xs font-bold">{formatCurrency(Number(card.minimum_due || 0), user?.baseCurrency)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[9px] text-gray-400 uppercase font-semibold">Payment in</div>
-                    <div className={`text-xs font-bold ${daysLeft <= 5 ? 'text-red-500 font-black' : ''}`}>
-                      {daysLeft} Days
-                    </div>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">TOTAL COMBINED DUE</span>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+
+              {/* 3D Stacked CardSwap Showcase */}
+              <div className="relative w-[340px] h-[320px] sm:w-[480px] sm:h-[350px] mt-8 lg:mt-0 flex items-center justify-center">
+                <CardSwap
+                  width={340}
+                  height={200}
+                  cardDistance={45}
+                  verticalDistance={45}
+                  delay={4500}
+                  pauseOnHover={true}
+                  skewAmount={4}
+                >
+                  {cards.slice(0, 4).map((card, index) => {
+                    const gradient = cardGradients[index % cardGradients.length];
+                    const limit = Number(card.limit_amount || 0);
+                    const due = Number(card.total_due || 0);
+
+                    // Retrieve stored details if present
+                    const localDetails = localStorage.getItem(`card_details_${card.id}`);
+                    const details = localDetails ? JSON.parse(localDetails) : null;
+
+                    return (
+                      <SwapCard key={card.id} className="!p-0 !border-0 !bg-transparent !shadow-none">
+                        <InteractiveCreditCard
+                          cardName={card.name}
+                          cardNumber={details?.cardNumber || `•••• ​ •••• ​ •••• ​ ${card.id.substring(card.id.length - 4)}`}
+                          limitAmount={limit}
+                          totalDue={due}
+                          dueDate={(card.days_until_due ?? 0).toString()}
+                          cardHolder={user?.name || "CARDHOLDER"}
+                          gradientFrom={gradient.from}
+                          gradientTo={gradient.to}
+                        />
+                      </SwapCard>
+                    );
+                  })}
+                </CardSwap>
+              </div>
+            </div>
+          )}
+
+          {/* Individual Account Detail Grid */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-[#0b1c30]">Account Details & Limits</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {cards.map((card, index) => {
+                const limit = Number(card.limit_amount || 0);
+                const due = Number(card.total_due || 0);
+                const usage = limit > 0 ? (due / limit) * 100 : 0;
+                const daysLeft = card.days_until_due ?? 0;
+                const gradient = cardGradients[index % cardGradients.length];
+
+                let riskColor = 'text-emerald-600 bg-emerald-50 border-emerald-200';
+                let riskText = 'Low Risk';
+                if (usage > 30 && usage <= 60) {
+                  riskColor = 'text-yellow-600 bg-yellow-50 border-yellow-200';
+                  riskText = 'Medium Risk';
+                } else if (usage > 60) {
+                  riskColor = 'text-red-600 bg-red-50 border-red-200';
+                  riskText = 'High Risk';
+                }
+
+                // Retrieve stored details if present
+                const localDetails = localStorage.getItem(`card_details_${card.id}`);
+                const details = localDetails ? JSON.parse(localDetails) : null;
+
+                return (
+                  <div key={card.id} className="soft-card p-6 flex flex-col xl:flex-row gap-6 items-center">
+                    <div className="flex-shrink-0 w-full md:w-auto flex justify-center">
+                      <InteractiveCreditCard
+                        cardName={card.name}
+                        cardNumber={details?.cardNumber || `•••• ​ •••• ​ •••• ​ ${card.id.substring(card.id.length - 4)}`}
+                        limitAmount={limit}
+                        totalDue={due}
+                        dueDate={daysLeft.toString()}
+                        cardHolder={user?.name || "CARDHOLDER"}
+                        gradientFrom={gradient.from}
+                        gradientTo={gradient.to}
+                      />
+                    </div>
+
+                    <div className="flex-1 w-full space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-xl font-bold text-[#0b1c30]">{card.name}</h3>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 border rounded uppercase tracking-wider ${riskColor}`}>
+                            {riskText}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleDelete(card.id, card.name)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer transition-colors"
+                          title="Remove card"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Due Amount</span>
+                          <span className="text-sm font-extrabold text-red-600">{formatCurrency(due, user?.baseCurrency)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Min Bill</span>
+                          <span className="text-sm font-extrabold text-[#0b1c30]">{formatCurrency(Number(card.minimum_due || 0), user?.baseCurrency)}</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Limit Available</span>
+                          <span className="text-sm font-extrabold text-emerald-600">{formatCurrency(limit - due, user?.baseCurrency)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Remaining Time</span>
+                          <span className={`text-sm font-extrabold ${daysLeft <= 5 ? 'text-red-500 font-black animate-pulse' : 'text-[#0b1c30]'}`}>
+                            {daysLeft} Days
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Credit card modal creation form */}
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title=""
+        title="Register Liability Card"
       >
-        <CreditCardForm 
+        <CreditCardForm
           onSubmit={handleFormSubmit}
           onCancel={() => setIsModalOpen(false)}
           isSubmitting={createMutation.isPending}

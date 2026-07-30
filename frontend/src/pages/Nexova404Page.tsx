@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
 
 function FacebookIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -88,32 +88,32 @@ export default function Nexova404Page() {
     return () => clearTimeout(t);
   };
 
-  const navLinks = ['Domain', 'Servers', 'Cloud', 'Managed', 'Email', 'Privacy'];
+  const navLinks = ['Dashboard', 'Expenses', 'Budgets', 'Analytics', 'Goals', 'Bills'];
 
   const footerColumns = [
     {
-      title: 'SERVERS',
-      links: ['Web Servers', 'VPS Servers', 'Cloud Servers', 'Managed Instances', 'Bare Metal']
+      title: 'TRACK',
+      links: ['Expenses', 'Wallets', 'Credit Cards', 'Categories', 'Transactions']
     },
     {
-      title: 'DOMAINS',
-      links: ['Find Domain', 'Move Domains', 'DNS Manager', 'Domain Costs']
+      title: 'PLAN',
+      links: ['Budgets', 'Savings Goals', 'Bills', 'Subscriptions']
     },
     {
-      title: 'HELP US',
-      links: ['Open a Ticket', 'FAQs', 'Docs', 'Tutorials', 'Forum']
+      title: 'INSIGHTS',
+      links: ['Analytics', 'Reports', 'Spend Trends', 'AI Copilot', 'Assistant']
     },
     {
-      title: 'ABOUT',
-      links: ['Our Story', 'Leadership Team', 'Press Room', 'We Hire', 'Alliance', 'Blog']
+      title: 'ACCOUNT',
+      links: ['Dashboard', 'Workspace Settings', 'Groups', 'Security', 'Help']
     }
   ];
 
   return (
     <div 
-      className="relative min-h-screen flex flex-col text-white overflow-x-hidden"
-      style={{ 
-        fontFamily: '"Helvetica Now Var", Helvetica, Arial, sans-serif',
+      className="relative min-h-screen flex flex-col overflow-x-hidden"
+      style={{
+        fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, sans-serif',
         backgroundColor: '#0A0A0B'
       }}
     >
@@ -168,15 +168,10 @@ export default function Nexova404Page() {
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Navigation Bar */}
         <header className="flex items-center justify-between px-6 md:px-12 lg:px-16 py-5">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <svg viewBox="0 0 480 480" className="w-8 h-8 fill-white">
-              <path d="M480 240a240 240 0 0 0-240 240 240 240 0 0 0 240-240Z" />
-              <path d="M240 0A240 240 0 0 0 0 240 240 240 0 0 0 240 0Z" />
-              <path d="M480 240A240 240 0 0 0 240 0a240 240 0 0 0 240 240Z" />
-              <path d="M240 480A240 240 0 0 0 0 240a240 240 0 0 0 240 240Z" />
-            </svg>
-            <span className="text-white text-xl font-bold tracking-wider font-sans">NEXOVA</span>
-          </div>
+          <Link to="/dashboard" className="flex items-center gap-3">
+            <img src="/favicon.svg" alt="Expense Tracker" className="w-8 h-8" />
+            <span className="text-white text-xl font-bold tracking-wider font-sans">Expense Tracker</span>
+          </Link>
 
           <nav className="hidden lg:flex items-center gap-8">
             {navLinks.map(link => (
@@ -191,10 +186,10 @@ export default function Nexova404Page() {
           </nav>
 
           <div className="hidden lg:block">
-            <button className="bg-gradient-to-r from-emerald-400 to-cyan-500 hover:from-emerald-500 hover:to-cyan-600 transition-all duration-300 text-white text-sm font-semibold px-6 py-2.5 rounded-full flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10">
-              LOG IN
+            <Link to="/dashboard" className="bg-[#10B981] hover:bg-[#059669] transition-all duration-300 text-white text-sm font-semibold px-6 py-2.5 rounded-full flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10">
+              Go to Dashboard
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
 
           {/* Mobile hamburger */}
@@ -250,15 +245,17 @@ export default function Nexova404Page() {
                   );
                 })}
 
-                <button 
+                  <Link
+                  to="/dashboard"
+                  onClick={closeMenu}
                   style={{ transitionDelay: menuVisible ? `${350 + (navLinks.length * 50)}ms` : '0ms' }}
-                  className={`bg-gradient-to-r from-emerald-400 to-cyan-500 text-white text-sm font-semibold px-8 py-3 rounded-full flex items-center gap-2 mt-4 transition-all duration-400 ease-out shadow-lg shadow-cyan-500/20 cursor-pointer
+                  className={`bg-[#10B981] hover:bg-[#059669] text-white text-sm font-semibold px-8 py-3 rounded-full flex items-center gap-2 mt-4 transition-all duration-400 ease-out shadow-lg shadow-emerald-500/20 cursor-pointer
                     ${menuVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}
                   `}
                 >
-                  LOG IN
+                  Go to Dashboard
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </Link>
               </div>
             </div>
           </>
@@ -266,10 +263,10 @@ export default function Nexova404Page() {
 
         {/* Hero / 404 Section */}
         <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-16 md:py-0">
-          <h1 className="text-white/80 text-lg xs:text-2xl sm:text-3xl md:text-5xl font-light leading-snug tracking-tight mb-1 sm:mb-2">
+          <h1 className="text-white/80 text-lg xs:text-2xl sm:text-3xl md:text-5xl font-light leading-snug tracking-tight mb-1 sm:mb-2 text-white">
             This page seems to have
           </h1>
-          <h1 className="text-white/80 text-lg xs:text-2xl sm:text-3xl md:text-5xl font-light leading-snug tracking-tight mb-8 sm:mb-12">
+          <h1 className="text-white/80 text-lg xs:text-2xl sm:text-3xl md:text-5xl font-light leading-snug tracking-tight mb-8 sm:mb-12 text-white">
             slipped beyond our reach :/
           </h1>
 
@@ -279,13 +276,12 @@ export default function Nexova404Page() {
             </span>
           </div>
 
-          <a 
-            href="/"
-            onClick={(e) => { e.preventDefault(); navigate('/'); }}
+          <Link
+            to="/dashboard"
             className="liquid-glass text-white text-[10px] xs:text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] font-medium px-6 sm:px-8 py-3 sm:py-3.5 rounded-full uppercase hover:text-white/90 active:scale-95 transition-transform cursor-pointer"
           >
-            Return to Main Page
-          </a>
+            Return to Dashboard
+          </Link>
         </main>
 
         {/* Footer */}
@@ -319,7 +315,7 @@ export default function Nexova404Page() {
                   placeholder="Type your email to sign up" 
                   className="flex-1 bg-white text-black px-4 py-2.5 rounded-l-md text-xs sm:text-sm focus:outline-none placeholder-gray-400"
                 />
-                <button className="bg-gradient-to-r from-emerald-400 to-cyan-500 text-white font-bold px-4 sm:px-6 py-2.5 rounded-r-md text-[10px] sm:text-xs tracking-wider cursor-pointer hover:opacity-90 transition-opacity">
+                <button className="bg-[#10B981] hover:bg-[#059669] text-white font-bold px-4 sm:px-6 py-2.5 rounded-r-md text-[10px] sm:text-xs tracking-wider cursor-pointer hover:opacity-90 transition-opacity">
                   SEND IT
                 </button>
               </div>
