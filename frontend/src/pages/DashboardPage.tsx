@@ -16,6 +16,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import Ferrofluid from '../components/UI/Ferrofluid';
+import StaggeredMenu from '../components/StaggeredMenu/StaggeredMenu';
 import ExpandableActionMenu from '../components/UI/ExpandableActionMenu';
 
 export default function DashboardPage() {

@@ -4,7 +4,7 @@ import './StaggeredMenu.css';
 
 export const StaggeredMenu = ({
   position = 'right',
-  colors = ['#10B981', '#065f46'],
+  colors = ['#B497CF', '#5227FF'],
   items = [],
   socialItems = [],
   displaySocials = true,
@@ -13,7 +13,7 @@ export const StaggeredMenu = ({
   logoUrl = '',
   menuButtonColor = '#fff',
   openMenuButtonColor = '#fff',
-  accentColor = '#10B981',
+  accentColor = '#5227FF',
   changeMenuColorOnOpen = true,
   isFixed = false,
   closeOnClickAway = true,
@@ -31,6 +31,7 @@ export const StaggeredMenu = ({
   const textInnerRef = useRef(null);
   const textWrapRef = useRef(null);
   const [textLines, setTextLines] = useState(['Menu', 'Close']);
+
   const openTlRef = useRef(null);
   const closeTweenRef = useRef(null);
   const spinTweenRef = useRef(null);
@@ -109,7 +110,6 @@ export const StaggeredMenu = ({
     layerStates.forEach((ls, i) => {
       tl.fromTo(ls.el, { xPercent: ls.start }, { xPercent: 0, duration: 0.5, ease: 'power4.out' }, i * 0.07);
     });
-
     const lastTime = layerStates.length ? (layerStates.length - 1) * 0.07 : 0;
     const panelInsertTime = lastTime + (layerStates.length ? 0.08 : 0);
     const panelDuration = 0.65;
@@ -201,6 +201,7 @@ export const StaggeredMenu = ({
     openTlRef.current?.kill();
     openTlRef.current = null;
     itemEntranceTweenRef.current?.kill();
+
     const panel = panelRef.current;
     const layers = preLayerElsRef.current;
     if (!panel) return;
@@ -245,21 +246,16 @@ export const StaggeredMenu = ({
   const animateColor = useCallback(
     opening => {
       const btn = toggleBtnRef.current;
-      const textInner = textInnerRef.current;
-      const icon = iconRef.current;
       if (!btn) return;
       colorTweenRef.current?.kill();
       if (changeMenuColorOnOpen) {
         const targetColor = opening ? openMenuButtonColor : menuButtonColor;
         colorTweenRef.current = gsap.to(btn, {
           color: targetColor,
-          backgroundColor: opening ? '#ffffff' : '#10B981',
           delay: 0.18,
           duration: 0.3,
           ease: 'power2.out'
         });
-        if (textInner) gsap.to(textInner, { color: targetColor, duration: 0.3 });
-        if (icon) gsap.to(icon, { color: targetColor, duration: 0.3 });
       } else {
         gsap.set(btn, { color: menuButtonColor });
       }
@@ -271,9 +267,7 @@ export const StaggeredMenu = ({
     if (toggleBtnRef.current) {
       if (changeMenuColorOnOpen) {
         const targetColor = openRef.current ? openMenuButtonColor : menuButtonColor;
-        gsap.set(toggleBtnRef.current, { color: targetColor, backgroundColor: openRef.current ? '#ffffff' : '#10B981' });
-        if (textInnerRef.current) gsap.set(textInnerRef.current, { color: targetColor });
-        if (iconRef.current) gsap.set(iconRef.current, { color: targetColor });
+        gsap.set(toggleBtnRef.current, { color: targetColor });
       } else {
         gsap.set(toggleBtnRef.current, { color: menuButtonColor });
       }
@@ -284,6 +278,7 @@ export const StaggeredMenu = ({
     const inner = textInnerRef.current;
     if (!inner) return;
     textCycleAnimRef.current?.kill();
+
     const currentLabel = opening ? 'Menu' : 'Close';
     const targetLabel = opening ? 'Close' : 'Menu';
     const cycles = 3;
@@ -296,6 +291,7 @@ export const StaggeredMenu = ({
     if (last !== targetLabel) seq.push(targetLabel);
     seq.push(targetLabel);
     setTextLines(seq);
+
     gsap.set(inner, { yPercent: 0 });
     const lineCount = seq.length;
     const finalShift = ((lineCount - 1) / lineCount) * 100;
@@ -336,6 +332,7 @@ export const StaggeredMenu = ({
 
   React.useEffect(() => {
     if (!closeOnClickAway || !open) return;
+
     const handleClickOutside = event => {
       if (
         panelRef.current &&
@@ -346,6 +343,7 @@ export const StaggeredMenu = ({
         closeMenu();
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -370,55 +368,48 @@ export const StaggeredMenu = ({
           return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c }} />);
         })()}
       </div>
-      <header className="staggered-menu-header" aria-label="Main navigation header">
+      <div className="staggered-menu-trigger-container" style={{ position: 'relative', zIndex: 50 }}>
         <button
           ref={toggleBtnRef}
-          className="sm-toggle"
+          className="btn-premium-inv px-8 font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95"
+          style={{
+            backgroundColor: '#0b1c30', 
+            color: '#fff', 
+            border: 'none', 
+            borderRadius: '16px',
+            padding: '12px 24px',
+            fontSize: '14px'
+          }}
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
           aria-controls="staggered-menu-panel"
           onClick={toggleMenu}
           type="button"
         >
-          <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true">
-            <span ref={textInnerRef} className="sm-toggle-textInner" style={{ color: open ? '#000' : '#fff' }}>
+          <span ref={iconRef} className="sm-icon" aria-hidden="true" style={{ width: '16px', height: '16px', position: 'relative' }}>
+            <span ref={plusHRef} className="sm-icon-line" style={{ width: '16px', height: '2px', backgroundColor: 'currentColor', position: 'absolute', top: '7px', left: '0' }} />
+            <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ width: '2px', height: '16px', backgroundColor: 'currentColor', position: 'absolute', top: '0', left: '7px' }} />
+          </span>
+          <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true" style={{ position: 'relative', height: '1.2em', overflow: 'hidden', display: 'inline-block', lineHeight: 1.2 }}>
+            <span ref={textInnerRef} className="sm-toggle-textInner" style={{ display: 'flex', flexDirection: 'column' }}>
               {textLines.map((l, i) => (
-                <span className="sm-toggle-line" key={i}>
-                  {l}
+                <span className="sm-toggle-line" key={i} style={{ display: 'block', height: '1.2em' }}>
+                  {l === 'Menu' ? 'ADD' : l.toUpperCase()}
                 </span>
               ))}
             </span>
           </span>
-          <span ref={iconRef} className="sm-icon" aria-hidden="true" style={{ color: open ? '#000' : '#fff' }}>
-            <span ref={plusHRef} className="sm-icon-line" />
-            <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" />
-          </span>
         </button>
-      </header>
+      </div>
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
         <div className="sm-panel-inner">
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (
               items.map((it, idx) => (
                 <li className="sm-panel-itemWrap" key={it.label + idx}>
-                  {it.onClick ? (
-                    <button
-                      className="sm-panel-item"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        it.onClick?.(it.link);
-                      }}
-                      aria-label={it.ariaLabel}
-                      data-index={idx + 1}
-                      type="button"
-                    >
-                      <span className="sm-panel-itemLabel">{it.label}</span>
-                    </button>
-                  ) : (
-                    <a className="sm-panel-item" href={it.link} aria-label={it.ariaLabel} data-index={idx + 1}>
-                      <span className="sm-panel-itemLabel">{it.label}</span>
-                    </a>
-                  )}
+                  <a className="sm-panel-item" href={it.link} aria-label={it.ariaLabel} data-index={idx + 1}>
+                    <span className="sm-panel-itemLabel">{it.label}</span>
+                  </a>
                 </li>
               ))
             ) : (
