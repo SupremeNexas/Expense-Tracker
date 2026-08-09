@@ -10,10 +10,12 @@ export async function logAction(
   resource: string,
   resourceId: string | null = null,
   previousValues: any = null,
-  newValues: any = null
+  newValues: any = null,
+  tx?: any
 ): Promise<void> {
   try {
-    await prisma.auditLog.create({
+    const db = tx || prisma;
+    await db.auditLog.create({
       data: {
         userId,
         workspaceId,

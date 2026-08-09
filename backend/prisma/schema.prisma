@@ -122,6 +122,7 @@ model Wallet {
   recurringTransactions RecurringTransaction[]
   subscriptions        Subscription[]
 
+  @@index([workspaceId])
   @@map("wallets")
 }
 
@@ -192,6 +193,9 @@ model Transaction {
   wallet    Wallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
   receipts  Receipt[]
 
+  @@index([workspaceId, date])
+  @@index([workspaceId, categoryId])
+  @@index([workspaceId, walletId])
   @@map("transactions")
 }
 
@@ -211,6 +215,8 @@ model Budget {
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   category  Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
+  @@index([workspaceId, categoryId])
+  @@index([workspaceId, startDate, endDate])
   @@map("budgets")
 }
 
@@ -229,6 +235,7 @@ model Goal {
   workspace     Workspace?         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contributions GoalContribution[]
 
+  @@index([workspaceId])
   @@map("goals")
 }
 
@@ -287,6 +294,7 @@ model Subscription {
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   wallet    Wallet?    @relation(fields: [walletId], references: [id])
 
+  @@index([workspaceId])
   @@map("subscriptions")
 }
 
@@ -308,6 +316,8 @@ model Receipt {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   transaction Transaction? @relation(fields: [transactionId], references: [id])
 
+  @@index([transactionId])
+  @@index([userId])
   @@map("receipts")
 }
 
@@ -340,6 +350,7 @@ model Bill {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  @@index([workspaceId])
   @@map("bills")
 }
 
@@ -432,5 +443,6 @@ model AuditLog {
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([workspaceId, createdAt])
   @@map("audit_logs")
 }

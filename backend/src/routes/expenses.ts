@@ -237,43 +237,48 @@ router.post('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), expenseRule
     const baseCurrency = userSettings?.currency || 'USD';
     const finalAmount = await convertCurrency(Number(amount), wallet.currency, baseCurrency);
 
-    const transaction = await prisma.transaction.create({
-      data: {
-        userId: req.user.id,
-        workspaceId: req.workspaceId,
-        title,
-        amount: new Prisma.Decimal(finalAmount),
-        type,
-        categoryId: category_id,
-        walletId: wallet.id,
-        paymentMethod: payment_method,
-        tags: Array.isArray(tags) ? tags : [],
-        notes,
-        date: new Date(date),
-      },
-      include: { category: true }
+    const transaction = await prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.create({
+        data: {
+          userId: req.user.id,
+          workspaceId: req.workspaceId,
+          title,
+          amount: new Prisma.Decimal(finalAmount),
+          type,
+          categoryId: category_id,
+          walletId: wallet.id,
+          paymentMethod: payment_method,
+          tags: Array.isArray(tags) ? tags : [],
+          notes,
+          date: new Date(date),
+        },
+        include: { category: true }
+      });
+
+      // Update Wallet Balance
+      const change = Number(amount);
+      const balanceChange = type === 'EXPENSE' ? -change : change;
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { increment: balanceChange } }
+      });
+
+      // 1. Immutable Audit Logging
+      await logAction(
+        req.user.id,
+        req.workspaceId,
+        'TRANSACTION_CREATE',
+        'Transaction',
+        transaction.id,
+        null,
+        transaction,
+        tx
+      );
+
+      return transaction;
     });
 
-    // Update Wallet Balance
-    const change = Number(amount);
-    const balanceChange = type === 'EXPENSE' ? -change : change;
-    await prisma.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { increment: balanceChange } }
-    });
-
-    // 1. Immutable Audit Logging
-    await logAction(
-      req.user.id,
-      req.workspaceId,
-      'TRANSACTION_CREATE',
-      'Transaction',
-      transaction.id,
-      null,
-      transaction
-    );
-
-    // 2. Trigger Automations Engine
+    // 2. Trigger Automations Engine (run outside transaction to prevent holding locks)
     await triggerAutomations(req.workspaceId, 'TRANSACTION_CREATED', transaction);
 
     res.status(201).json({
@@ -325,56 +330,61 @@ router.put('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), expenseRu
       return res.status(400).json({ error: 'Category not found' });
     }
 
-    // Revert old wallet balance
-    const oldAmount = Number(transaction.amount);
-    const oldBalanceChange = transaction.type === 'EXPENSE' ? oldAmount : -oldAmount;
-    await prisma.wallet.update({
-      where: { id: transaction.walletId },
-      data: { balance: { increment: oldBalanceChange } }
+    const updated = await prisma.$transaction(async (tx) => {
+      // Revert old wallet balance
+      const oldAmount = Number(transaction.amount);
+      const oldBalanceChange = transaction.type === 'EXPENSE' ? oldAmount : -oldAmount;
+      await tx.wallet.update({
+        where: { id: transaction.walletId },
+        data: { balance: { increment: oldBalanceChange } }
+      });
+
+      // Apply new wallet balance
+      const wallet = await getOrCreateWorkspaceWallet(req.user.id, req.workspaceId, payment_method, wallet_id);
+      const newAmount = Number(amount);
+      const newBalanceChange = type === 'EXPENSE' ? -newAmount : newAmount;
+
+      // Convert currency if needed
+      const userSettings = await tx.settings.findFirst({ where: { userId: req.user.id } });
+      const baseCurrency = userSettings?.currency || 'USD';
+      const finalAmount = await convertCurrency(newAmount, wallet.currency, baseCurrency);
+
+      const updated = await tx.transaction.update({
+        where: { id: req.params.id as string },
+        data: {
+          title,
+          amount: new Prisma.Decimal(finalAmount),
+          type,
+          categoryId: category_id,
+          walletId: wallet.id,
+          paymentMethod: payment_method,
+          tags: Array.isArray(tags) ? tags : [],
+          notes,
+          date: new Date(date),
+          lastEditorId: req.user.id
+        },
+        include: { category: true }
+      });
+
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { increment: newBalanceChange } }
+      });
+
+      // Audit Logging
+      await logAction(
+        req.user.id,
+        req.workspaceId,
+        'TRANSACTION_UPDATE',
+        'Transaction',
+        updated.id,
+        transaction,
+        updated,
+        tx
+      );
+
+      return updated;
     });
-
-    // Apply new wallet balance
-    const wallet = await getOrCreateWorkspaceWallet(req.user.id, req.workspaceId, payment_method, wallet_id);
-    const newAmount = Number(amount);
-    const newBalanceChange = type === 'EXPENSE' ? -newAmount : newAmount;
-
-    // Convert currency if needed
-    const userSettings = await prisma.settings.findFirst({ where: { userId: req.user.id } });
-    const baseCurrency = userSettings?.currency || 'USD';
-    const finalAmount = await convertCurrency(newAmount, wallet.currency, baseCurrency);
-    
-    const updated = await prisma.transaction.update({
-      where: { id: req.params.id as string },
-      data: {
-        title,
-        amount: new Prisma.Decimal(finalAmount),
-        type,
-        categoryId: category_id,
-        walletId: wallet.id,
-        paymentMethod: payment_method,
-        tags: Array.isArray(tags) ? tags : [],
-        notes,
-        date: new Date(date),
-        lastEditorId: req.user.id
-      },
-      include: { category: true }
-    });
-
-    await prisma.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { increment: newBalanceChange } }
-    });
-
-    // Audit Logging
-    await logAction(
-      req.user.id,
-      req.workspaceId,
-      'TRANSACTION_UPDATE',
-      'Transaction',
-      updated.id,
-      transaction,
-      updated
-    );
 
     res.json({
       id: updated.id,
@@ -409,28 +419,31 @@ router.delete('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), async 
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    // Revert wallet balance
-    const amount = Number(transaction.amount);
-    const balanceRevert = transaction.type === 'EXPENSE' ? amount : -amount;
-    await prisma.wallet.update({
-      where: { id: transaction.walletId },
-      data: { balance: { increment: balanceRevert } }
-    });
+    await prisma.$transaction(async (tx) => {
+      // Revert wallet balance
+      const amount = Number(transaction.amount);
+      const balanceRevert = transaction.type === 'EXPENSE' ? amount : -amount;
+      await tx.wallet.update({
+        where: { id: transaction.walletId },
+        data: { balance: { increment: balanceRevert } }
+      });
 
-    await prisma.transaction.delete({
-      where: { id: req.params.id as string }
-    });
+      await tx.transaction.delete({
+        where: { id: req.params.id as string }
+      });
 
-    // Audit Logging
-    await logAction(
-      req.user.id,
-      req.workspaceId,
-      'TRANSACTION_DELETE',
-      'Transaction',
-      transaction.id,
-      transaction,
-      null
-    );
+      // Audit Logging
+      await logAction(
+        req.user.id,
+        req.workspaceId,
+        'TRANSACTION_DELETE',
+        'Transaction',
+        transaction.id,
+        transaction,
+        null,
+        tx
+      );
+    });
 
     res.json({ message: 'Expense deleted successfully' });
   } catch (err) {

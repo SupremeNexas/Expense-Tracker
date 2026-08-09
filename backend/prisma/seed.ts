@@ -18,13 +18,43 @@ const DEFAULT_CATEGORIES = [
   { name: 'Other', color: '#6B7280', icon: 'more-horizontal', type: 'EXPENSE' },
 ];
 
+async function getOrCreatePersonalWorkspace(userId: string) {
+  const member = await prisma.workspaceMember.findFirst({
+    where: {
+      userId,
+      workspace: { type: 'PERSONAL' }
+    }
+  });
+
+  if (member) {
+    return member.workspaceId;
+  }
+
+  const ws = await prisma.workspace.create({
+    data: {
+      name: 'Personal Workspace',
+      type: 'PERSONAL',
+      members: {
+        create: {
+          userId,
+          role: 'OWNER'
+        }
+      }
+    }
+  });
+
+  return ws.id;
+}
+
 export async function seedCategoriesForUser(userId: string) {
-  const existingCount = await prisma.category.count({ where: { userId } });
+  const workspaceId = await getOrCreatePersonalWorkspace(userId);
+  const existingCount = await prisma.category.count({ where: { userId, workspaceId } });
   if (existingCount > 0) return;
 
   await prisma.category.createMany({
     data: DEFAULT_CATEGORIES.map(cat => ({
       userId,
+      workspaceId,
       name: cat.name,
       color: cat.color,
       icon: cat.icon,
@@ -43,10 +73,13 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.bill.deleteMany({ where: { userId } });
   await prisma.wallet.deleteMany({ where: { userId } });
 
+  const workspaceId = await getOrCreatePersonalWorkspace(userId);
+
   // 1. Create default wallets
   const mainWallet = await prisma.wallet.create({
     data: {
       userId,
+      workspaceId,
       name: 'HDFC Bank Account',
       type: 'BANK',
       balance: 145000.50,
@@ -57,6 +90,7 @@ export async function seedSampleDataForUser(userId: string) {
   const cashWallet = await prisma.wallet.create({
     data: {
       userId,
+      workspaceId,
       name: 'Cash Wallet',
       type: 'CASH',
       balance: 4500.00,
@@ -67,6 +101,7 @@ export async function seedSampleDataForUser(userId: string) {
   const creditCard = await prisma.wallet.create({
     data: {
       userId,
+      workspaceId,
       name: 'ICICI Amazon Pay Card',
       type: 'CREDIT_CARD',
       balance: -12500.00, // debt
@@ -77,7 +112,7 @@ export async function seedSampleDataForUser(userId: string) {
   console.log(`✅ Seeded wallets for user ${userId}`);
 
   // Fetch created categories
-  const categories = await prisma.category.findMany({ where: { userId } });
+  const categories = await prisma.category.findMany({ where: { userId, workspaceId } });
   const catMap = new Map(categories.map(c => [c.name, c.id]));
 
   const now = new Date();
@@ -88,6 +123,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.transaction.create({
     data: {
       userId,
+      workspaceId,
       title: 'Monthly Salary Credit',
       amount: 125000.00,
       type: 'INCOME',
@@ -102,6 +138,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.transaction.create({
     data: {
       userId,
+      workspaceId,
       title: 'Monthly Salary Credit',
       amount: 125000.00,
       type: 'INCOME',
@@ -116,6 +153,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.transaction.create({
     data: {
       userId,
+      workspaceId,
       title: 'Dividend Payout',
       amount: 4500.00,
       type: 'INCOME',
@@ -167,6 +205,7 @@ export async function seedSampleDataForUser(userId: string) {
 
       expenseData.push({
         userId,
+        workspaceId,
         title: template.title,
         amount,
         type: 'EXPENSE',
@@ -187,6 +226,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.budget.create({
     data: {
       userId,
+      workspaceId,
       categoryId: catMap.get('Food')!,
       amount: 25000.00,
       period: 'MONTHLY',
@@ -198,6 +238,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.budget.create({
     data: {
       userId,
+      workspaceId,
       categoryId: catMap.get('Shopping')!,
       amount: 15000.00,
       period: 'MONTHLY',
@@ -209,6 +250,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.budget.create({
     data: {
       userId,
+      workspaceId,
       categoryId: catMap.get('Travel')!,
       amount: 8000.00,
       period: 'MONTHLY',
@@ -223,6 +265,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.goal.create({
     data: {
       userId,
+      workspaceId,
       name: 'MacBook Pro 16" M4',
       targetAmount: 249000.00,
       currentAmount: 85000.00,
@@ -239,6 +282,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.goal.create({
     data: {
       userId,
+      workspaceId,
       name: 'Goa Vacation Fund',
       targetAmount: 60000.00,
       currentAmount: 45000.00,
@@ -258,6 +302,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.subscription.create({
     data: {
       userId,
+      workspaceId,
       name: 'Spotify Premium Duo',
       amount: 149.00,
       billingCycle: 'MONTHLY',
@@ -270,6 +315,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.subscription.create({
     data: {
       userId,
+      workspaceId,
       name: 'Amazon Prime India',
       amount: 1499.00,
       billingCycle: 'YEARLY',
@@ -283,6 +329,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.bill.create({
     data: {
       userId,
+      workspaceId,
       name: 'House Rent Payment',
       amount: 28000.00,
       dueDate: new Date(year, month, 7),
@@ -294,6 +341,7 @@ export async function seedSampleDataForUser(userId: string) {
   await prisma.bill.create({
     data: {
       userId,
+      workspaceId,
       name: 'Internet & Broadband Charge',
       amount: 1199.00,
       dueDate: new Date(year, month, 12),

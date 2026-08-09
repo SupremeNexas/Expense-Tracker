@@ -36,8 +36,26 @@ export async function runSchedulerIntervalChecks(): Promise<void> {
       console.log(`Auto-logging recurring transaction for subscription: ${sub.name}`);
 
       // Resolve category and wallet link parameters
-      const catId = sub.categoryId || (await prisma.category.findFirst({ where: { name: 'Other' } }))?.id;
-      const walletId = sub.walletId || (await prisma.wallet.findFirst({ where: { userId: sub.userId } }))?.id;
+      const catId = sub.categoryId || (await prisma.category.findFirst({
+        where: {
+          name: 'Other',
+          OR: [
+            { userId: sub.userId },
+            { workspaceId: sub.workspaceId }
+          ]
+        }
+      }))?.id || (await prisma.category.findFirst({
+        where: {
+          workspaceId: sub.workspaceId
+        }
+      }))?.id;
+
+      const walletId = sub.walletId || (await prisma.wallet.findFirst({
+        where: {
+          userId: sub.userId,
+          workspaceId: sub.workspaceId
+        }
+      }))?.id;
 
       if (catId && walletId) {
         // Create actual transaction
