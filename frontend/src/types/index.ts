@@ -4,6 +4,7 @@ export interface User {
   email: string;
   baseCurrency: string;
   createdAt: string;
+  isPremium?: boolean;
   settings?: UserSettings;
 }
 

@@ -2,7 +2,10 @@ import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import './StaggeredMenu.css';
 
-export const StaggeredMenu = ({
+import { useImperativeHandle } from 'react';
+
+export const StaggeredMenu = React.forwardRef(({
+  // Extracted props
   position = 'right',
   colors = ['#B497CF', '#5227FF'],
   items = [],
@@ -10,16 +13,16 @@ export const StaggeredMenu = ({
   displaySocials = true,
   displayItemNumbering = true,
   className,
-  logoUrl = '',
   menuButtonColor = '#fff',
   openMenuButtonColor = '#fff',
   accentColor = '#5227FF',
   changeMenuColorOnOpen = true,
   isFixed = false,
   closeOnClickAway = true,
+  showTrigger = true,
   onMenuOpen,
   onMenuClose
-}) => {
+}, ref) => {
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
   const panelRef = useRef(null);
@@ -31,6 +34,18 @@ export const StaggeredMenu = ({
   const textInnerRef = useRef(null);
   const textWrapRef = useRef(null);
   const [textLines, setTextLines] = useState(['Menu', 'Close']);
+
+  useImperativeHandle(ref, () => ({
+    toggle: () => {
+      toggleMenu();
+    },
+    open: () => {
+      if (!openRef.current) toggleMenu();
+    },
+    close: () => {
+      if (openRef.current) toggleMenu();
+    }
+  }));
 
   const openTlRef = useRef(null);
   const closeTweenRef = useRef(null);
@@ -337,8 +352,7 @@ export const StaggeredMenu = ({
       if (
         panelRef.current &&
         !panelRef.current.contains(event.target) &&
-        toggleBtnRef.current &&
-        !toggleBtnRef.current.contains(event.target)
+        (!toggleBtnRef.current || !toggleBtnRef.current.contains(event.target))
       ) {
         closeMenu();
       }
@@ -368,46 +382,48 @@ export const StaggeredMenu = ({
           return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c }} />);
         })()}
       </div>
-      <div className="staggered-menu-trigger-container" style={{ position: 'relative', zIndex: 50 }}>
-        <button
-          ref={toggleBtnRef}
-          className="btn-premium-inv px-8 font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95"
-          style={{
-            backgroundColor: '#0b1c30', 
-            color: '#fff', 
-            border: 'none', 
-            borderRadius: '16px',
-            padding: '12px 24px',
-            fontSize: '14px'
-          }}
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-          aria-controls="staggered-menu-panel"
-          onClick={toggleMenu}
-          type="button"
-        >
-          <span ref={iconRef} className="sm-icon" aria-hidden="true" style={{ width: '16px', height: '16px', position: 'relative' }}>
-            <span ref={plusHRef} className="sm-icon-line" style={{ width: '16px', height: '2px', backgroundColor: 'currentColor', position: 'absolute', top: '7px', left: '0' }} />
-            <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ width: '2px', height: '16px', backgroundColor: 'currentColor', position: 'absolute', top: '0', left: '7px' }} />
-          </span>
-          <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true" style={{ position: 'relative', height: '1.2em', overflow: 'hidden', display: 'inline-block', lineHeight: 1.2 }}>
-            <span ref={textInnerRef} className="sm-toggle-textInner" style={{ display: 'flex', flexDirection: 'column' }}>
-              {textLines.map((l, i) => (
-                <span className="sm-toggle-line" key={i} style={{ display: 'block', height: '1.2em' }}>
-                  {l === 'Menu' ? 'ADD' : l.toUpperCase()}
-                </span>
-              ))}
+      {showTrigger && (
+        <div className="staggered-menu-trigger-container" style={{ position: 'relative', zIndex: 50 }}>
+          <button
+            ref={toggleBtnRef}
+            className="btn-premium-inv px-8 font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: '#0b1c30',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '16px',
+              padding: '12px 24px',
+              fontSize: '14px'
+            }}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            aria-controls="staggered-menu-panel"
+            onClick={toggleMenu}
+            type="button"
+          >
+            <span ref={iconRef} className="sm-icon" aria-hidden="true" style={{ width: '16px', height: '16px', position: 'relative' }}>
+              <span ref={plusHRef} className="sm-icon-line" style={{ width: '16px', height: '2px', backgroundColor: 'currentColor', position: 'absolute', top: '7px', left: '0' }} />
+              <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ width: '2px', height: '16px', backgroundColor: 'currentColor', position: 'absolute', top: '0', left: '7px' }} />
             </span>
-          </span>
-        </button>
-      </div>
+            <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true" style={{ position: 'relative', height: '1.2em', overflow: 'hidden', display: 'inline-block', lineHeight: 1.2 }}>
+              <span ref={textInnerRef} className="sm-toggle-textInner" style={{ display: 'flex', flexDirection: 'column' }}>
+                {textLines.map((l, i) => (
+                  <span className="sm-toggle-line" key={i} style={{ display: 'block', height: '1.2em' }}>
+                    {l === 'Menu' ? 'ADD' : l.toUpperCase()}
+                  </span>
+                ))}
+              </span>
+            </span>
+          </button>
+        </div>
+      )}
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
         <div className="sm-panel-inner">
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (
               items.map((it, idx) => (
                 <li className="sm-panel-itemWrap" key={it.label + idx}>
-                  <a className="sm-panel-item" href={it.link} aria-label={it.ariaLabel} data-index={idx + 1}>
+                  <a className="sm-panel-item" href={it.link} aria-label={it.ariaLabel} data-index={idx + 1} onClick={it.onClick}>
                     <span className="sm-panel-itemLabel">{it.label}</span>
                   </a>
                 </li>
@@ -438,6 +454,7 @@ export const StaggeredMenu = ({
       </aside>
     </div>
   );
-};
+
+});
 
 export default StaggeredMenu;

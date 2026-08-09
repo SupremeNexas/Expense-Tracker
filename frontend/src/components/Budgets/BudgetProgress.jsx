@@ -1,4 +1,3 @@
-import React from 'react';
 import './BudgetProgress.css';
 
 export const BudgetProgress = ({ spent, total, color }) => {

@@ -205,16 +205,10 @@ export default function AuthPage() {
           </div>
           <button
             type="button"
-            onClick={async () => {
-              setIsLoading(true);
-              try {
-                await login({ email: 'demo@example.com', password: 'password123' });
-                showToast('Signed in as demo user!', 'success');
-                navigate('/dashboard');
-              } catch (err: any) {
-                showToast(err.message || 'Demo login failed. Try regular sign-in.', 'error');
-                setIsLoading(false);
-              }
+            onClick={() => {
+              setSkipAuth?.(true);
+              showToast('Demo mode enabled.', 'success');
+              navigate('/dashboard');
             }}
             disabled={isAnyLoading}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all duration-150 cursor-pointer text-xs font-bold uppercase tracking-wider shadow-sm active:scale-95 disabled:opacity-50"

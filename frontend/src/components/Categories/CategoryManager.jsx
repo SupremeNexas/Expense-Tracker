@@ -1,4 +1,3 @@
-import React from 'react';
 import * as Icons from 'lucide-react';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 import { EmptyState } from '../UI/EmptyState';

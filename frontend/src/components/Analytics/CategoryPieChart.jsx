@@ -1,6 +1,18 @@
-import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { EmptyState } from '../UI/EmptyState';
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="glass-card" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
+        <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{data.name}</div>
+        <div style={{ color: data.color }}>₹{data.total.toFixed(2)}</div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const CategoryPieChart = ({ data, loading }) => {
   if (loading) {
@@ -27,19 +39,6 @@ export const CategoryPieChart = ({ data, loading }) => {
 
   // Filter out categories with 0 total
   const chartData = data.filter(d => d.total > 0);
-
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="glass-card" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
-          <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{data.name}</div>
-          <div style={{ color: data.color }}>₹{data.total.toFixed(2)}</div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <ResponsiveContainer width="100%" height="100%">

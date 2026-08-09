@@ -1,4 +1,3 @@
-import React from 'react';
 import { CategoryPieChart } from './CategoryPieChart';
 import { TrendLineChart } from './TrendLineChart';
 import { BudgetComparison } from './BudgetComparison';
@@ -9,7 +8,6 @@ import './AnalyticsDashboard.css';
 export const AnalyticsDashboard = ({ summary, categoryData, trendData, budgetData, loading }) => {
   const { user } = useAppContext();
   const totalSpent = summary?.total || 0;
-  const highestCategory = summary?.byCategory?.[0] || null;
 
   return (
     <div className="analytics-dashboard">

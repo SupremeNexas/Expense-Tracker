@@ -167,10 +167,10 @@ interface FerrofluidProps {
 
 export default function Ferrofluid(props: FerrofluidProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number>();
-  const programRef = useRef<Program>();
-  const meshRef = useRef<Mesh>();
-  const rendererRef = useRef<Renderer>();
+  const rafRef = useRef<number>(undefined);
+  const programRef = useRef<Program>(undefined);
+  const meshRef = useRef<Mesh>(undefined);
+  const rendererRef = useRef<Renderer>(undefined);
   const mouseTargetRef = useRef<[number, number]>([0, 0]);
   const lastTimeRef = useRef(0);
 

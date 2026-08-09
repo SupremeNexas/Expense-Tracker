@@ -1,6 +1,28 @@
-import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { EmptyState } from '../UI/EmptyState';
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const isOverBudget = payload[0].payload.over_budget;
+    return (
+      <div className="glass-card" style={{ padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
+        <div style={{ color: 'var(--text-primary)', fontWeight: 600, marginBottom: '8px' }}>{label}</div>
+        {payload.map((entry, index) => (
+          <div key={index} style={{ color: entry.color, display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '0.875rem', marginBottom: '4px' }}>
+            <span>{entry.name}:</span>
+            <span style={{ fontWeight: 600 }}>₹{entry.value.toFixed(2)}</span>
+          </div>
+        ))}
+        {isOverBudget && (
+          <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '8px', fontWeight: 600 }}>
+            Over budget by ₹{payload[0].payload.remaining.toString().replace('-', '')}
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
+};
 
 export const BudgetComparison = ({ data, loading }) => {
   if (loading) {
@@ -25,29 +47,6 @@ export const BudgetComparison = ({ data, loading }) => {
       </div>
     );
   }
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const isOverBudget = payload[0].payload.over_budget;
-      return (
-        <div className="glass-card" style={{ padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
-          <div style={{ color: 'var(--text-primary)', fontWeight: 600, marginBottom: '8px' }}>{label}</div>
-          {payload.map((entry, index) => (
-            <div key={index} style={{ color: entry.color, display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '0.875rem', marginBottom: '4px' }}>
-              <span>{entry.name}:</span>
-              <span style={{ fontWeight: 600 }}>₹{entry.value.toFixed(2)}</span>
-            </div>
-          ))}
-          {isOverBudget && (
-            <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '8px', fontWeight: 600 }}>
-              Over budget by ₹{payload[0].payload.remaining.toString().replace('-', '')}
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div style={{ width: '100%', height: '100%', padding: '0 var(--space-md) var(--space-md) 0', minHeight: '350px' }}>

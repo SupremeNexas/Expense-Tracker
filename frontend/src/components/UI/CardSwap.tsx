@@ -59,7 +59,7 @@ const CardSwap = ({
 
   const childArr = useMemo(() => Children.toArray(children), [children]);
   const refs = useMemo(
-    () => childArr.map(() => React.createRef()),
+    () => childArr.map(() => React.createRef<HTMLElement>()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [childArr.length]
   );
@@ -67,7 +67,7 @@ const CardSwap = ({
   const order = useRef(Array.from({ length: childArr.length }, (_, i) => i));
 
   const tlRef = useRef<gsap.core.Timeline | null>(null);
-  const intervalRef = useRef<number>();
+  const intervalRef = useRef<number>(0);
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -160,19 +160,19 @@ const CardSwap = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing]);
 
-  const rendered = childArr.map((child, i) =>
-    isValidElement(child)
-      ? cloneElement(child, {
+  const rendered = childArr.map((child, i) => {
+    if (!isValidElement(child)) return child;
+    const childEl = child as React.ReactElement<any>;
+    return cloneElement(childEl, {
           key: i,
           ref: refs[i],
-          style: { width, height, ...(child.props.style ?? {}) },
+          style: { width, height, ...(childEl.props.style ?? {}) },
           onClick: (e: any) => {
-            if (typeof child.props.onClick === 'function') child.props.onClick(e);
+            if (typeof childEl.props.onClick === 'function') childEl.props.onClick(e);
             onCardClick?.(i);
           }
-        } as any)
-      : child
-  );
+        } as any);
+  });
 
   return (
     <div ref={container} className="card-swap-container" style={{ width, height }}>

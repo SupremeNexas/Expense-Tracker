@@ -6,7 +6,7 @@
 import type { FC, ReactNode, CSSProperties } from 'react';
 
 interface GlassSurfaceProps {
-  children: ReactNode;
+  children?: ReactNode;
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
@@ -15,6 +15,8 @@ interface GlassSurfaceProps {
   blur?: number;
   brightness?: number;
   opacity?: number;
+  borderWidth?: number;
+  displace?: number;
   className?: string;
   style?: CSSProperties;
 }

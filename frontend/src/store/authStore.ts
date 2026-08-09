@@ -75,22 +75,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ authLoading: true });
 
     if (localStorage.getItem('fintech_skip_auth') === 'true') {
-      // User is trapped in old fake skip_auth flow. Let's auto log them in with real demo creds.
-      try {
-        const res = await api.login({ email: 'demo@example.com', password: 'password123' });
-        setToken(res.token);
-        if (res.refreshToken) {
-          localStorage.setItem('fintech_refresh_token', res.refreshToken);
-        }
-        set({ user: res.user, authLoading: false });
-        return;
-      } catch (err) {
-        // Fallback if login fails - clear the broken state
-        localStorage.removeItem('fintech_skip_auth');
-        setToken(null);
-        set({ user: null, authLoading: false });
-        return;
-      }
+      setToken(null);
+      set({
+        user: {
+          id: 'test-user',
+          email: 'test@example.com',
+          name: 'Demo User',
+          baseCurrency: 'USD'
+        } as User,
+        authLoading: false
+      });
+      return;
     }
 
     try {

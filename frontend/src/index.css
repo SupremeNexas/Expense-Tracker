@@ -69,20 +69,25 @@ body {
     border-radius: 0.75rem;
   }
 
+  /* Subtle status accents; avoids heavy side-tab borders. */
   .status-border-left-purple {
-    border-left: 4px solid #8b5cf6 !important;
+    border-left: 1px solid rgba(139, 92, 246, 0.35) !important;
+    box-shadow: inset 3px 0 8px rgba(139, 92, 246, 0.08);
   }
 
   .status-border-left-green {
-    border-left: 4px solid #10b981 !important;
+    border-left: 1px solid rgba(16, 185, 129, 0.35) !important;
+    box-shadow: inset 3px 0 8px rgba(16, 185, 129, 0.08);
   }
 
   .status-border-left-yellow {
-    border-left: 4px solid #f59e0b !important;
+    border-left: 1px solid rgba(245, 158, 11, 0.35) !important;
+    box-shadow: inset 3px 0 8px rgba(245, 158, 11, 0.08);
   }
 
   .status-border-left-red {
-    border-left: 4px solid #ef4444 !important;
+    border-left: 1px solid rgba(239, 68, 68, 0.35) !important;
+    box-shadow: inset 3px 0 8px rgba(239, 68, 68, 0.08);
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -95,6 +100,95 @@ body {
     background-color: #cbd5e1;
     border-radius: 20px;
   }
+
+  .btn-premium,
+  .btn-premium-primary,
+  .btn-premium-secondary,
+  button:not(.specular-button):not(.toast-close) {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(16, 185, 129, 0.36);
+    background:
+      linear-gradient(135deg, rgba(22, 129, 24, 0.96), rgba(6, 95, 70, 0.96)),
+      #168118;
+    color: #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 10px 24px rgba(22, 129, 24, 0.22);
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .btn-premium::before,
+  .btn-premium-primary::before,
+  .btn-premium-secondary::before,
+  button:not(.specular-button):not(.toast-close)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+      linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.34) 32%, transparent 58%),
+      radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.28), transparent 34%);
+    opacity: 0.28;
+    transform: translateX(-28%);
+    transition: opacity 0.2s ease, transform 0.35s ease;
+  }
+
+  .btn-premium:hover,
+  .btn-premium-primary:hover,
+  .btn-premium-secondary:hover,
+  button:not(.specular-button):not(.toast-close):hover {
+    transform: translateY(-1px);
+    border-color: rgba(16, 185, 129, 0.62);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+      0 14px 30px rgba(22, 129, 24, 0.3);
+  }
+
+  .btn-premium:hover::before,
+  .btn-premium-primary:hover::before,
+  .btn-premium-secondary:hover::before,
+  button:not(.specular-button):not(.toast-close):hover::before {
+    opacity: 0.5;
+    transform: translateX(18%);
+  }
+
+  .btn-premium:active,
+  .btn-premium-primary:active,
+  .btn-premium-secondary:active,
+  button:not(.specular-button):not(.toast-close):active {
+    transform: scale(0.97);
+  }
+
+  .btn-premium-secondary,
+  button[class*="border"],
+  button[class*="bg-white"],
+  button[class*="bg-transparent"] {
+    border-color: rgba(22, 129, 24, 0.22);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(229, 238, 255, 0.68)),
+      #ffffff;
+    color: #0b1c30;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      0 8px 20px rgba(11, 28, 48, 0.08);
+  }
+
+  button:disabled,
+  button[disabled] {
+    opacity: 0.55;
+    cursor: default;
+    transform: none !important;
+  }
 }
 
 /* Lenis scroll styles */
@@ -106,4 +200,99 @@ body {
 }
 .lenis.lenis-stopped {
   overflow: hidden;
+}
+
+/* Global Specular Button Direction
+   Placed outside Tailwind layers so it overrides utility-class buttons. */
+button:not(.specular-button):not(.toast-close) {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(16, 185, 129, 0.42) !important;
+  background:
+    linear-gradient(135deg, rgba(22, 129, 24, 0.98), rgba(6, 95, 70, 0.98)),
+    #168118 !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 10px 24px rgba(22, 129, 24, 0.24) !important;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease !important;
+}
+
+button:not(.specular-button):not(.toast-close)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.36) 32%, transparent 58%),
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.32), transparent 34%);
+  opacity: 0.32;
+  transform: translateX(-28%);
+  transition: opacity 0.2s ease, transform 0.35s ease;
+}
+
+button:not(.specular-button):not(.toast-close):hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(16, 185, 129, 0.68) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 14px 30px rgba(22, 129, 24, 0.32) !important;
+}
+
+button:not(.specular-button):not(.toast-close):hover::before {
+  opacity: 0.56;
+  transform: translateX(18%);
+}
+
+button:not(.specular-button):not(.toast-close):active {
+  transform: scale(0.97) !important;
+}
+
+button:not(.specular-button):not(.toast-close):disabled,
+button:not(.specular-button):not(.toast-close)[disabled] {
+  opacity: 0.55 !important;
+  cursor: default !important;
+  transform: none !important;
+}
+
+button:not(.specular-button):not(.toast-close).btn-premium-secondary,
+button:not(.specular-button):not(.toast-close)[class*="bg-white"],
+button:not(.specular-button):not(.toast-close)[class*="bg-transparent"] {
+  border-color: rgba(22, 129, 24, 0.24) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(229, 238, 255, 0.76)),
+    #ffffff !important;
+  color: #0b1c30 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 8px 20px rgba(11, 28, 48, 0.1) !important;
+}
+
+.specular-button {
+  font-weight: 700;
+  text-transform: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 12px 28px rgba(22, 129, 24, 0.24) !important;
+}
+
+.specular-button--sm {
+  min-height: 34px;
+}
+
+.specular-button--md {
+  min-height: 42px;
+}
+
+.specular-button--lg {
+  min-height: 50px;
 }

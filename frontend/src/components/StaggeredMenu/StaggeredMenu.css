@@ -49,7 +49,7 @@
 
 .sm-toggle {
   position: relative;
-  display: inline-flex;
+  display: none !important; /* Hide default trigger */
   align-items: center;
   gap: 0.3rem;
   background: transparent;
@@ -269,19 +269,25 @@
 
 .sm-panel-item {
   position: relative;
-  color: #000;
+  color: #111827;
   font-weight: 600;
-  font-size: 3.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
-  line-height: 1;
-  letter-spacing: -2px;
-  text-transform: uppercase;
-  transition:
-    background 0.25s,
-    color 0.25s;
-  display: inline-block;
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   text-decoration: none;
-  padding-right: 1.4em;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.sm-panel-item:hover {
+  background: rgba(16, 185, 129, 0.08);
+  color: #10B981;
 }
 
 .staggered-menu-panel .sm-socials-list .sm-socials-link {

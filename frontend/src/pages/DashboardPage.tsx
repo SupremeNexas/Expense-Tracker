@@ -18,12 +18,14 @@ import {
 import Ferrofluid from '../components/UI/Ferrofluid';
 import StaggeredMenu from '../components/StaggeredMenu/StaggeredMenu';
 import ExpandableActionMenu from '../components/UI/ExpandableActionMenu';
+import SpecularButton from '../components/UI/SpecularButton';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const menuRef = React.useRef(null);
 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
@@ -34,10 +36,10 @@ export default function DashboardPage() {
   const [scanLoading, setScanLoading] = useState(false);
 
   const [quests, setQuests] = useState([
-    { id: 1, title: 'Zero Spend', reward: '150XP', progress: '1/3', completed: false },
-    { id: 2, title: 'Check In', reward: '50XP', progress: '0/1', completed: false },
-    { id: 3, title: 'Add Ledger', reward: '100XP', progress: '1/1', completed: true },
-    { id: 4, title: 'Scan Receipt', reward: '200XP', progress: '0/1', completed: false }
+    { id: 1, title: 'Zero Spend', reward: '150XP', progress: '1/3', completed: false, rewardClaimed: false },
+    { id: 2, title: 'Check In', reward: '50XP', progress: '0/1', completed: false, rewardClaimed: false },
+    { id: 3, title: 'Add Ledger', reward: '100XP', progress: '1/1', completed: true, rewardClaimed: false },
+    { id: 4, title: 'Scan Receipt', reward: '200XP', progress: '0/1', completed: false, rewardClaimed: false }
   ]);
 
   const claimQuestReward = (questId: number) => {
@@ -96,13 +98,50 @@ export default function DashboardPage() {
                 DASHBOARD
             </h1>
             </div>
-            <div className="flex items-center z-50">
-              <ExpandableActionMenu 
-                onAdd={() => navigate('/expenses')}
-                onScan={() => navigate('/copilot')}
-                addText="Add Ledger"
-                scanText="Scan Receipt"
-              />
+            <div className="flex items-center gap-3">
+              <SpecularButton
+                  size="sm"
+                  radius={14}
+                  tint="#168118"
+                  tintOpacity={0.15}
+                  blur={8}
+                  textColor="#ffffff"
+                  lineColor="#10B981"
+                  baseColor="#168118"
+                  intensity={1.2}
+                  shineSize={12}
+                  shineFade={35}
+                  thickness={1}
+                  speed={0.3}
+                  followMouse
+                  proximity={200}
+                  onClick={() => setScannerOpen(true)}
+              >
+                  <ScanLine className="w-4 h-4" strokeWidth={2.5} />
+                  SCAN
+              </SpecularButton>
+
+              <SpecularButton
+                  size="sm"
+                  radius={14}
+                  tint="#0b1c30"
+                  tintOpacity={0.9}
+                  blur={0}
+                  textColor="#ffffff"
+                  lineColor="#10B981"
+                  baseColor="#168118"
+                  intensity={1.2}
+                  shineSize={12}
+                  shineFade={35}
+                  thickness={1}
+                  speed={0.3}
+                  followMouse
+                  proximity={200}
+                  onClick={() => menuRef.current?.toggle()}
+              >
+                 <Plus className="w-4 h-4" strokeWidth={2.5} />
+                 ADD
+              </SpecularButton>
             </div>
         </div>
 
@@ -303,10 +342,29 @@ export default function DashboardPage() {
                   <p>No insights yet. Add more transactions for AI analysis.</p>
                 </div>
               )}
-              <button onClick={() => setChatOpen(true)} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#168118] text-white text-[11px] font-bold hover:bg-[#065f46] transition-colors cursor-pointer mt-2">
+              <SpecularButton
+                size="sm"
+                radius={12}
+                tint="#168118"
+                tintOpacity={0.85}
+                blur={0}
+                textColor="#ffffff"
+                lineColor="#10B981"
+                baseColor="#065f46"
+                intensity={1}
+                shineSize={10}
+                shineFade={40}
+                thickness={1}
+                speed={0.35}
+                followMouse
+                proximity={200}
+                autoAnimate={false}
+                onClick={() => setChatOpen(true)}
+                className="w-full mt-2"
+              >
                 <Bot className="w-3.5 h-3.5" />
                 Open AI Coach
-              </button>
+              </SpecularButton>
             </div>
           </div>
         </div>
@@ -323,13 +381,30 @@ export default function DashboardPage() {
                 <div className="text-[10px] font-bold text-[#168118] uppercase tracking-wider mb-1">{q.title}</div>
                 <div className="text-xs text-gray-500 font-semibold mb-1">{q.progress}</div>
                 <div className="text-[10px] text-[#168118] font-bold mb-2">Reward: {q.reward}</div>
-                {q.completed ? (
-                  <button
+                {q.completed && q.rewardClaimed ? (
+                  <span className="px-3 py-1 rounded-lg bg-[#168118]/10 text-[#168118] text-[10px] font-bold">Claimed</span>
+                ) : q.completed ? (
+                  <SpecularButton
+                    size="sm"
+                    radius={10}
+                    tint="#168118"
+                    tintOpacity={0.85}
+                    blur={0}
+                    textColor="#ffffff"
+                    lineColor="#10B981"
+                    baseColor="#065f46"
+                    intensity={1.2}
+                    shineSize={10}
+                    shineFade={35}
+                    thickness={1}
+                    speed={0.4}
+                    followMouse
+                    proximity={150}
+                    autoAnimate
                     onClick={() => claimQuestReward(q.id)}
-                    className="px-3 py-1 rounded-lg bg-[#168118] text-white text-[10px] font-bold hover:bg-[#065f46] cursor-pointer transition-colors"
                   >
                     Claim
-                  </button>
+                  </SpecularButton>
                 ) : (
                   <span className="px-3 py-1 rounded-lg bg-gray-100 text-gray-400 text-[10px] font-bold">In Progress</span>
                 )}
@@ -338,6 +413,65 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      
+      {/* Viewport-fixed StaggeredMenu triggered externally by the ADD button */}
+      <StaggeredMenu
+        ref={menuRef}
+        isFixed
+        position="right"
+        showTrigger={false}
+        items={[
+          { 
+            label: 'AI Financial Copilot', 
+            ariaLabel: 'AI Financial Copilot', 
+            link: user?.isPremium ? '/copilot' : '#',
+            onClick: (e) => { 
+                if (!user?.isPremium) {
+                    e.preventDefault();
+                    showToast('This feature is for PRO users only.', 'warning');
+                }
+            } 
+          },
+          { 
+            label: 'AI Assistant', 
+            ariaLabel: 'AI Assistant', 
+            link: user?.isPremium ? '/assistant' : '#',
+            onClick: (e) => { 
+                if (!user?.isPremium) {
+                    e.preventDefault();
+                    showToast('This feature is for PRO users only.', 'warning');
+                }
+            }
+          },
+          { 
+            label: 'Savings Goals', 
+            ariaLabel: 'Savings Goals', 
+            link: '/goals' // Free feature
+          },
+          { 
+            label: 'Add Ledger', 
+            ariaLabel: 'Add a manual transaction', 
+            link: '/expenses' // Free feature
+          },
+          { 
+            label: 'Receipt Scanner', 
+            ariaLabel: 'Analyze a receipt', 
+            link: user?.isPremium ? '/copilot' : '#',
+            onClick: (e) => { 
+                if (!user?.isPremium) {
+                    e.preventDefault();
+                    showToast('This feature is for PRO users only.', 'warning');
+                }
+            }
+          }
+        ]}
+        colors={['#10B981', '#065f46']}
+        menuButtonColor="#000"
+        openMenuButtonColor="#fff"
+        accentColor="#10B981"
+        displaySocials={false}
+        displayItemNumbering={false}
+      />
     </div>
   );
 }
