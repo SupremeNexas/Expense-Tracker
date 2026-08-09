@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { authenticate } from './src/middleware/auth';
 import { errorHandler } from './src/middleware/error';
 
@@ -9,6 +11,16 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5002;
+
+// ── Security & Hardening ──────────────────────────────────────────────────────
+app.use(helmet());
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  message: { error: 'Too many requests from this IP, please try again later.' }
+} as any);
+app.use('/api/', apiLimiter);
 
 // ── CORS — only allow our configured frontend origin ──────────────────────────
 const ALLOWED_ORIGINS = [

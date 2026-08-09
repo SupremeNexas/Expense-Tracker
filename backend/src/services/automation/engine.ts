@@ -106,9 +106,10 @@ export async function triggerAutomations(
           
           let goalId = action.goalId;
           if (!goalId) {
-            const firstGoal = await prisma.goal.findFirst({
-              where: { workspaceId, currentAmount: { lt: prisma.goal.fields.targetAmount } }
+            const allGoals = await prisma.goal.findMany({
+              where: { workspaceId }
             });
+            const firstGoal = allGoals.find(g => Number(g.currentAmount) < Number(g.targetAmount));
             goalId = firstGoal?.id;
           }
 

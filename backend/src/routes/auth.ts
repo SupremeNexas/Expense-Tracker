@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import { body } from 'express-validator';
 import { validate } from '../middleware/validation';
 import { OAuth2Client } from 'google-auth-library';
@@ -9,6 +10,15 @@ import { JWT_SECRET, authenticate, AuthenticatedRequest } from '../middleware/au
 import { seedCategoriesForUser, seedSampleDataForUser } from '../../prisma/seed';
 
 const router = Router();
+
+// ─── Brute-force protection on credential endpoints ──────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // 20 login/register attempts per 15 min per IP
+  message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+} as any);
 
 // ─── Google OAuth Client ─────────────────────────────────────────────────────
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
@@ -25,7 +35,7 @@ const generateTokens = (user: { id: string; email: string }) => {
 };
 
 // ─── POST /register ──────────────────────────────────────────────────────────
-router.post('/register', [
+router.post('/register', authLimiter, [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   passwordRules
@@ -84,7 +94,7 @@ router.post('/register', [
 });
 
 // ─── POST /login ─────────────────────────────────────────────────────────────
-router.post('/login', [
+router.post('/login', authLimiter, [
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required')
 ], validate, async (req: any, res: Response) => {
@@ -160,7 +170,7 @@ router.post('/refresh', [
 // ─── POST /google ─────────────────────────────────────────────────────────────
 // Real Google OAuth: verifies the GSI credential (ID Token) server-side
 // using google-auth-library before trusting any profile data.
-router.post('/google', [
+router.post('/google', authLimiter, [
   body('idToken').notEmpty().withMessage('Google ID token is required')
 ], validate, async (req: any, res: Response) => {
   const { idToken } = req.body;
