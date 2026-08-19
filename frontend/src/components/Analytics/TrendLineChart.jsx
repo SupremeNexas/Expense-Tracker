@@ -1,6 +1,20 @@
-import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { EmptyState } from '../UI/EmptyState';
+import { formatCurrency } from '../../utils/currency';
+import useAuthStore from '../../store/authStore';
+
+const CustomTooltip = ({ active, payload, label }) => {
+  const { user } = useAuthStore();
+  if (active && payload && payload.length) {
+    return (
+      <div className="glass-card" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '4px' }}>{label}</div>
+        <div style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>{formatCurrency(payload[0].value, user?.baseCurrency)}</div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const TrendLineChart = ({ data, loading }) => {
   if (loading) {
@@ -29,18 +43,6 @@ export const TrendLineChart = ({ data, loading }) => {
       </div>
     );
   }
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="glass-card" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '4px' }}>{label}</div>
-          <div style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>₹{payload[0].value.toFixed(2)}</div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div style={{ width: '100%', height: '100%', padding: '0 var(--space-md) var(--space-md) 0' }}>

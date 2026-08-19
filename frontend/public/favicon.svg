@@ -12,18 +12,10 @@
   <!-- Background Circle Glow -->
   <circle cx="256" cy="256" r="220" stroke="url(#logo-grad)" stroke-width="16" fill="none" opacity="0.9" filter="url(#glow)"/>
 
-  <!-- Chart Bar 1 (Shortest) -->
-  <rect x="180" y="240" width="36" height="120" rx="8" fill="url(#logo-grad)" />
-
-  <!-- Chart Bar 2 (Medium) -->
-  <rect x="238" y="190" width="36" height="170" rx="8" fill="url(#logo-grad)" />
-
-  <!-- Chart Bar 3 (Tallest) -->
-  <rect x="296" y="140" width="36" height="220" rx="8" fill="url(#logo-grad)" />
-
-  <!-- Uptrend Arrow Line -->
-  <path d="M 140 340 C 200 300, 230 320, 270 270 L 375 165" stroke="url(#logo-grad)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Arrow Head -->
-  <path d="M 320 160 L 390 150 L 380 220 Z" fill="url(#logo-grad)" stroke-linejoin="round"/>
+  <!-- Stylized F Logo inside the circle -->
+  <g fill="url(#logo-grad)">
+    <rect x="160" y="120" width="50" height="272" rx="20" />
+    <rect x="225" y="120" width="140" height="55" rx="20" />
+    <rect x="225" y="225" width="95" height="55" rx="20" />
+  </g>
 </svg>

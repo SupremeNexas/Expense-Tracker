@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /thank-you
+Disallow: /dashboard
+Disallow: /expenses
+Disallow: /categories
+Disallow: /budgets
+Disallow: /analytics
+Disallow: /subscriptions
+Disallow: /credit-cards
+Disallow: /bills
+Disallow: /groups
+Disallow: /goals
+Disallow: /copilot
+Disallow: /assistant
+Disallow: /workspace-settings
+
+Sitemap: https://finova.example.com/sitemap.xml

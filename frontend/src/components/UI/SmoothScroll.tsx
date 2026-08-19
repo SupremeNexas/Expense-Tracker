@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from 'react';
 import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 
 export function SmoothScroll({ children }: { children: ReactNode }) {
   useEffect(() => {

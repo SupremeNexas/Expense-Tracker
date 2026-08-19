@@ -1,13 +1,16 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { EmptyState } from '../UI/EmptyState';
+import { formatCurrency } from '../../utils/currency';
+import useAuthStore from '../../store/authStore';
 
 const CustomTooltip = ({ active, payload }) => {
+  const { user } = useAuthStore();
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="glass-card" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
         <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{data.name}</div>
-        <div style={{ color: data.color }}>₹{data.total.toFixed(2)}</div>
+        <div style={{ color: data.color }}>{formatCurrency(data.total, user?.baseCurrency)}</div>
       </div>
     );
   }
@@ -58,11 +61,11 @@ export const CategoryPieChart = ({ data, loading }) => {
           ))}
         </Pie>
         <Tooltip content={<CustomTooltip />} />
-        <Legend 
-          verticalAlign="bottom" 
-          height={36} 
+        <Legend
+          verticalAlign="bottom"
+          height={36}
           iconType="circle"
-          formatter={(value, entry) => <span style={{ color: 'var(--text-secondary)' }}>{value}</span>}
+          formatter={(value) => <span style={{ color: 'var(--text-secondary)' }}>{value}</span>}
         />
       </PieChart>
     </ResponsiveContainer>

@@ -20,6 +20,7 @@ declare global {
           }) => void;
           prompt: (notification?: (n: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean; isDismissedMoment: () => boolean; getDismissedReason: () => string }) => void) => void;
           disableAutoSelect: () => void;
+          renderButton: (parent: HTMLElement, options: any) => void;
         };
       };
     };
@@ -54,15 +55,20 @@ export default function AuthPage() {
       return;
     }
 
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogleCredentialResponse,
-      auto_select: false,
-      cancel_on_tap_outside: true,
-    });
+    try {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
 
-    setGoogleReady(true);
-    setGoogleError(null);
+      setGoogleReady(true);
+      setGoogleError(null);
+    } catch (err: any) {
+      console.error('[Google Auth] Init error:', err);
+      setGoogleError('Failed to initialize Google Sign-in.');
+    }
   }, []);
 
   useEffect(() => {
@@ -91,6 +97,23 @@ export default function AuthPage() {
     };
   }, [initializeGSI]);
 
+  // ── Render official Google button container ──────────────────────────────
+  useEffect(() => {
+    if (googleReady && window.google?.accounts?.id) {
+      const btnContainer = document.getElementById('google-btn-container');
+      if (btnContainer) {
+        window.google.accounts.id.renderButton(btnContainer, {
+          theme: 'outline',
+          size: 'large',
+          width: btnContainer.clientWidth || 360,
+          shape: 'rectangular',
+          text: 'continue_with',
+          logo_alignment: 'left'
+        });
+      }
+    }
+  }, [googleReady, isLogin]);
+
   // ── Handle credential response from GSI popup ────────────────────────────────
   const handleGoogleCredentialResponse = async (response: { credential: string; error?: string }) => {
     if (!response.credential) {
@@ -110,36 +133,6 @@ export default function AuthPage() {
     } finally {
       setGoogleLoading(false);
     }
-  };
-
-  // ── Trigger GSI popup ─────────────────────────────────────────────────────────
-  const handleGoogleLogin = () => {
-    if (!googleReady || !window.google?.accounts?.id) {
-      showToast('Google Sign-In is not ready yet. Please wait a moment.', 'error');
-      return;
-    }
-
-    if (!GOOGLE_CLIENT_ID) {
-      showToast('Google Sign-In is not configured. Contact the administrator.', 'error');
-      return;
-    }
-
-    setGoogleLoading(true);
-
-    window.google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed()) {
-        setGoogleLoading(false);
-        showToast('Google sign-in popup was blocked. Please allow popups for this site.', 'error');
-        return;
-      }
-
-      if (notification.isSkippedMoment() || notification.isDismissedMoment()) {
-        setGoogleLoading(false);
-        const reason = notification.getDismissedReason?.();
-        if (reason === 'credential_returned') return;
-        showToast('Google sign-in was cancelled.', 'error');
-      }
-    });
   };
 
   // ── Email/Password form ───────────────────────────────────────────────────────
@@ -198,9 +191,11 @@ export default function AuthPage() {
         className="w-full max-w-[440px] bg-white border border-[#E5E7EB] rounded-[32px] p-8 sm:p-10 shadow-[0_4px_20px_rgb(0,0,0,0.03)]"
       >
         <div className="mb-8 flex items-center justify-between">
-           <div className="w-12 h-12 rounded-full bg-[#111113] flex items-center justify-center">
-            <svg className="w-4 h-4 text-white fill-current transform rotate-45" viewBox="0 0 16 16">
-              <rect x="2" y="2" width="12" height="12" rx="1" />
+          <div className="w-12 h-12 rounded-full bg-[#111113] flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="3" width="4" height="18" rx="2" fill="currentColor" />
+              <rect x="9" y="3" width="11" height="4" rx="2" fill="currentColor" />
+              <rect x="9" y="10" width="7" height="4" rx="2" fill="currentColor" />
             </svg>
           </div>
           <button
@@ -219,7 +214,7 @@ export default function AuthPage() {
 
         <div className="mb-8">
           <h1 className="text-[28px] font-bold tracking-tight text-[#111113] mb-2 font-display">
-            {isLogin ? 'Sign in to Expense Tracker' : 'Create your account'}
+            {isLogin ? 'Sign in to Finova' : 'Create your account'}
           </h1>
           <p className="text-sm font-normal text-gray-600">
             {isLogin ? "We'll sign you in securely to your command center." : "Get started with intelligent account tracking today."}
@@ -329,14 +324,12 @@ export default function AuthPage() {
             <span className="relative px-3 bg-white text-[11px] font-bold text-gray-500 tracking-wider">OR</span>
         </div>
 
-        <button
-            id="google-signin-btn"
-            onClick={handleGoogleLogin}
-            disabled={isAnyLoading || !!googleError}
-            className="w-full h-[50px] rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 font-semibold text-sm flex items-center justify-center gap-3 transition-colors duration-150 active:scale-[0.99] disabled:opacity-50 cursor-pointer shadow-xs"
-        >
-            <span>Continue with Google</span>
-        </button>
+        <div className="w-full flex justify-center min-h-[50px] items-center">
+          <div
+            id="google-btn-container"
+            className="w-full flex justify-center [&>iframe]:!w-full [&>iframe]:!max-w-none"
+          />
+        </div>
       </motion.div>
     </div>
   );

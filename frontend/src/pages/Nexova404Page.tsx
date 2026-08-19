@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
+import usePageTitle from '../hooks/usePageTitle';
 
 function FacebookIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -57,6 +58,7 @@ function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function Nexova404Page() {
+  usePageTitle('Page Not Found');
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -88,24 +90,54 @@ export default function Nexova404Page() {
     return () => clearTimeout(t);
   };
 
-  const navLinks = ['Dashboard', 'Expenses', 'Budgets', 'Analytics', 'Goals', 'Bills'];
+  const navLinks = [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Expenses', path: '/expenses' },
+    { label: 'Budgets', path: '/budgets' },
+    { label: 'Analytics', path: '/analytics' },
+    { label: 'Goals', path: '/goals' },
+    { label: 'Bills', path: '/bills' }
+  ];
 
   const footerColumns = [
     {
       title: 'TRACK',
-      links: ['Expenses', 'Wallets', 'Credit Cards', 'Categories', 'Transactions']
+      links: [
+        { label: 'Expenses', path: '/expenses' },
+        { label: 'Wallets', path: '/expenses' },
+        { label: 'Credit Cards', path: '/credit-cards' },
+        { label: 'Categories', path: '/categories' },
+        { label: 'Transactions', path: '/expenses' }
+      ]
     },
     {
       title: 'PLAN',
-      links: ['Budgets', 'Savings Goals', 'Bills', 'Subscriptions']
+      links: [
+        { label: 'Budgets', path: '/budgets' },
+        { label: 'Savings Goals', path: '/goals' },
+        { label: 'Bills', path: '/bills' },
+        { label: 'Subscriptions', path: '/subscriptions' }
+      ]
     },
     {
       title: 'INSIGHTS',
-      links: ['Analytics', 'Reports', 'Spend Trends', 'AI Copilot', 'Assistant']
+      links: [
+        { label: 'Analytics', path: '/analytics' },
+        { label: 'Reports', path: '/analytics' },
+        { label: 'Spend Trends', path: '/analytics' },
+        { label: 'AI Copilot', path: '/copilot' },
+        { label: 'Assistant', path: '/assistant' }
+      ]
     },
     {
       title: 'ACCOUNT',
-      links: ['Dashboard', 'Workspace Settings', 'Groups', 'Security', 'Help']
+      links: [
+        { label: 'Dashboard', path: '/dashboard' },
+        { label: 'Workspace Settings', path: '/workspace-settings' },
+        { label: 'Groups', path: '/groups' },
+        { label: 'Security', path: '/workspace-settings' },
+        { label: 'Help', path: '/thank-you' }
+      ]
     }
   ];
 
@@ -169,19 +201,19 @@ export default function Nexova404Page() {
         {/* Navigation Bar */}
         <header className="flex items-center justify-between px-6 md:px-12 lg:px-16 py-5">
           <Link to="/dashboard" className="flex items-center gap-3">
-            <img src="/favicon.svg" alt="Expense Tracker" className="w-8 h-8" />
-            <span className="text-white text-xl font-bold tracking-wider font-sans">Expense Tracker</span>
+            <img src="/favicon.svg" alt="Finova" className="w-8 h-8" />
+            <span className="text-white text-xl font-bold tracking-wider font-sans">Finova</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">
             {navLinks.map(link => (
-              <a 
-                key={link} 
-                href="#" 
+              <Link
+                key={link.label}
+                to={link.path}
                 className="text-white/80 hover:text-white text-sm tracking-wide transition-colors duration-200"
               >
-                {link}
-              </a>
+                {link.label}
+              </Link>
             ))}
           </nav>
 
@@ -232,16 +264,17 @@ export default function Nexova404Page() {
                 {navLinks.map((link, index) => {
                   const delay = menuVisible ? `${350 + (index * 50)}ms` : '0ms';
                   return (
-                    <a 
-                      key={link} 
-                      href="#" 
+                    <Link
+                      key={link.label}
+                      to={link.path}
+                      onClick={closeMenu}
                       style={{ transitionDelay: delay }}
                       className={`text-lg sm:text-xl font-light tracking-[0.08em] text-white/80 hover:text-white transition-all duration-400 ease-out py-2 block
                         ${menuVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}
                       `}
                     >
-                      {link}
-                    </a>
+                      {link.label}
+                    </Link>
                   );
                 })}
 
@@ -294,10 +327,10 @@ export default function Nexova404Page() {
                 </h4>
                 <ul className="space-y-2 sm:space-y-2.5">
                   {col.links.map(link => (
-                    <li key={link}>
-                      <a href="#" className="text-white/50 hover:text-white/80 text-[10px] sm:text-xs transition-colors duration-200">
-                        {link}
-                      </a>
+                    <li key={link.label}>
+                      <Link to={link.path} className="text-white/50 hover:text-white/80 text-[10px] sm:text-xs transition-colors duration-200">
+                        {link.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>

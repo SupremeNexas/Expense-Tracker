@@ -1,8 +1,18 @@
 export interface User {
   id: string;
   name: string;
+  displayName?: string;
   email: string;
   baseCurrency: string;
+  avatar?: string;
+  authProvider: string;
+  country?: string;
+  timezone?: string;
+  monthlyIncome?: string;
+  preferredGoal?: string;
+  shortTermGoal?: string;
+  longTermGoal?: string;
+  onboardingComplete: boolean;
   createdAt: string;
   isPremium?: boolean;
   settings?: UserSettings;

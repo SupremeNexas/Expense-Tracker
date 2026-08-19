@@ -2,8 +2,11 @@ import { format } from 'date-fns';
 import * as Icons from 'lucide-react';
 import { EmptyState } from '../UI/EmptyState';
 import './RecentExpenses.css';
+import { formatCurrency } from '../../utils/currency';
+import { useAuthStore } from '../../store/authStore';
 
 export const RecentExpenses = ({ expenses, loading }) => {
+  const { user } = useAuthStore();
   if (loading) {
     return (
       <div className="recent-expenses glass-card">
@@ -26,11 +29,11 @@ export const RecentExpenses = ({ expenses, loading }) => {
   return (
     <div className="recent-expenses glass-card">
       <h3 className="section-title">Recent Expenses</h3>
-      
+
       {expenses.length === 0 ? (
-        <EmptyState 
-          iconName="Receipt" 
-          title="No recent expenses" 
+        <EmptyState
+          iconName="Receipt"
+          title="No recent expenses"
           description="You haven't added any expenses yet."
         />
       ) : (
@@ -39,8 +42,8 @@ export const RecentExpenses = ({ expenses, loading }) => {
             const Icon = Icons[expense.category_icon] || Icons.Tag;
             return (
               <div key={expense.id} className="expense-item-mini">
-                <div 
-                  className="expense-icon" 
+                <div
+                  className="expense-icon"
                   style={{ backgroundColor: `${expense.category_color}20`, color: expense.category_color }}
                 >
                   <Icon size={18} />
@@ -53,7 +56,7 @@ export const RecentExpenses = ({ expenses, loading }) => {
                   </div>
                 </div>
                 <div className="expense-amount">
-                  ₹{expense.amount.toFixed(2)}
+                  {formatCurrency(expense.amount, user?.baseCurrency)}
                 </div>
               </div>
             );

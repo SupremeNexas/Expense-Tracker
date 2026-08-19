@@ -22,8 +22,21 @@ import {
   getCategorizePrompt
 } from '../services/ai/prompts';
 
+import rateLimit from 'express-rate-limit';
+
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Rate limit AI access to prevent API abuse/cost spikes
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 requests per 15 minutes
+  message: { error: 'Too many queries to the AI Assistant. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+} as any);
+
+router.use(aiLimiter);
 
 // In-memory cache to save remote token consumption
 const cache: Record<string, { data: any; expiry: number }> = {};

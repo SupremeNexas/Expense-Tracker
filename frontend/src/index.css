@@ -104,20 +104,17 @@ body {
   .btn-premium,
   .btn-premium-primary,
   .btn-premium-secondary,
-  button:not(.specular-button):not(.toast-close) {
+  .specular-button-flat {
     position: relative;
     isolation: isolate;
     overflow: hidden;
     border-radius: 14px;
-    border: 1px solid rgba(16, 185, 129, 0.36);
-    background:
-      linear-gradient(135deg, rgba(22, 129, 24, 0.96), rgba(6, 95, 70, 0.96)),
-      #168118;
-    color: #ffffff;
+    border: 1px solid rgba(17, 20, 17, 0.16);
+    background: #fdf1e1;
+    color: #111411;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-      0 10px 24px rgba(22, 129, 24, 0.22);
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 8px 20px rgba(11, 28, 48, 0.06);
     transition:
       transform 0.15s ease,
       box-shadow 0.2s ease,
@@ -128,7 +125,7 @@ body {
   .btn-premium::before,
   .btn-premium-primary::before,
   .btn-premium-secondary::before,
-  button:not(.specular-button):not(.toast-close)::before {
+  .specular-button-flat::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -145,7 +142,7 @@ body {
   .btn-premium:hover,
   .btn-premium-primary:hover,
   .btn-premium-secondary:hover,
-  button:not(.specular-button):not(.toast-close):hover {
+  .specular-button-flat:hover {
     transform: translateY(-1px);
     border-color: rgba(16, 185, 129, 0.62);
     box-shadow:
@@ -157,7 +154,7 @@ body {
   .btn-premium:hover::before,
   .btn-premium-primary:hover::before,
   .btn-premium-secondary:hover::before,
-  button:not(.specular-button):not(.toast-close):hover::before {
+  .specular-button-flat:hover::before {
     opacity: 0.5;
     transform: translateX(18%);
   }
@@ -165,14 +162,14 @@ body {
   .btn-premium:active,
   .btn-premium-primary:active,
   .btn-premium-secondary:active,
-  button:not(.specular-button):not(.toast-close):active {
+  .specular-button-flat:active {
     transform: scale(0.97);
   }
 
   .btn-premium-secondary,
-  button[class*="border"],
-  button[class*="bg-white"],
-  button[class*="bg-transparent"] {
+  .specular-button-flat[class*="border"],
+  .specular-button-flat[class*="bg-white"],
+  .specular-button-flat[class*="bg-transparent"] {
     border-color: rgba(22, 129, 24, 0.22);
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(229, 238, 255, 0.68)),
@@ -204,85 +201,71 @@ body {
 
 /* Global Specular Button Direction
    Placed outside Tailwind layers so it overrides utility-class buttons. */
-button:not(.specular-button):not(.toast-close) {
+.specular-button-flat,
+.btn-premium,
+.btn-premium-primary {
   position: relative !important;
-  isolation: isolate !important;
-  overflow: hidden !important;
   border-radius: 14px !important;
-  border: 1px solid rgba(16, 185, 129, 0.42) !important;
-  background:
-    linear-gradient(135deg, rgba(22, 129, 24, 0.98), rgba(6, 95, 70, 0.98)),
-    #168118 !important;
-  color: #ffffff !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 10px 24px rgba(22, 129, 24, 0.24) !important;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    background 0.2s ease !important;
+  border: 1px solid rgba(17, 20, 17, 0.16) !important;
+  background: #fdf1e1 !important;
+  color: #111411 !important;
+  box-shadow: none !important;
+  transition: all 0.15s ease !important;
 }
 
-button:not(.specular-button):not(.toast-close)::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background:
-    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.36) 32%, transparent 58%),
-    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.32), transparent 34%);
-  opacity: 0.32;
-  transform: translateX(-28%);
-  transition: opacity 0.2s ease, transform 0.35s ease;
+.specular-button-flat::before,
+.btn-premium::before,
+.btn-premium-primary::before {
+  content: none !important;
 }
 
-button:not(.specular-button):not(.toast-close):hover {
+.specular-button-flat:hover,
+.btn-premium:hover,
+.btn-premium-primary:hover {
   transform: translateY(-1px) !important;
-  border-color: rgba(16, 185, 129, 0.68) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 14px 30px rgba(22, 129, 24, 0.32) !important;
+  border-color: rgba(17, 20, 17, 0.35) !important;
+  background: #fff8f0 !important;
+  box-shadow: none !important;
 }
 
-button:not(.specular-button):not(.toast-close):hover::before {
-  opacity: 0.56;
-  transform: translateX(18%);
+.specular-button-flat:hover::before,
+.btn-premium:hover::before,
+.btn-premium-primary:hover::before {
+  content: none !important;
 }
 
-button:not(.specular-button):not(.toast-close):active {
+.specular-button-flat:active,
+.btn-premium:active,
+.btn-premium-primary:active {
   transform: scale(0.97) !important;
 }
 
-button:not(.specular-button):not(.toast-close):disabled,
-button:not(.specular-button):not(.toast-close)[disabled] {
+.specular-button-flat:disabled,
+.specular-button-flat[disabled],
+.btn-premium:disabled,
+.btn-premium[disabled],
+.btn-premium-primary:disabled,
+.btn-premium-primary[disabled] {
   opacity: 0.55 !important;
   cursor: default !important;
   transform: none !important;
 }
 
-button:not(.specular-button):not(.toast-close).btn-premium-secondary,
-button:not(.specular-button):not(.toast-close)[class*="bg-white"],
-button:not(.specular-button):not(.toast-close)[class*="bg-transparent"] {
-  border-color: rgba(22, 129, 24, 0.24) !important;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(229, 238, 255, 0.76)),
-    #ffffff !important;
+.btn-premium-secondary,
+.specular-button-flat[class*="bg-white"],
+.specular-button-flat[class*="bg-transparent"],
+.btn-premium[class*="bg-white"],
+.btn-premium[class*="bg-transparent"] {
+  border-color: rgba(17, 20, 17, 0.12) !important;
+  background: transparent !important;
   color: #0b1c30 !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 8px 20px rgba(11, 28, 48, 0.1) !important;
+  box-shadow: none !important;
 }
 
 .specular-button {
   font-weight: 700;
   text-transform: none;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 12px 28px rgba(22, 129, 24, 0.24) !important;
+  box-shadow: none !important;
 }
 
 .specular-button--sm {

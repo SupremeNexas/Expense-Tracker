@@ -73,6 +73,7 @@ export const api = {
   register: (data: any) => request('/auth/register', { method: 'POST', body: data }),
   googleLogin: (idToken: string) => request('/auth/google', { method: 'POST', body: { idToken } }),
   getMe: () => request('/auth/me'),
+  updateProfile: (data: any) => request('/auth/profile', { method: 'PUT', body: data }),
   updateCurrency: (currency: string) => request('/auth/currency', { method: 'PUT', body: { currency } }),
 
   // Expenses

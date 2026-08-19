@@ -7,7 +7,63 @@
     <link href="https://db.onlinewebfonts.com/c/e66905e07608167a84e6ad52f638c3c6?family=Helvetica+Now+Var" rel="stylesheet">
     <!-- Google Identity Services — required for Google Sign-In -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <title>Expense Tracker</title>
+
+    <!-- Meta Descriptions and Keywords (SEO) -->
+    <meta name="description" content="Finova - Keep track of your budgets, expenses, credit cards, bills, and subscriptions with AI assistance and shared ledgers." />
+    <meta name="keywords" content="finova, budgeting, personal finance, ledger, double-entry, AI receipt scanner, split bills" />
+    <meta name="author" content="Antigravity Devs" />
+
+    <!-- Open Graph / Facebook Social Share Cards -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://finova.example.com/" />
+    <meta property="og:title" content="Finova - Unified Financial Ledger" />
+    <meta property="og:description" content="Manage your budgets, cards, and recurring bills with secure statement parsing." />
+    <meta property="og:image" content="https://finova.example.com/favicon.png" />
+
+    <!-- Twitter Social Share Cards -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://finova.example.com/" />
+    <meta property="twitter:title" content="Finova - Unified Financial Ledger" />
+    <meta property="twitter:description" content="Manage your budgets, cards, and recurring bills with secure statement parsing." />
+    <meta property="twitter:image" content="https://finova.example.com/favicon.png" />
+
+    <!-- Organization Local Business Structured Schema (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FinancialService",
+      "name": "Finova HQ",
+      "image": "https://finova.example.com/favicon.png",
+      "@id": "https://finova.example.com/#localbusiness",
+      "url": "https://finova.example.com",
+      "telephone": "+1-415-555-0199",
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "548 Market St, Suite 9081",
+        "addressLocality": "San Francisco",
+        "addressRegion": "CA",
+        "postalCode": "94104",
+        "addressCountry": "US"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 37.7897,
+        "longitude": -122.4014
+      }
+    }
+    </script>
+
+    <!-- Google Analytics tracking script setup -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+
+    <title>Finova</title>
   </head>
   <body>
     <div id="root"></div>

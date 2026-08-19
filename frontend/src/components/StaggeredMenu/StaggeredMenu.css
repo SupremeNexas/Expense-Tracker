@@ -16,6 +16,19 @@
   overflow: hidden;
 }
 
+.staggered-menu-wrapper.fixed-wrapper .staggered-menu-trigger-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  pointer-events: auto;
+  z-index: 50;
+}
+
+.staggered-menu-wrapper.fixed-wrapper[data-position='left'] .staggered-menu-trigger-container {
+  right: auto;
+  left: 2rem;
+}
+
 .staggered-menu-header {
   position: absolute;
   top: 0;
@@ -337,26 +350,97 @@
   opacity: var(--sm-num-opacity, 0);
 }
 
+/* ── Tablet (≤1024px) ────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .staggered-menu-panel {
-    width: 100%;
-    left: 0;
+    width: 70vw;
+    min-width: 280px;
+    left: auto;
     right: 0;
+  }
+
+  .sm-prelayers {
+    width: 70vw;
+    min-width: 280px;
   }
 
   .staggered-menu-wrapper[data-open] .sm-logo-img {
     filter: invert(100%);
   }
+
+  .staggered-menu-wrapper.fixed-wrapper .staggered-menu-trigger-container {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
 }
 
+/* ── Mobile (≤640px) — Android phones, iPhone SE → iPhone 15 ─────── */
 @media (max-width: 640px) {
   .staggered-menu-panel {
     width: 100%;
     left: 0;
     right: 0;
+    padding: 5em 1.25rem 1.5rem 1.25rem;
+  }
+
+  .sm-prelayers {
+    width: 100%;
   }
 
   .staggered-menu-wrapper[data-open] .sm-logo-img {
     filter: invert(100%);
+  }
+
+  .staggered-menu-wrapper.fixed-wrapper .staggered-menu-trigger-container {
+    bottom: 1.25rem;
+    right: 1.25rem;
+  }
+
+  .sm-panel-item {
+    font-size: 1.1rem;
+    padding: 8px 10px;
+  }
+
+  .sm-panel-list[data-numbering] .sm-panel-item::after {
+    font-size: 14px;
+    right: 1.5em;
+  }
+}
+
+/* ── Small phones (≤375px) — iPhone SE, Galaxy S series compact ──── */
+@media (max-width: 375px) {
+  .staggered-menu-panel {
+    padding: 4.5em 1rem 1rem 1rem;
+  }
+
+  .staggered-menu-wrapper.fixed-wrapper .staggered-menu-trigger-container {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .sm-panel-item {
+    font-size: 1rem;
+    padding: 6px 8px;
+  }
+}
+
+/* ── Landscape phones — prevent content overflow in short viewports ─ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .staggered-menu-panel {
+    padding-top: 3em;
+  }
+
+  .staggered-menu-wrapper.fixed-wrapper .staggered-menu-trigger-container {
+    bottom: 0.75rem;
+    right: 1rem;
+  }
+
+  .sm-panel-item {
+    padding: 6px 10px;
+    font-size: 1rem;
+  }
+
+  .sm-panel-list {
+    gap: 0.25rem;
   }
 }

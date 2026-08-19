@@ -14,6 +14,7 @@ interface AuthState {
   googleLogin: (idToken: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  updateProfile: (data: any) => Promise<void>;
   updateCurrency: (currency: string) => Promise<void>;
 }
 
@@ -25,7 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSkipAuth: (skip: boolean) => {
     if (skip) {
       localStorage.setItem('fintech_skip_auth', 'true');
-      set({ user: { id: 'test-user', email: 'test@example.com', name: 'Demo User', baseCurrency: 'USD' } as User });
+      set({ user: { id: 'test-user', email: 'test@example.com', name: 'Demo User', baseCurrency: 'USD', onboardingComplete: true } as User });
     } else {
       localStorage.removeItem('fintech_skip_auth');
       set({ user: null });
@@ -81,7 +82,8 @@ export const useAuthStore = create<AuthState>((set) => ({
           id: 'test-user',
           email: 'test@example.com',
           name: 'Demo User',
-          baseCurrency: 'USD'
+          baseCurrency: 'USD',
+          onboardingComplete: true
         } as User,
         authLoading: false
       });
@@ -123,6 +125,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       setToken(null);
       set({ user: null, authLoading: false });
     }
+  },
+
+  updateProfile: async (data: any) => {
+    const res = await api.updateProfile(data);
+    set({ user: res.user });
   },
 
   updateCurrency: async (currency) => {

@@ -21,7 +21,11 @@ const GoalsPage         = React.lazy(() => import('./pages/GoalsPage'));
 const CopilotPage       = React.lazy(() => import('./pages/CopilotPage'));
 const AIAssistantPage   = React.lazy(() => import('./pages/AIAssistantPage'));
 const WorkspaceSettings = React.lazy(() => import('./pages/WorkspaceSettings'));
+const ProfileSetupPage  = React.lazy(() => import('./pages/ProfileSetupPage'));
+const ProfilePage       = React.lazy(() => import('./pages/ProfilePage'));
 const Nexova404Page     = React.lazy(() => import('./pages/Nexova404Page'));
+const ThankYouPage      = React.lazy(() => import('./pages/ThankYouPage'));
+const PrivacyPage       = React.lazy(() => import('./pages/PrivacyPage'));
 
 /** Full-screen spinner shown while a lazy page chunk loads */
 function PageLoader() {
@@ -32,9 +36,9 @@ function PageLoader() {
   );
 }
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const OnboardingProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, authLoading } = useAuthStore();
-  
+
   if (authLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#0C0C0C]">
@@ -42,9 +46,35 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  
+
   if (!user) return <Navigate to="/auth" />;
-  
+
+  // If onboarding is already finished, go straight to dashboard
+  if (user.onboardingComplete) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, authLoading } = useAuthStore();
+
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#0C0C0C]">
+        <div className="animate-pulse text-sm text-gray-500 font-medium">Loading Workspace...</div>
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/auth" />;
+
+  // Force onboarding setup first
+  if (!user.onboardingComplete) {
+    return <Navigate to="/profile-setup" replace />;
+  }
+
   return <Layout>{children}</Layout>;
 };
 
@@ -67,11 +97,18 @@ function AppRoutes() {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* SaaS Landing Page is public at root */}
-        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         
         {/* Auth page */}
-        <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage />} />
-        
+        <Route path="/auth" element={<AuthPage />} />
+
+        {/* First-Time Profile Onboarding */}
+        <Route path="/profile-setup" element={
+          <OnboardingProtectedRoute>
+            <ProfileSetupPage />
+          </OnboardingProtectedRoute>
+        } />
+
         {/* Protected Dashboard and sub-views */}
         <Route path="/dashboard"          element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/expenses"           element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
@@ -86,6 +123,11 @@ function AppRoutes() {
         <Route path="/copilot"            element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
         <Route path="/assistant"          element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
         <Route path="/workspace-settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
+        <Route path="/profile"            element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+        {/* Privacy & Legal */}
+        <Route path="/privacy"            element={<PrivacyPage />} />
+        <Route path="/thank-you"          element={<ThankYouPage />} />
 
         {/* 404 */}
         <Route path="/404" element={<Nexova404Page />} />

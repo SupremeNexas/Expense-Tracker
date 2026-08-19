@@ -123,7 +123,7 @@ ensureDefaultWorkspaces().then(() => {
   startSchedulerJobs(24 * 60 * 60 * 1000);
 
   app.listen(PORT, () => {
-    console.log(`\n🚀 Fintech Expense Tracker API running at http://localhost:${PORT}`);
+    console.log(`\n🚀 Fintech Finova API (Hot-Reloaded) running at http://localhost:${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health\n`);
   });
 });

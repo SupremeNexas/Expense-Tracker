@@ -27,7 +27,18 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f8f9ff]">
+    <div className="min-h-screen flex bg-transparent relative">
+      {/* Background Graphic matching Landing page */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <img
+          src="https://raft-blast-61784561.figma.site/_assets/v11/16b5007d9c93971e26ffe4e0e3e37946f6bd538c.png"
+          alt="Workspace backdrop sky canvas"
+          className="w-full h-full object-cover opacity-60 scale-105"
+        />
+        {/* Soft overlay mask for contrast */}
+        <div className="absolute inset-0 bg-[#f8f9ff]/60" />
+      </div>
+
       {/* Sidebar navigation */}
       <Sidebar
         mobileOpen={mobileOpen}
@@ -38,7 +49,7 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Main layout context */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300
+        className={`flex-1 flex flex-col transition-all duration-300 relative z-10
           ${collapsed ? 'md:pl-16' : 'md:pl-64'}
         `}
       >

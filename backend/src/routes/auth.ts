@@ -309,16 +309,99 @@ router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response)
     res.json({
       id: user.id,
       name: user.name,
+      displayName: user.displayName,
       email: user.email,
       avatar: user.avatar,
       baseCurrency: user.baseCurrency,
       authProvider: user.authProvider,
+      country: user.country,
+      timezone: user.timezone,
+      monthlyIncome: user.monthlyIncome,
+      preferredGoal: user.preferredGoal,
+      shortTermGoal: user.shortTermGoal,
+      longTermGoal: user.longTermGoal,
+      onboardingComplete: user.onboardingComplete,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       settings: user.settings
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+// ─── PUT /profile ─────────────────────────────────────────────────────────────
+router.put('/profile', authenticate, [
+  body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('displayName').trim().notEmpty().withMessage('Preferred display name is required'),
+], validate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const {
+      name,
+      displayName,
+      avatar,
+      baseCurrency,
+      country,
+      timezone,
+      monthlyIncome,
+      preferredGoal,
+      shortTermGoal,
+      longTermGoal,
+      onboardingComplete
+    } = req.body;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name || undefined,
+        displayName: displayName,
+        avatar: avatar || undefined,
+        baseCurrency: baseCurrency || undefined,
+        country: country || null,
+        timezone: timezone || null,
+        monthlyIncome: monthlyIncome || null,
+        preferredGoal: preferredGoal || null,
+        shortTermGoal: shortTermGoal || null,
+        longTermGoal: longTermGoal || null,
+        onboardingComplete: onboardingComplete !== undefined ? onboardingComplete : undefined,
+      },
+      include: { settings: true }
+    });
+
+    // Mirror in settings table too for base currency consistency
+    if (baseCurrency) {
+      await prisma.settings.upsert({
+        where: { userId: req.user.id },
+        update: { currency: baseCurrency },
+        create: { userId: req.user.id, currency: baseCurrency }
+      });
+    }
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        displayName: updatedUser.displayName,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        baseCurrency: updatedUser.baseCurrency,
+        authProvider: updatedUser.authProvider,
+        country: updatedUser.country,
+        timezone: updatedUser.timezone,
+        monthlyIncome: updatedUser.monthlyIncome,
+        preferredGoal: updatedUser.preferredGoal,
+        shortTermGoal: updatedUser.shortTermGoal,
+        longTermGoal: updatedUser.longTermGoal,
+        onboardingComplete: updatedUser.onboardingComplete,
+        settings: updatedUser.settings
+      }
+    });
+  } catch (err) {
+    console.error('[Profile Update] Error:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

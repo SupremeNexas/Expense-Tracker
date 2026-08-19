@@ -1,11 +1,12 @@
 {
-  "name": "expense-tracker-backend",
+  "name": "finova-backend",
   "version": "1.0.0",
-  "description": "Expense Tracker REST API with Express and SQLite",
+  "description": "Finova REST API with Express and SQLite",
   "main": "server.ts",
   "scripts": {
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
+    "build": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts"

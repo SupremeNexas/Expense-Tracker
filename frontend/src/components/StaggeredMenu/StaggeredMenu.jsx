@@ -196,7 +196,7 @@ export const StaggeredMenu = React.forwardRef(({
 
     openTlRef.current = tl;
     return tl;
-  }, []);
+  }, [position]);
 
   const playOpen = useCallback(() => {
     if (busyRef.current) return;
@@ -383,7 +383,7 @@ export const StaggeredMenu = React.forwardRef(({
         })()}
       </div>
       {showTrigger && (
-        <div className="staggered-menu-trigger-container" style={{ position: 'relative', zIndex: 50 }}>
+        <div className="staggered-menu-trigger-container">
           <button
             ref={toggleBtnRef}
             className="btn-premium-inv px-8 font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95"

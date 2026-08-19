@@ -1,0 +1,57 @@
+{
+  "screens": [
+    {
+      "id": "screen-msx3poos-0",
+      "title": "Home",
+      "kind": "desktop",
+      "routePath": "/",
+      "position": {
+        "x": 80,
+        "y": 60
+      },
+      "size": {
+        "width": 640,
+        "height": 430
+      },
+      "screenVersion": 1
+    }
+  ],
+  "chatBoxes": [
+    {
+      "ownerUserId": "e0290d2b-0163-4a35-b687-3bc867520e47",
+      "ownerDeviceId": "c8459722-f1e7-4dfd-8a19-6ed227f7f34f",
+      "ownerName": "gamingr3hab",
+      "id": "chat-msx3poos-1",
+      "title": "Chat",
+      "harness": "codex",
+      "position": {
+        "x": 80,
+        "y": 570
+      },
+      "size": {
+        "width": 380,
+        "height": 420
+      },
+      "messages": [],
+      "activeScreenId": "screen-msx3poos-0",
+      "agentName": "Apollo"
+    }
+  ],
+  "stickies": [],
+  "analytics": [],
+  "experiments": [],
+  "terminals": [],
+  "connections": [
+    {
+      "id": "conn-msx3poos-2",
+      "source": "chat-msx3poos-1",
+      "target": "screen-msx3poos-0"
+    }
+  ],
+  "viewport": {
+    "x": 52.39577992730307,
+    "y": -282.0703060263868,
+    "zoom": 0.8643205784623873
+  },
+  "busCanvasId": "6c1abb99-10ee-4eb0-8446-aed0f2145b67"
+}

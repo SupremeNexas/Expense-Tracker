@@ -24,6 +24,16 @@ model User {
   authProvider         String                 @default("email") @map("auth_provider") // email | google
   lastLogin            DateTime?              @map("last_login")
 
+  // Onboarding & Profile details
+  displayName          String?                @map("display_name")
+  country              String?
+  timezone             String?
+  monthlyIncome        String?                @map("monthly_income")
+  preferredGoal        String?                @map("preferred_goal")
+  shortTermGoal        String?                @map("short_term_goal")
+  longTermGoal         String?                @map("long_term_goal")
+  onboardingComplete   Boolean                @default(false) @map("onboarding_complete")
+
   // Relations
   settings             Settings?
   wallets              Wallet[]

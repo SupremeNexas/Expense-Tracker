@@ -1,754 +1,806 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowRight, Play, CheckCircle2, ChevronDown,
-  Wallet, PieChart, Sparkles, TrendingUp, CreditCard,
-  ScanLine, HelpCircle, Receipt, PiggyBank, Target, RefreshCcw, FileSpreadsheet
-} from 'lucide-react';
-import BorderGlow from '../components/UI/BorderGlow';
-import SpotlightCard from '../components/UI/SpotlightCard';
-import GlassSurface from '../components/UI/GlassSurface';
-import CircularGallery from '../components/UI/CircularGallery';
+import useAuthStore from '../store/authStore';
+import { useToast } from '../components/UI/Toast';
+import usePageTitle from '../hooks/usePageTitle';
+import './LandingPage.css';
 
+// Card list for the top row
+const SIGHTS_DATA = [
+  {
+    ariaLabel: 'Open Main Wallet card',
+    kicker: 'Primary Account',
+    h3: 'Main Wallet',
+    p: 'High-yield savings, checking, and cash balances aggregated automatically.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230438_d526b8b6-8a2e-4e3b-9993-3908acae03a7.png'
+  },
+  {
+    ariaLabel: 'Open Category Limits card',
+    kicker: 'Smart Categorization',
+    h3: 'Category Limits',
+    p: 'Track grocery runs, subscription cycles, dining out, and shopping trends.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230442_140bc25b-b165-4249-904a-f708bff6970e.png'
+  },
+  {
+    ariaLabel: 'Open Savings Goals card',
+    kicker: 'Savings Goals',
+    h3: 'Goa Vacation',
+    p: 'High-fidelity savings goals, milestone contributions, and automated deposits.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230448_825949c9-ccdb-4857-b4a6-e349eccc9010.png'
+  },
+  {
+    ariaLabel: 'Open Credit Cards card',
+    kicker: 'Credit Cards',
+    h3: 'Billing Cycles',
+    p: 'Avoid interest premiums with automated statement parsing and due date reminders.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230438_d526b8b6-8a2e-4e3b-9993-3908acae03a7.png'
+  },
+  {
+    ariaLabel: 'Open Audit Logs card',
+    kicker: 'Audit Logs',
+    h3: 'Enterprise Audit',
+    p: 'Immutable traces for every wallet transaction, budget change, and member action.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230442_140bc25b-b165-4249-904a-f708bff6970e.png'
+  }
+];
 
-const DEMO_PANEL_GLOW_COLORS = ['#0f766e', '#22d3ee', '#34d399'];
-
-interface FeatureCardProps {
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  gradient: string;
-  delay: number;
-}
-
-function FeatureCard({ title, description, icon: Icon, gradient, delay }: FeatureCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: "easeOut", delay }}
-      className="relative w-full h-[220px]"
-    >
-      <SpotlightCard className="h-full rounded-[30px] p-0 overflow-hidden border-2 border-emerald-500 shadow-xl transition-all duration-500 group-hover:scale-[1.02]" spotlightColor="rgba(255, 255, 255, 0.15)">
-        {/* Intense colored aura right behind the glass */}
-        <div
-          className="absolute inset-0 opacity-50 rounded-[30px] pointer-events-none transition-all duration-700 group-hover:opacity-95"
-          style={{
-            background: gradient,
-            filter: "blur(35px)",
-            transform: "scale(0.95)"
-          }}
-        />
-
-        {/* The Apple Liquid Glass Slab */}
-        <GlassSurface
-          width="100%"
-          height="100%"
-          borderRadius={30}
-          backgroundOpacity={0.72}
-          saturation={1.8}
-          blur={22}
-          opacity={0.9}
-          brightness={30}
-          borderWidth={0}
-          className="relative w-full h-full"
-          style={{ minHeight: '220px' }}
-        >
-          <div className="relative h-full flex flex-col justify-between p-6 w-full">
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-[30px]" />
-            {/* Apple floating glass button/icon container */}
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 8px 16px rgba(0,0,0,0.1)'
-              }}
-            >
-              <Icon size={20} className="text-white drop-shadow-md" />
-            </div>
-
-            {/* Text bottom alignment matches image precisely */}
-            <div className="mt-auto z-10">
-              <h3 className="text-white font-bold text-lg mb-1 tracking-tight drop-shadow-md">{title}</h3>
-              <p className="text-gray-200/90 text-xs leading-relaxed font-semibold drop-shadow-sm line-clamp-3">{description}</p>
-            </div>
-          </div>
-        </GlassSurface>
-      </SpotlightCard>
-    </motion.div>
-  );
-}
+// Card list for the bottom row (scrolling in opposite direction)
+const SIGHTS_DATA_2 = [
+  {
+    ariaLabel: 'Open Subscriptions card',
+    kicker: 'Recurring Obligation',
+    h3: 'Subscriptions',
+    p: 'Track auto-billing updates and identify unused or double-charged services.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230438_d526b8b6-8a2e-4e3b-9993-3908acae03a7.png'
+  },
+  {
+    ariaLabel: 'Open Visual Reports card',
+    kicker: 'Flexible Exports',
+    h3: 'Visual Audit',
+    p: 'Generate detailed sheets and export transaction logs as CSV, Excel, or PDF.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230442_140bc25b-b165-4249-904a-f708bff6970e.png'
+  },
+  {
+    ariaLabel: 'Open Offline Mode card',
+    kicker: 'Native Sandbox',
+    h3: 'Offline Mock',
+    p: 'Experiment with transactions, charts, and limits immediately without databases.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230448_825949c9-ccdb-4857-b4a6-e349eccc9010.png'
+  },
+  {
+    ariaLabel: 'Open Financial Coach card',
+    kicker: 'AI Insights',
+    h3: 'Active Advisory',
+    p: 'Get personalized insights on monthly budget overflows and saving priorities.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230438_d526b8b6-8a2e-4e3b-9993-3908acae03a7.png'
+  },
+  {
+    ariaLabel: 'Open Shared Groups card',
+    kicker: 'Group Splits',
+    h3: 'Shared Ledgers',
+    p: 'Settle shared debts or split collaborative group expenses with zero overhead.',
+    pin: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260730_230442_140bc25b-b165-4249-904a-f708bff6970e.png'
+  }
+];
 
 export default function LandingPage() {
+  usePageTitle('Unified Financial Ledger');
   const navigate = useNavigate();
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const { user } = useAuthStore();
+  const { showToast } = useToast();
 
-  const toggleFaq = (index: number) => {
-    setActiveFaq(activeFaq === index ? null : index);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sightsControlsRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const track2Ref = useRef<HTMLDivElement>(null);
+
+  // States
+  const [activeSight, setActiveSight] = useState(SIGHTS_DATA.length); // Start in middle set
+  const [isJumping, setIsJumping] = useState(false);
+  const [showStickyCta, setShowStickyCta] = useState(false);
+  const [faqOpen, setFaqOpen] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyCta(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Animation Refs
+  const targetMouseX = useRef(0);
+  const targetMouseY = useRef(0);
+  const mouseX = useRef(0);
+  const mouseY = useRef(0);
+  const targetScroll = useRef(0);
+  const smoothScroll = useRef(0);
+  const initialized = useRef(false);
+  const rafPending = useRef(false);
+  const reduceMotionRef = useRef(false);
+
+  // Card cloning for infinite loop (3 identical sets for loop)
+  const clonedSights = [...SIGHTS_DATA, ...SIGHTS_DATA, ...SIGHTS_DATA];
+  const clonedSights2 = [...SIGHTS_DATA_2, ...SIGHTS_DATA_2, ...SIGHTS_DATA_2];
+
+  // Helpers
+  const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
+  const smoothstep = (e0: number, e1: number, v: number) => {
+    const x = clamp((v - e0) / (e1 - e0));
+    return x * x * (3 - 2 * x);
+  };
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const segmentInOut = (s: number, a: number, b: number, c: number, d: number) => {
+    const enter = smoothstep(a, b, s);
+    const exit = smoothstep(c, d, s);
+    return { enter, exit, active: enter * (1 - exit) };
   };
 
-  const expenseFeatures = [
-    {
-      title: 'Add Transaction',
-      description: 'Quickly record income or expenses with categories, payment methods, receipts, notes, recurring entries, and smart tagging.',
-      icon: Receipt,
-      gradient: 'linear-gradient(137deg, #22C55E 0%, #86EFAC 45%, #BBF7D0 100%)',
-      delay: 0.1
-    },
-    {
-      title: 'Wallets & Accounts',
-      description: 'Manage cash, bank accounts, UPI wallets, and credit cards in one place while tracking balances across every source.',
-      icon: Wallet,
-      gradient: 'linear-gradient(137deg, #3B82F6 0%, #93C5FD 45%, #BFDBFE 100%)',
-      delay: 0.2
-    },
-    {
-      title: 'Smart Analytics',
-      description: 'Visualize spending habits with interactive charts, monthly trends, category breakdowns, and AI-powered financial insights.',
-      icon: PieChart,
-      gradient: 'linear-gradient(137deg, #8B5CF6 0%, #C4B5FD 45%, #DDD6FE 100%)',
-      delay: 0.3
-    },
-    {
-      title: 'Budget Planner',
-      description: 'Set monthly budgets, monitor spending in real time, and receive alerts before exceeding your limits.',
-      icon: PiggyBank,
-      gradient: 'linear-gradient(137deg, #10B981 0%, #F59E0B 45%, #FBBF24 100%)',
-      delay: 0.4
-    },
-    {
-      title: 'Credit Cards',
-      description: 'Track outstanding balances, billing cycles, payment due dates, interest charges, and available credit.',
-      icon: CreditCard,
-      gradient: 'linear-gradient(137deg, #F97316 0%, #FB923C 45%, #FFEDD5 100%)',
-      delay: 0.5
-    },
-    {
-      title: 'Savings Goals',
-      description: 'Create financial goals for travel, gadgets, emergencies, or investments and monitor your progress over time.',
-      icon: Target,
-      gradient: 'linear-gradient(137deg, #2563EB 0%, #7C3AED 45%, #C084FC 100%)',
-      delay: 0.6
-    },
-    {
-      title: 'Subscriptions',
-      description: 'Monitor recurring payments, identify unused subscriptions, and never miss upcoming renewal dates.',
-      icon: RefreshCcw,
-      gradient: 'linear-gradient(137deg, #EC4899 0%, #F472B6 45%, #FCE7F3 100%)',
-      delay: 0.7
-    },
-    {
-      title: 'AI Receipt Scanner',
-      description: 'Upload receipts and automatically extract merchant details, amount, date, tax, and spending category using OCR.',
-      icon: ScanLine,
-      gradient: 'linear-gradient(137deg, #06B6D4 0%, #4F46E5 45%, #818CF8 100%)',
-      delay: 0.8
-    },
-    {
-      title: 'Reports & Export',
-      description: 'Generate detailed daily, monthly, and yearly reports, then export your financial data to CSV, Excel, or PDF.',
-      icon: FileSpreadsheet,
-      gradient: 'linear-gradient(137deg, #10B981 0%, #14B8A6 45%, #A7F3D0 100%)',
-      delay: 0.9
+  const requestTick = () => {
+    if (!rafPending.current) {
+      rafPending.current = true;
+      requestAnimationFrame(update);
     }
-  ];
+  };
 
-  const pricingPlans = [
-    {
-      name: 'Free Starter',
-      price: '0',
-      desc: 'Essential personal tracking.',
-      features: ['Up to 50 transactions / mo', '1 Wallet & 3 Categories', 'Basic spending list', 'CSV Export'],
-      cta: 'Start Free',
-      popular: false
-    },
-    {
-      name: 'Pro Professional',
-      price: '499',
-      desc: 'AI-powered financial optimization.',
-      features: ['Unlimited transactions', 'Unlimited Wallets & Categories', 'AI Receipt Scanner (50 uploads/mo)', 'AI Coach & Chat Assistant', 'Budget progress circular rings', 'PDF & Excel Export'],
-      cta: 'Upgrade to Pro',
-      popular: true
-    },
-    {
-      name: 'Enterprise Custom',
-      price: 'Custom',
-      desc: 'Multi-user sharing & shared bills.',
-      features: ['Co-operative Group splitting', 'Infinite shared expense sheets', 'Unlimited AI receipt uploads', 'Priority server SLA support', 'Dedicated financial advisors'],
-      cta: 'Contact Sales',
-      popular: false
+  const update = () => {
+    rafPending.current = false;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const section = container.querySelector('.cinema-scroll') as HTMLElement;
+    if (!section) return;
+
+    const reduceMotion = reduceMotionRef.current;
+
+    // Target scroll height clamped
+    const rect = section.getBoundingClientRect();
+    targetScroll.current = clamp(-rect.top, 0, section.offsetHeight - window.innerHeight);
+
+    // Synchronized precisely with Lenis scroll position (no double-lerp for scroll)
+    smoothScroll.current = targetScroll.current;
+    initialized.current = true;
+
+    mouseX.current = lerp(mouseX.current, targetMouseX.current, 0.12);
+    mouseY.current = lerp(mouseY.current, targetMouseY.current, 0.12);
+
+    const s = smoothScroll.current;
+    const frame2 = segmentInOut(s, 560, 900, 1300, 1620);
+    const frame3 = segmentInOut(s, 1760, 2140, 2540, 2700);
+    const progress = clamp(s / 2700);
+    const introExit = smoothstep(90, 650, s);
+    const sightsEnterRaw = smoothstep(2760, 3560, s);
+    const sightsEnter = Math.pow(sightsEnterRaw, 1.55);
+    const sightsControlsEnter = smoothstep(3360, 3660, s);
+    const blurActive = clamp(frame2.active + frame3.active);
+    const frame2Opacity = frame2.active * (1 - frame3.enter);
+    const splitDrift = Math.pow(frame2.enter, 1.5);
+    const panel2Opacity = frame2.active * (1 - frame2.exit);
+    const panel3Opacity = frame3.active * (1 - frame3.exit);
+    const backScale = 0.76 + progress * 0.2 + frame2.enter * 0.18 + frame3.enter * 0.16;
+    const sharedHeroY = progress * -74;
+    const sharedHeroScale = progress * 0.23;
+    const sightsScreenTop = Math.min(220, Math.max(112, window.innerHeight * 0.19)) - 50;
+    const sightsParentTop = window.innerHeight - (window.innerHeight - sightsScreenTop) / backScale;
+
+    // Apply values to container style properties
+    container.style.setProperty('--mx', (reduceMotion ? 0 : mouseX.current).toFixed(4));
+    container.style.setProperty('--my', (reduceMotion ? 0 : mouseY.current).toFixed(4));
+
+    container.style.setProperty('--back-opacity', (1 - frame2.active * 0.06).toFixed(4));
+    container.style.setProperty('--back-x', `${(mouseX.current * -12).toFixed(4)}px`);
+    container.style.setProperty('--back-y', `${(mouseY.current * -4).toFixed(4)}px`);
+    container.style.setProperty('--back-scale', backScale.toFixed(4));
+    container.style.setProperty('--four-y', `${(10 + progress * 10).toFixed(4)}vh`);
+    container.style.setProperty('--four-scale', (0.78 + progress * 0.16).toFixed(4));
+    container.style.setProperty('--bazaar-y', `${(20 - progress * 8).toFixed(4)}vh`);
+    container.style.setProperty('--blur-px', `${(blurActive * 14).toFixed(4)}px`);
+    container.style.setProperty('--back-brightness', (1 - blurActive * 0.255).toFixed(4));
+    container.style.setProperty('--bazaar-blur-px', `${(frame2.active * 14).toFixed(4)}px`);
+    container.style.setProperty('--bazaar-brightness', (1 - frame2.active * 0.255 - frame3.active * 0.06).toFixed(4));
+    container.style.setProperty('--bazaar-saturation', (1 + frame3.active * 0.18).toFixed(4));
+    container.style.setProperty('--shade-opacity', "1");
+    container.style.setProperty('--shade-z', frame2.active > 0.02 ? "2" : "0");
+    container.style.setProperty('--shade-top-alpha', (blurActive * 0.465).toFixed(4));
+    container.style.setProperty('--shade-mid-alpha', (blurActive * 0.42).toFixed(4));
+    container.style.setProperty('--shade-bottom-alpha', (blurActive * 0.51).toFixed(4));
+
+    container.style.setProperty('--title-y', `${(introExit * -210).toFixed(4)}px`);
+    container.style.setProperty('--title-scale', (1 - introExit * 0.08).toFixed(4));
+    container.style.setProperty('--title-opacity', (1 - introExit).toFixed(4));
+
+    container.style.setProperty('--bridge-x', `calc(-50% + ${(mouseX.current * 18).toFixed(4)}px)`);
+    container.style.setProperty('--bridge-y', `${(mouseY.current * 8 + sharedHeroY - frame2.exit * 760).toFixed(4)}px`);
+    container.style.setProperty('--bridge-bottom', `${(5 - frame2.enter * 13).toFixed(4)}vh`);
+    container.style.setProperty('--bridge-width', `${(67.2 + frame2.enter * 37.8).toFixed(4)}vw`);
+    container.style.setProperty('--bridge-scale', (1.02 + sharedHeroScale + frame2.exit * 0.46).toFixed(4));
+
+    container.style.setProperty('--split-left-x', `calc(-50% + ${(-splitDrift * 46).toFixed(4)}vw + ${(mouseX.current * 22).toFixed(4)}px)`);
+    container.style.setProperty('--split-left-y', `${(mouseY.current * 10 + sharedHeroY - splitDrift * 180).toFixed(4)}px`);
+    container.style.setProperty('--split-left-scale', (1 + sharedHeroScale + frame2.enter * 0.74).toFixed(4));
+    container.style.setProperty('--split-right-x', `calc(-50% + ${(splitDrift * 46).toFixed(4)}vw + ${(mouseX.current * 22).toFixed(4)}px)`);
+    container.style.setProperty('--split-right-y', `${(mouseY.current * 10 + sharedHeroY - splitDrift * 180).toFixed(4)}px`);
+    container.style.setProperty('--split-right-scale', (1 + sharedHeroScale + frame2.enter * 0.74).toFixed(4));
+
+    container.style.setProperty('--frame2-opacity', frame2Opacity.toFixed(4));
+    container.style.setProperty('--frame2-x', `calc(-50% + ${(mouseX.current * 10).toFixed(4)}px)`);
+    container.style.setProperty('--frame2-y', `calc(-50% + ${(mouseY.current * 8 - frame2.exit * 150).toFixed(4)}px)`);
+    container.style.setProperty('--frame2-scale', (1.06 + frame2.enter * 0.08 + frame2.exit * 0.08).toFixed(4));
+
+    container.style.setProperty('--intro-copy-y', `${(introExit * 90).toFixed(4)}px`);
+    container.style.setProperty('--intro-copy-opacity', (1 - introExit).toFixed(4));
+    container.style.setProperty('--panel2-opacity', panel2Opacity.toFixed(4));
+    container.style.setProperty('--panel2-y', `calc(-50% + ${(-frame2.exit * 86 + (1 - frame2.enter) * 58).toFixed(4)}px)`);
+    container.style.setProperty('--panel3-opacity', panel3Opacity.toFixed(4));
+    container.style.setProperty('--panel3-y', `calc(-50% + ${(-frame3.exit * 86 + (1 - frame3.enter) * 58).toFixed(4)}px)`);
+
+    container.style.setProperty('--sights-opacity', sightsEnter.toFixed(4));
+    container.style.setProperty('--sights-controls-opacity', sightsControlsEnter.toFixed(4));
+
+    const sightsControlsEl = sightsControlsRef.current;
+    if (sightsControlsEl) {
+      sightsControlsEl.classList.toggle("is-ready", sightsControlsEnter > 0.98);
     }
-  ];
 
-  const aiWorkflowSteps = [
-    {
-      step: '01',
-      title: 'Receipt Upload',
-      desc: 'Drag receipt PDF or image into interface.',
-      glowColor: '158 90 68',
-      colors: ['#34d399', '#22d3ee', '#a78bfa'],
-    },
-    {
-      step: '02',
-      title: 'OCR Extraction',
-      desc: 'AI reads text, parses details & currency.',
-      glowColor: '192 95 68',
-      colors: ['#22d3ee', '#60a5fa', '#c084fc'],
-    },
-    {
-      step: '03',
-      title: 'Smart Categorization',
-      desc: 'Automatically maps to correct spending tags.',
-      glowColor: '268 92 74',
-      colors: ['#c084fc', '#f472b6', '#38bdf8'],
-    },
-    {
-      step: '04',
-      title: 'Behavior Insight',
-      desc: 'Financial coach computes impacts on budgets.',
-      glowColor: '42 95 72',
-      colors: ['#facc15', '#fb923c', '#34d399'],
-    },
-    {
-      step: '05',
-      title: 'Dashboard Update',
-      desc: 'Wallets, goals, and metrics sync instantly.',
-      glowColor: '164 92 62',
-      colors: ['#10b981', '#38bdf8', '#f472b6'],
-    },
-  ];
+    container.style.setProperty('--sights-visibility', sightsEnter > 0.01 ? "visible" : "hidden");
+    container.style.setProperty('--sights-y', "0px");
+    container.style.setProperty('--sights-enter-x', `${((1 - sightsEnter) * 420).toFixed(4)}vw`);
+    container.style.setProperty('--sights-scale', (1 / backScale).toFixed(4));
+    container.style.setProperty('--sights-top', `${sightsParentTop.toFixed(4)}px`);
+    container.style.setProperty('--sights-screen-top', `${sightsScreenTop.toFixed(4)}px`);
 
-  const faqs = [
-    {
-      q: 'How does the AI Receipt Scanner work?',
-      a: 'Simply drag and drop an image or PDF of any receipt. Our system reads the receipt using OCR and passes the contents to a Gemini model which extracts key details like the merchant name, total, tax, items, and date, creating the expense record automatically.'
-    },
-    {
-      q: 'Can I link multiple bank accounts and cards?',
-      a: 'Yes! Expense Tracker supports multi-wallet sync. You can create different wallets for Cash, Bank Accounts, UPI accounts, and Credit Cards, allowing you to log transactions against specific payment channels.'
-    },
-    {
-      q: 'Is my data secure?',
-      a: 'Security is our core design standard. All data is transferred over SSL, passwords are cryptographically salted and hashed using bcrypt, and user-space PostgreSQL databases run isolated with strict JWT authorization headers.'
-    },
-    {
-      q: 'Can I export my transaction data?',
-      a: 'Absolutely. You can export all your financial reports and logs as CSV spreadsheets, Microsoft Excel sheets, or print clean PDF summaries directly from the Reports portal.'
+    const scrollDelta = Math.abs(smoothScroll.current - targetScroll.current);
+    const mouseXDelta = Math.abs(mouseX.current - targetMouseX.current);
+    const mouseYDelta = Math.abs(mouseY.current - targetMouseY.current);
+
+    if (scrollDelta > 0.08 || mouseXDelta > 0.001 || mouseYDelta > 0.001) {
+      requestTick();
     }
-  ];
+  };
+
+  // Event Listeners for Parallax + Scroll Story
+  useEffect(() => {
+    const md = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reduceMotionRef.current = md.matches;
+    const list = (e: MediaQueryListEvent) => {
+      reduceMotionRef.current = e.matches;
+    };
+    md.addEventListener('change', list);
+
+    const onScroll = () => {
+      requestTick();
+    };
+
+    const onPointer = (e: PointerEvent) => {
+      targetMouseX.current = e.clientX / window.innerWidth - 0.5;
+      targetMouseY.current = e.clientY / window.innerHeight - 0.5;
+      requestTick();
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('pointermove', onPointer, { passive: true });
+
+    // Initial tick
+    requestTick();
+
+    return () => {
+      md.removeEventListener('change', list);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('pointermove', onPointer);
+    };
+  }, []);
+
+  // Update slider shift responsive position of relative cards for both rows
+  useEffect(() => {
+    const updateShift = () => {
+      const track = trackRef.current;
+      const track2 = track2Ref.current;
+
+      if (track && track.children[0]) {
+        const cardWidth = track.children[0].getBoundingClientRect().width;
+        const gap = parseFloat(window.getComputedStyle(track).columnGap || '0');
+
+        // Row 1 goes standard direction (based on activeSight)
+        const sightsShift = -(cardWidth + gap) * activeSight;
+        track.style.setProperty('--sights-shift', `${sightsShift}px`);
+
+        // Row 2 goes in the opposite direction
+        if (track2) {
+          const activeSight2 = clonedSights.length - 1 - activeSight;
+          const sightsShift2 = -(cardWidth + gap) * activeSight2;
+          track2.style.setProperty('--sights-shift', `${sightsShift2}px`);
+        }
+      }
+    };
+
+    updateShift();
+    window.addEventListener('resize', updateShift);
+    return () => window.removeEventListener('resize', updateShift);
+  }, [activeSight, clonedSights.length]);
+
+  // Jump logic for infinite loop slider
+  const jumpSightSlider = (targetIndex: number) => {
+    setIsJumping(true);
+    setActiveSight(targetIndex);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsJumping(false);
+      });
+    });
+  };
+
+  const handleTransitionEnd = () => {
+    const origCount = SIGHTS_DATA.length;
+    if (activeSight >= origCount * 2) {
+      jumpSightSlider(activeSight - origCount);
+    } else if (activeSight < origCount) {
+      jumpSightSlider(activeSight + origCount);
+    }
+  };
+
+  const handlePrev = () => {
+    setActiveSight(prev => prev - 1);
+  };
+
+  const handleNext = () => {
+    setActiveSight(prev => prev + 1);
+  };
+
+  const handleNavClick = (e: React.MouseEvent, scrollPos: number) => {
+    e.preventDefault();
+    window.scrollTo({ top: scrollPos, behavior: 'smooth' });
+  };
 
   return (
-    <div className="min-h-screen relative selection:bg-emerald-500 selection:text-white font-body">
-      {/* 1. Page-Wide Bright Moving Motion Background */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className="w-full h-full object-cover scale-105"
-        >
-          <source
-            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4"
-            type="video/mp4"
-          />
-        </video>
-        {/* Very light, bright translucent layer to maximize background visibility while ensuring crisp contrast */}
-        <div className="absolute inset-0 bg-white/10 dark:bg-black/15 backdrop-brightness-110" />
-      </div>
-
-      {/* 2. Page Content Layers */}
-      <div className="relative z-10 w-full flex flex-col min-h-screen">
-        {/* Floating Liquid Glass Topbar */}
-        <header className="sticky top-6 z-50 w-full px-6 flex justify-center">
-          <SpotlightCard
-            className="w-full max-w-5xl rounded-[32px] p-0 overflow-hidden shadow-xl"
-            spotlightColor="rgba(255, 255, 255, 0.15)"
-          >
-            <GlassSurface
-              width="100%"
-              height="auto"
-              borderRadius={32}
-              backgroundOpacity={0.62}
-              saturation={2}
-              blur={32}
-              opacity={0.85}
-              brightness={24}
-              displace={0}
-              borderWidth={0}
-              className="w-full"
-              style={{ minHeight: '64px' }}
-            >
-              <div className="flex items-center justify-between px-6 py-4 w-full">
-                <div className="flex items-center gap-1 text-xl font-semibold tracking-tight">
-                  <span className="text-emerald-500 font-serif text-2xl font-bold drop-shadow-md">antigravity.</span>
-                </div>
-
-                <nav className="hidden md:flex items-center gap-8 text-[15px] text-white font-semibold drop-shadow-sm">
-                  <a href="#features" className="hover:text-emerald-400 transition-colors">Features</a>
-                  <a href="#ai" className="hover:text-emerald-400 transition-colors">AI Module</a>
-                  <a href="#pricing" className="hover:text-emerald-400 transition-colors">Pricing</a>
-                  <a href="#faq" className="hover:text-emerald-400 transition-colors">FAQ</a>
-                </nav>
-
-                <div>
-                  <Link
-                    to="/auth"
-                    className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-bold text-gray-900 shadow-xl transition-transform hover:scale-105"
-                    style={{
-                      background: 'linear-gradient(180deg, #ffffff 0%, #e2e2e2 100%)',
-                      boxShadow: 'inset 0 -2px 5px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.15)'
-                    }}
-                  >
-                    Sign In
-                  </Link>
-                </div>
-              </div>
-            </GlassSurface>
-          </SpotlightCard>
-        </header>
-
-        {/* Clean Hero Section */}
-        <section className="w-full flex flex-col items-center justify-center text-center pt-28 md:pt-40 pb-24 md:pb-36 px-6 max-w-5xl mx-auto">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/20 backdrop-blur-md px-5 py-2 text-xs md:text-sm font-bold text-emerald-700 dark:text-emerald-300 shadow-sm"
-          >
-            <Sparkles className="w-4 h-4 text-emerald-500 animate-spin" />
-            <span>Powered by Gemini AI Vision</span>
-          </motion.div>
-
-          {/* Main Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display text-5xl md:text-7xl lg:text-[5.5rem] leading-[0.95] tracking-tight text-foreground drop-shadow-md"
-          >
-            Take control of your <span className="font-display italic text-emerald-500">wealth</span>
-          </motion.h1>
-
-          {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-base md:text-xl text-foreground/90 font-medium max-w-2xl leading-relaxed drop-shadow-sm"
-          >
-            Track spending, build budgets, analyze habits, and grow your savings with AI-powered financial insights designed for professionals.
-          </motion.p>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-8 flex items-center gap-4"
-          >
-            <Link to="/auth" className="inline-flex h-12 items-center justify-center rounded-full bg-foreground px-8 py-3 text-sm font-bold text-background hover:opacity-90 transition-colors shadow-xl">
-              Start Tracking Free <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
-            <button className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/80 backdrop-blur-md shadow-md hover:bg-muted transition-colors group cursor-pointer">
-              <Play className="h-4 w-4 fill-foreground text-foreground group-hover:scale-110 transition-transform" />
-            </button>
-          </motion.div>
-        </section>
-
-        {/* Circular Gallery Showcase */}
-        <section className="w-full h-[600px] relative overflow-hidden my-12 md:my-20">
-          <CircularGallery
-             items={[
-               { image: "https://picsum.photos/seed/finance1/800/600", text: "Automated Receipts" },
-               { image: "https://picsum.photos/seed/finance2/800/600", text: "Smart Budgeting" },
-               { image: "https://picsum.photos/seed/finance3/800/600", text: "Deep Financial Insights" },
-               { image: "https://picsum.photos/seed/finance4/800/600", text: "Asset Monitoring" }
-             ]}
-             bend={2}
-             textColor="#ffffff"
-             borderRadius={0.05}
-             font="bold 30px Figtree"
-          />
-        </section>
-
-        {/* Features Bento Section */}
-        <section id="features" className="max-w-7xl mx-auto px-6 py-20 md:py-32 w-full">
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Handcrafted tools for personal ledger auditing.</h2>
-            <p className="text-foreground/80 font-medium text-base md:text-lg drop-shadow-sm">No bloat. Simply powerful, beautiful finance mechanics designed to move as fast as you do.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 w-full max-w-7xl mx-auto px-4">
-            {expenseFeatures.map((f, idx) => (
-              <FeatureCard
-                key={idx}
-                title={f.title}
-                description={f.description}
-                icon={f.icon}
-                gradient={f.gradient}
-                delay={f.delay}
+    <div ref={containerRef} className="site-shell-cinematic">
+      <main className="site-shell">
+        <section className="cinema-scroll" id="cinema" aria-label="Finova cinematic scroll story">
+          <div className="stage">
+            <div className="world">
+              {/* Sky Background */}
+              <img
+                className="scene-img sky-img"
+                src="https://raft-blast-61784561.figma.site/_assets/v11/16b5007d9c93971e26ffe4e0e3e37946f6bd538c.png"
+                alt="Vibrant gradient sky canvas depicting financial transparency and clarity"
               />
-            ))}
-          </div>
-        </section>
 
-        {/* Demo Section (Analytics Preview) - Dark Liquid Glass Developer Dashboard */}
-        <section id="demo" className="px-4 py-20 md:py-32">
-          <BorderGlow
-            className="mx-auto w-full max-w-7xl"
-            edgeSensitivity={14}
-            glowColor="164 92 62"
-            backgroundColor="rgba(4, 12, 13, 0.62)"
-            borderRadius={42}
-            glowRadius={72}
-            glowIntensity={1.65}
-            coneSpread={38}
-            colors={DEMO_PANEL_GLOW_COLORS}
-            fillOpacity={0.72}
-            alwaysVisible
-          >
-            <GlassSurface
-              width="100%"
-              height="auto"
-              borderRadius={42}
-              backgroundOpacity={0.72}
-              saturation={1.9}
-              blur={48}
-              brightness={22}
-              opacity={0.9}
-              borderWidth={0.05}
-              style={{ minHeight: '520px' }}
-              className="min-h-[520px]"
-            >
-              <div className="relative w-full h-full px-6 py-12 md:px-12 md:py-16">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_8%,rgba(255,255,255,0.30),transparent_28%),radial-gradient(circle_at_80%_18%,rgba(34,211,238,0.22),transparent_32%),radial-gradient(circle_at_78%_88%,rgba(16,185,129,0.20),transparent_30%),linear-gradient(115deg,rgba(255,255,255,0.20),rgba(255,255,255,0.03)_36%,rgba(255,255,255,0.10)_58%,rgba(255,255,255,0.02))] opacity-90 rounded-[42px]" />
-                <div className="pointer-events-none absolute inset-x-8 top-5 h-px bg-gradient-to-r from-transparent via-white/65 to-transparent" />
-                <div className="pointer-events-none absolute -left-20 top-16 h-56 w-56 rounded-full border border-white/20 bg-white/10 blur-3xl" />
-                <div className="pointer-events-none absolute -right-28 bottom-10 h-72 w-72 rounded-full border border-emerald-300/20 bg-emerald-400/10 blur-3xl" />
-                <div className="pointer-events-none absolute inset-0 rounded-[42px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),inset_18px_18px_70px_rgba(255,255,255,0.07),inset_-22px_-18px_70px_rgba(0,0,0,0.28)]" />
-
-                <div className="relative z-10 grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-                <div className="lg:col-span-5">
-                  <GlassSurface
-                    width="100%"
-                    height="auto"
-                    borderRadius={32}
-                    backgroundOpacity={0.55}
-                    saturation={1.75}
-                    blur={30}
-                    brightness={18}
-                    opacity={0.88}
-                    borderWidth={0.08}
-                    className="min-h-[300px]"
-                  >
-                    <div className="relative w-full p-7 md:p-8">
-                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.10),transparent_46%,rgba(255,255,255,0.06))] rounded-[32px]" />
-                      <div className="relative z-10 space-y-6">
-                        <h2 className="text-3xl font-bold tracking-tight text-white drop-shadow-[0_2px_22px_rgba(0,0,0,0.45)] md:text-5xl">A dashboard that looks like developer tooling.</h2>
-                        <p className="text-sm font-medium leading-relaxed text-white/78 drop-shadow-sm md:text-base">Quiet, monochromatic typography stacked against dense layouts. Visualize your cash balances, credit liabilities, and investment earnings instantly without shiny distractions.</p>
-                        <button onClick={() => navigate('/auth')} className="btn-premium btn-premium-primary gap-2 cursor-pointer shadow-xl">
-                          Enter Command Center <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </GlassSurface>
-                </div>
-                <div className="lg:col-span-7">
-                  {/* Liquid Glass Container - mirrors `.glassEffectContainer` for grouped elements */}
-                  <GlassSurface
-                    width="100%"
-                    height="auto"
-                    borderRadius={32}
-                    backgroundOpacity={0.5}
-                    saturation={1.85}
-                    blur={34}
-                    brightness={20}
-                    opacity={0.9}
-                    borderWidth={0.07}
-                  >
-                    <div className="glass-effect-container relative w-full overflow-hidden rounded-[32px] p-4">
-                      {/* Liquid Glass sub-layer - creates depth and refraction */}
-                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.24),transparent_34%),radial-gradient(circle_at_90%_18%,rgba(34,211,238,0.18),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.02)_54%,rgba(255,255,255,0.08))] opacity-95" />
-                      {/* Developer Chrome Bar - integrates with glass container shape */}
-                      <div className="relative z-10 mb-4 flex h-8 w-full items-center gap-2 border-b border-white/10 pb-4 pl-2">
-                        <div className="h-2.5 w-2.5 rounded-full bg-red-500/90 shadow-sm" />
-                        <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/90 shadow-sm" />
-                        <div className="h-2.5 w-2.5 rounded-full bg-green-500/90 shadow-sm" />
-                        <span className="ml-3 font-mono text-[10px] tracking-wider text-gray-300/80">localhost:5173/dashboard</span>
-                      </div>
-                      {/* Dashboard Glass Panel - aligns shape with parent container (containerRelativeShape) */}
-                      <GlassSurface
-                        width="100%"
-                        height="auto"
-                        borderRadius={28}
-                        backgroundOpacity={0.62}
-                        saturation={1.65}
-                        blur={22}
-                        brightness={16}
-                        opacity={0.86}
-                        borderWidth={0.09}
-                        className="relative z-10 transition-all duration-500"
-                      >
-                        <div className="glass-panel flex w-full flex-col justify-between rounded-[28px] p-6 transition-all duration-500">
-                      {/* Metrics Header */}
-                      <div className="flex items-baseline justify-between">
-                        <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-300/70">Cash Flow Trend</div>
-                          <div className="mt-1 text-2xl font-bold text-white">₹1,56,800 total credits</div>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="flex h-8 w-16 items-center justify-center rounded-xl border border-emerald-500/35 bg-emerald-500/18 text-xs font-bold text-emerald-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.20),0_0_22px_rgba(16,185,129,0.18)] backdrop-blur-sm transition-colors hover:bg-emerald-500/30">
-                            +12%
-                          </div>
-                        </div>
-                      </div>
-                      {/* Chart Bars - with morphing hover states (Liquid Glass interaction) */}
-                      <div className="flex h-32 w-full items-end gap-3 pt-6">
-                        <div className="h-[30%] flex-1 origin-bottom rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:scale-y-105 hover:border-emerald-400/40 hover:bg-emerald-500 hover:shadow-[0_0_24px_rgba(16,185,129,0.55)]" />
-                        <div className="h-[45%] flex-1 origin-bottom rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:scale-y-105 hover:border-emerald-400/40 hover:bg-emerald-500 hover:shadow-[0_0_24px_rgba(16,185,129,0.55)]" />
-                        <div className="h-[60%] flex-1 origin-bottom rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:scale-y-105 hover:border-emerald-400/40 hover:bg-emerald-500 hover:shadow-[0_0_24px_rgba(16,185,129,0.55)]" />
-                        <div className="h-[50%] flex-1 origin-bottom rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:scale-y-105 hover:border-emerald-400/40 hover:bg-emerald-500 hover:shadow-[0_0_24px_rgba(16,185,129,0.55)]" />
-                        <div className="h-[80%] flex-1 origin-bottom rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:scale-y-105 hover:border-emerald-400/40 hover:bg-emerald-500 hover:shadow-[0_0_24px_rgba(16,185,129,0.55)]" />
-                        <div className="h-[95%] flex-1 origin-bottom rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:scale-y-105 hover:border-emerald-400/40 hover:bg-emerald-500 hover:shadow-[0_0_24px_rgba(16,185,129,0.55)]" />
-                      </div>
-                        </div>
-                      </GlassSurface>
-                    </div>
-                  </GlassSurface>
-                </div>
-              </div>
-            </div>
-            </GlassSurface>
-          </BorderGlow>
-        </section>
-
-        {/* AI Workflow Section */}
-        <section id="ai" className="max-w-7xl mx-auto px-6 py-20 md:py-32 w-full">
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Powered by Gemini AI</h2>
-            <p className="text-foreground/80 text-base md:text-lg font-medium drop-shadow-sm">Upload receipts, ask questions to your chatbot assistant, and receive budget alerts generated in real-time.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch relative">
-            {aiWorkflowSteps.map((item, i) => (
-              <BorderGlow
-                key={item.step}
-                className="group h-full min-h-[300px]"
-                edgeSensitivity={16}
-                glowColor={item.glowColor}
-                backgroundColor="rgba(255, 255, 255, 0.04)"
-                borderRadius={30}
-                glowRadius={52}
-                glowIntensity={1.85}
-                coneSpread={34}
-                animated={i === 0}
-                colors={item.colors}
-                fillOpacity={0.95}
-                alwaysVisible
-              >
-                <GlassSurface
-                  width="100%"
-                  height="100%"
-                  borderRadius={30}
-                  backgroundOpacity={0.24}
-                  saturation={1.8}
-                  blur={28}
-                  brightness={18}
-                  opacity={0.88}
-                  borderWidth={0.06}
-                  className="transition-transform duration-300 ease-out group-hover:scale-[1.015]"
-                  style={{ minHeight: '300px' }}
+              {/* Site Header */}
+              <header className="site-header" aria-label="Primary navigation">
+                <a className="site-logo" href="#cinema" onClick={(e) => handleNavClick(e, 0)}>
+                  finova
+                </a>
+                <nav className="site-nav" aria-label="Main menu">
+                  <a href="#cinema" onClick={(e) => handleNavClick(e, 0)}>Intro</a>
+                  <a href="#bridge" onClick={(e) => handleNavClick(e, 1100)}>Ledger</a>
+                  <a href="#bazaar" onClick={(e) => handleNavClick(e, 2200)}>Dashboard</a>
+                  <a href="#routes" onClick={(e) => handleNavClick(e, 3300)}>Features</a>
+                </nav>
+                <button
+                  className="language-switcher"
+                  aria-label="Enter app"
+                  onClick={() => navigate('/auth')}
                 >
-                  <div className="relative flex h-full flex-col justify-between overflow-hidden p-6 w-full">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02)_54%,rgba(255,255,255,0.08))] opacity-95 rounded-[30px]" />
-                    <span className="relative z-10 text-3xl font-bold text-white/35 font-sans drop-shadow-sm transition-colors duration-300 group-hover:text-white/55">{item.step}</span>
-                    <div className="relative z-10 mt-8">
-                      <h4 className="text-lg font-bold mb-2 text-white drop-shadow-md">{item.title}</h4>
-                      <p className="text-xs text-white/82 leading-relaxed font-medium drop-shadow-sm">{item.desc}</p>
-                    </div>
-                  </div>
-                </GlassSurface>
-              </BorderGlow>
-            ))}
-          </div>
-        </section>
+                  <span>SIGN IN</span>
+                  <span aria-hidden="true"> ↗</span>
+                </button>
+              </header>
 
-        {/* Pricing Section */}
-        <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 md:py-32 border-t border-white/20 dark:border-white/10 w-full">
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Pricing aligned with value.</h2>
-            <p className="text-foreground/80 text-base md:text-lg font-medium drop-shadow-sm">No hidden fees, no credit card lockups. Choose the space that matches your goals.</p>
-          </div>
+              {/* Background Stack */}
+              <div className="back-stack">
+                <img
+                  className="scene-img back-img back-four"
+                  src="https://raft-blast-61784561.figma.site/_assets/v11/8a7f8af50e0ce92ec2e228e7b0b4112178c51cf1.png"
+                  alt="Aesthetic skyline landscape backdrop visual for budget section"
+                />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch w-full max-w-5xl mx-auto">
-            {pricingPlans.map((plan, i) => (
-              <SpotlightCard
-                key={i}
-                className={`h-full rounded-[24px] p-0 overflow-hidden shadow-xl transition-all duration-300 ${plan.popular ? 'scale-105 border-emerald-500 border-2' : 'hover:scale-[1.02] border-emerald-500 border-2'}`}
-              >
-                <GlassSurface
-                  width="100%"
-                  height="100%"
-                  borderRadius={24}
-                  backgroundOpacity={0.65}
-                  saturation={1.8}
-                  blur={30}
-                  brightness={22}
-                  opacity={0.88}
-                  borderWidth={0}
-                  className="w-full h-full"
-                >
-                  <div className="relative h-full flex flex-col justify-between p-8 w-full rounded-[24px] overflow-hidden">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02)_54%,rgba(255,255,255,0.08))] opacity-95 transition-opacity" />
-                  {plan.popular && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 px-3 py-1 rounded-b-lg bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest z-20">
-                      RECOMMENDED
-                    </div>
-                  )}
-                  <div className="relative z-10">
-                    <h3 className="text-2xl font-bold text-foreground">{plan.name}</h3>
-                    <p className="text-sm text-foreground/70 mt-2 font-medium">{plan.desc}</p>
-                    <div className="flex items-baseline gap-1 mt-6 mb-8">
-                      <span className="text-4xl font-bold font-sans text-foreground">₹{plan.price}</span>
-                      {plan.price !== 'Custom' && <span className="text-sm text-foreground/70 font-medium">/ mo</span>}
-                    </div>
-                    <ul className="space-y-4">
-                      {plan.features.map((feat, idx) => (
-                        <li key={idx} className="flex items-center gap-3 text-sm text-foreground/80 font-medium">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span>{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <button
-                    onClick={() => navigate('/auth')}
-                    className={`w-full relative z-10 btn-premium mt-8 cursor-pointer py-3 font-semibold ${plan.popular ? 'btn-premium-primary' : 'btn-premium-secondary'}`}
+                {/* Sights Slider - Dual Row Opposing Scroll */}
+                <section className="sights-slider" aria-label="Finova features slider">
+                  {/* Row 1 (scrolls standard direction) */}
+                  <div
+                    ref={trackRef}
+                    className={`sights-track track-1 ${isJumping ? 'is-jumping' : ''}`}
+                    onTransitionEnd={handleTransitionEnd}
                   >
-                    {plan.cta}
-                  </button>
-                </div>
-              </GlassSurface>
-            </SpotlightCard>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section id="faq" className="max-w-3xl mx-auto px-6 py-20 md:py-32 border-t border-white/20 dark:border-white/10 w-full">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground drop-shadow-md">Frequently Asked Questions</h2>
-          </div>
-
-          <div className="space-y-4">
-            {faqs.map((faq, i) => (
-              <SpotlightCard
-                key={i}
-                className="w-full rounded-[20px] p-0 overflow-hidden shadow-md border-2 border-emerald-500 transition-all duration-300 hover:scale-[1.01]"
-              >
-                <GlassSurface
-                  width="100%"
-                  height="auto"
-                  borderRadius={20}
-                  backgroundOpacity={0.65}
-                  saturation={1.8}
-                  blur={24}
-                  brightness={22}
-                  opacity={0.88}
-                  borderWidth={0}
-                  className="w-full"
-                >
-                  <div className="w-full flex justify-between relative overflow-hidden rounded-[20px] flex-col text-left">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.08),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01)_54%,rgba(255,255,255,0.04))] opacity-95 transition-opacity" />
-                    <button
-                      onClick={() => toggleFaq(i)}
-                      className="w-full p-6 text-left flex items-center justify-between font-semibold text-foreground hover:bg-white/10 dark:hover:bg-white/5 transition-colors relative z-10"
-                    >
-                      <span className="text-base md:text-lg flex items-center gap-3">
-                        <HelpCircle className="w-5 h-5 text-emerald-500" />
-                        {faq.q}
-                      </span>
-                      <ChevronDown className={`w-5 h-5 text-foreground/60 transition-transform ${activeFaq === i ? 'rotate-180' : ''}`} />
-                    </button>
-                    <AnimatePresence initial={false}>
-                      {activeFaq === i && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3, ease: 'easeInOut' }}
-                          className="relative z-10"
+                    {clonedSights.map((sight, idx) => {
+                      const isActive = idx === activeSight;
+                      return (
+                        <article
+                          key={idx}
+                          className={`sight-card ${isActive ? 'is-active' : ''}`}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={sight.ariaLabel}
+                          onClick={() => setActiveSight(idx)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setActiveSight(idx);
+                            }
+                          }}
                         >
-                          <div className="px-6 pb-6 pt-2 text-xs md:text-sm text-foreground/80 leading-relaxed border-t border-white/10 font-medium">
-                            {faq.a}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          <span className="sight-kicker">{sight.kicker}</span>
+                          <img className="sight-pin" src={sight.pin} alt={`Visual badge for ${sight.h3}`} />
+                          <h3>{sight.h3}</h3>
+                          <p>{sight.p}</p>
+                        </article>
+                      );
+                    })}
                   </div>
-                </GlassSurface>
-              </SpotlightCard>
-            ))}
+
+                  {/* Row 2 (scrolls opposite direction) */}
+                  <div
+                    ref={track2Ref}
+                    className={`sights-track track-2 ${isJumping ? 'is-jumping' : ''}`}
+                  >
+                    {clonedSights2.map((sight, idx) => {
+                      // Row 2 active index mirrors activeSight
+                      const activeSight2 = clonedSights2.length - 1 - activeSight;
+                      const isActive = idx === activeSight2;
+                      return (
+                        <article
+                          key={idx}
+                          className={`sight-card ${isActive ? 'is-active' : ''}`}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={sight.ariaLabel}
+                          onClick={() => setActiveSight(clonedSights2.length - 1 - idx)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setActiveSight(clonedSights2.length - 1 - idx);
+                            }
+                          }}
+                        >
+                          <span className="sight-kicker">{sight.kicker}</span>
+                          <img className="sight-pin" src={sight.pin} alt={`Visual badge for ${sight.h3}`} />
+                          <h3>{sight.h3}</h3>
+                          <p>{sight.p}</p>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <img
+                  className="scene-img back-img back-bazaar"
+                  src="https://raft-blast-61784561.figma.site/_assets/v11/864afe00e41e2fa20a5aa546e15cb807e0f81384.png"
+                  alt="Financial analytics chart visualization preview"
+                />
+              </div>
+
+              {/* Slider Controls */}
+              <div ref={sightsControlsRef} className="sights-controls" aria-label="Slider controls">
+                <button className="sight-nav sight-prev" onClick={handlePrev} aria-label="Previous sight">
+                  ←
+                </button>
+                <button className="sight-nav sight-next" onClick={handleNext} aria-label="Next sight">
+                  →
+                </button>
+              </div>
+
+              {/* Hero Title */}
+              <h1 className="hero-title">Finova</h1>
+
+              {/* Split Frame Midground */}
+              <img
+                className="scene-img splitframe-img splitframe-left"
+                src="https://raft-blast-61784561.figma.site/_assets/v11/7536d7b60a1fce482cf6edf3f0bffd3bad5d0f8a.png"
+                alt="Left ambient structural outline framing the landing canvas"
+              />
+              <img
+                className="scene-img splitframe-img splitframe-right"
+                src="https://raft-blast-61784561.figma.site/_assets/v11/392db6a6a6b98e868bd7f8d3f55bb719d51e5028.png"
+                alt="Right ambient structural outline framing the landing canvas"
+              />
+
+              {/* Foreground Layers */}
+              <img
+                className="scene-img bridge-img"
+                src="https://raft-blast-61784561.figma.site/_assets/v11/c6a6d8ef49bca43f708aa852692942c45ec950d4.png"
+                alt="Core ledger view illustrating balance tracking"
+              />
+              <img
+                className="scene-img frame-two-img"
+                src="https://raft-blast-61784561.figma.site/_assets/v11/ba75252bab2b1c510987b74837770f7bc8a6b2d4.png"
+                alt="Interactive credit card visual elements representing statement sync"
+              />
+
+              {/* Dynamic Color Overlay Mask */}
+              <div className="shade" />
+            </div>
+
+            {/* Cinematic Scroll Overlays */}
+            <section className="intro-copy" aria-label="Finova overview">
+              <p>
+                A simple ledger, smart categories, and a secure vault made for clean accounting, quick scanning, and one complete financial view.
+              </p>
+              <div className="hero-tags" aria-label="Mostar highlights">
+                <span>AI-Scanning</span>
+                <span>Double Entry</span>
+                <span>Secure Database</span>
+              </div>
+              <div className="mt-8 flex items-center justify-center pointer-events-auto" style={{ pointerEvents: 'auto' }}>
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="px-8 py-3 bg-[#006a61] hover:bg-[#00524a] text-[#fdf1e1] font-bold rounded-full transition-all duration-200 active:scale-95 text-xs uppercase tracking-wider cursor-pointer"
+                  style={{ minHeight: '44px', background: '#006a61', color: '#fdf1e1', border: '1px solid rgba(253,241,225,0.42)' }}
+                >
+                  Get Started Free &rarr;
+                </button>
+              </div>
+            </section>
+
+            {/* Split Story panel 1 */}
+            <section className="story-panel story-panel-bridge" aria-label="Ledger details">
+              <h2>The ledger is your compass.</h2>
+              <p>
+                Finova links all your credit cards, banks, and cash accounts into a single database shaped by double-entry precision and compliance.
+              </p>
+              <dl className="facts">
+                <div>
+                  <dt>2026</dt>
+                  <dd>Platform version 1.0</dd>
+                </div>
+                <div>
+                  <dt>99.9%</dt>
+                  <dd>Financial data isolation and uptime</dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* Split Story panel 2 */}
+            <section className="story-panel story-panel-bazaar" aria-label="Dashboard details">
+              <h2>The dashboard keeps everything close.</h2>
+              <p>
+                Real-time charts, category limits, pending bills, and active subscriptions stay within a single glance of your ledger.
+              </p>
+              <button className="note-button" onClick={() => navigate('/auth')}>
+                <span aria-hidden="true">↗</span>
+                <span>Open Finova</span>
+              </button>
+            </section>
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="mt-12 w-full flex justify-center pb-12 px-6">
-          <GlassSurface
-            width="100%"
-            height="auto"
-            borderRadius={24}
-            backgroundOpacity={0.65}
-            saturation={1.7}
-            blur={32}
-            brightness={18}
-            opacity={0.8}
-            borderWidth={0.06}
-            className="w-full max-w-7xl"
-          >
-            <div className="w-full flex justify-between relative overflow-hidden rounded-[24px] flex-col md:flex-row items-center gap-6 px-10 py-8 text-sm text-foreground/70 font-medium">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.08),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01)_54%,rgba(255,255,255,0.04))] opacity-95" />
-              <div className="flex items-center gap-2 relative z-10">
-                <span className="text-base font-bold tracking-tight text-foreground">Expense Tracker</span>
+        {/* Brand New: Corporate Trust & Support Sections */}
+        <section className="bg-[#0b1c30] text-slate-100 py-20 px-6 border-t border-white/10 relative z-20">
+          <div className="max-w-6xl mx-auto space-y-24">
+
+            {/* 1. Case Studies Section */}
+            <div className="space-y-8">
+              <div className="text-center">
+                <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#fdf1e1] bg-[#006a61] px-3 py-1 rounded-full uppercase">Success Metrics</span>
+                <h2 className="text-3xl sm:text-4xl font-normal font-serif text-white tracking-wide uppercase mt-4" style={{ fontFamily: "'Ogg Medium', Georgia, serif" }}>Case Studies</h2>
+                <p className="text-slate-400 text-xs sm:text-sm max-w-xl mx-auto mt-2">See how workspaces optimized workflows and cut overhead with our double-entry sandbox.</p>
               </div>
-              <p className="relative z-10">© 2026 Expense Tracker Inc. Built with React 19, TypeScript, and Prisma.</p>
-              <div className="flex gap-6 relative z-10">
-                <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-                <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-                <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#006a61]/40 transition-colors">
+                  <h4 className="text-emerald-400 text-2xl font-bold font-mono">28% Saved</h4>
+                  <h3 className="font-bold text-white text-base mt-2">Scale AI Inc.</h3>
+                  <p className="text-xs text-slate-300 mt-2 leading-relaxed">Integrated automatic subscription statements auditing. Decoupled billing overlaps in less than 3 weeks, isolating double-charged databases.</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#006a61]/40 transition-colors">
+                  <h4 className="text-emerald-400 text-2xl font-bold font-mono">14 hrs / mo</h4>
+                  <h3 className="font-bold text-white text-base mt-2">Decent Labs</h3>
+                  <p className="text-xs text-slate-300 mt-2 leading-relaxed">Leveraged multi-member workspaces allocation for group accounts. Shaved accounting latency, exporting financial sheets directly via API.</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#006a61]/40 transition-colors">
+                  <h4 className="text-emerald-400 text-2xl font-bold font-mono">$0 Late Fees</h4>
+                  <h3 className="font-bold text-white text-base mt-2">Acme Corp</h3>
+                  <p className="text-xs text-slate-300 mt-2 leading-relaxed">Configured statement due alerts and automatic billing tracker schedules, optimizing liquidity pools and statement interest premiums.</p>
+                </div>
               </div>
             </div>
-          </GlassSurface>
+
+            {/* 2. Customer Testimonials */}
+            <div className="space-y-8">
+              <div className="text-center">
+                <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#fdf1e1] bg-[#006a61] px-3 py-1 rounded-full uppercase">Community Voice</span>
+                <h2 className="text-3xl sm:text-4xl font-normal font-serif text-white tracking-wide uppercase mt-4" style={{ fontFamily: "'Ogg Medium', Georgia, serif" }}>Customer Reviews</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                  <p className="text-xs text-slate-300 leading-relaxed italic">"Double-entry bookkeeping is usually a headache, but the offline setup here is incredible. We prototype ledger entries before pushing to prod."</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs text-white">MK</div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Marc Kube</div>
+                      <div className="text-[10px] text-slate-400">Founder, FinAI</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                  <p className="text-xs text-slate-300 leading-relaxed italic">"The AI statement scanning saved us hours. We just feed it invoices and it maps categories perfectly. Uptime has been solid."</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs text-white">SL</div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Sarah Lim</div>
+                      <div className="text-[10px] text-slate-400">CFO, WebThree</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                  <p className="text-xs text-slate-300 leading-relaxed italic">"Shared ledgers split expenses effortlessly. No arguments about billing cycles anymore - the tracking histories are immutable."</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs text-white">DB</div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Dan Baker</div>
+                      <div className="text-[10px] text-slate-400">Operations, Apex</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. FAQ Accordion Section */}
+            <div className="space-y-8">
+              <div className="text-center">
+                <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#fdf1e1] bg-[#006a61] px-3 py-1 rounded-full uppercase">Got Questions?</span>
+                <h2 className="text-3xl sm:text-4xl font-normal font-serif text-white tracking-wide uppercase mt-4" style={{ fontFamily: "'Ogg Medium', Georgia, serif" }}>Frequently Asked Questions</h2>
+              </div>
+              <div className="max-w-3xl mx-auto space-y-4">
+                {[
+                  {
+                    q: "How does the AI receipt scanning work?",
+                    a: "Our AI scans receipts, identifies vendors, extracts dates, line items, tax details, and automatically categorizes the transactions into your ledger with 99% accuracy."
+                  },
+                  {
+                    q: "Is my bank-grade financial data secure?",
+                    a: "Yes. All database elements run under strict logical isolation. We employ transport-layer security and AES-256 standard cryptographic protocols."
+                  },
+                  {
+                    q: "Does Finova support multiple currencies?",
+                    a: "We support over 150 currencies with automated live mid-market exchange rate conversions."
+                  },
+                  {
+                    q: "How does shared ledgers expense splitting work?",
+                    a: "You can create shared groups for flatshares, trips, or projects, add transactions, and settle balances instantly with zero accounting overhead."
+                  },
+                  {
+                    q: "What is your support SLA response promise?",
+                    a: "Premium workspaces receive guaranteed responses within 2 hours. Free accounts are answered within 24 hours."
+                  }
+                ].map((faq, idx) => {
+                  const isOpen = faqOpen === idx;
+                  return (
+                    <div key={idx} className="border border-white/10 rounded-xl overflow-hidden bg-white/5 transition-colors">
+                      <button
+                        onClick={() => setFaqOpen(isOpen ? null : idx)}
+                        className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none cursor-pointer text-white"
+                        style={{ background: 'transparent', border: 'none', outline: 'none', boxShadow: 'none' }}
+                      >
+                        <span className="text-xs sm:text-sm font-semibold text-white">{faq.q}</span>
+                        <span className="text-slate-400 text-sm font-mono">{isOpen ? '−' : '+'}</span>
+                      </button>
+                      {isOpen && (
+                        <div className="px-6 pb-4 text-xs sm:text-sm text-slate-300 border-t border-white/5 pt-3 leading-relaxed">
+                          {faq.a}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4. Meet The Team Section */}
+            <div className="space-y-8">
+              <div className="text-center">
+                <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#fdf1e1] bg-[#006a61] px-3 py-1 rounded-full uppercase">The Builders</span>
+                <h2 className="text-3xl sm:text-4xl font-normal font-serif text-white tracking-wide uppercase mt-4" style={{ fontFamily: "'Ogg Medium', Georgia, serif" }}>Meet The Team</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#006a61]/30 border border-[#006a61]/50 flex items-center justify-center font-bold text-lg text-white mx-auto mb-4">SS</div>
+                  <h3 className="font-bold text-white text-sm">Supriyo Sen</h3>
+                  <p className="text-[10px] text-[#fdf1e1] font-bold uppercase tracking-wider mt-1">Lead Architect</p>
+                  <p className="text-[11px] text-slate-400 mt-2">Former Core Infrastructure engineer building ledger integrations.</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#006a61]/30 border border-[#006a61]/50 flex items-center justify-center font-bold text-lg text-white mx-auto mb-4">AS</div>
+                  <h3 className="font-bold text-white text-sm">Alex Smith</h3>
+                  <p className="text-[10px] text-[#fdf1e1] font-bold uppercase tracking-wider mt-1">Head of AI</p>
+                  <p className="text-[11px] text-slate-400 mt-2">Former OpenAI researcher scaling LLM statement categorization models.</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#006a61]/30 border border-[#006a61]/50 flex items-center justify-center font-bold text-lg text-white mx-auto mb-4">JN</div>
+                  <h3 className="font-bold text-white text-sm">Jess Ngo</h3>
+                  <p className="text-[10px] text-[#fdf1e1] font-bold uppercase tracking-wider mt-1">Lead Frontend</p>
+                  <p className="text-[11px] text-slate-400 mt-2">Design system coordinator specialized in high-performance WebGL interfaces.</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#006a61]/30 border border-[#006a61]/50 flex items-center justify-center font-bold text-lg text-white mx-auto mb-4">TR</div>
+                  <h3 className="font-bold text-white text-sm">Tim Ross</h3>
+                  <p className="text-[10px] text-[#fdf1e1] font-bold uppercase tracking-wider mt-1">Security Dev</p>
+                  <p className="text-[11px] text-slate-400 mt-2">Ex-Cloudflare SecOps guarding multi-wallet database boundaries.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. SLA Promise & Headquarters Map */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-white/10 pt-16 items-center">
+              <div className="space-y-6 flex-shrink-0">
+                <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#fdf1e1] bg-[#006a61] px-3 py-1 rounded-full uppercase inline-block">Our SLA Commitment</span>
+                <h3 className="text-2xl font-serif text-white uppercase tracking-wider" style={{ fontFamily: "'Ogg Medium', Georgia, serif" }}>Support Guarantee</h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  We guarantee a <strong className="text-emerald-400 font-bold">2-hour human engineering SLA</strong> response guarantee for all technical support requests and security bug reports received on premium workspaces. Free account queries receive answers within 24 hours.
+                </p>
+                <div className="text-xs text-slate-400">
+                  <strong>Office HQ Address:</strong> 548 Market St, Suite 9081, San Francisco, CA 94104
+                  <br /><strong>Transit Directions:</strong> Take BART to Montgomery Street Station, head north on Sansome St, turn left on Pine St, then turn right on Market St.
+                </div>
+              </div>
+              <div className="relative p-6 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
+                <svg className="w-full max-w-sm h-64 grayscale opacity-80" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Headquarters street map diagram">
+                  <path d="M10 10H290M10 50H290M10 90H290M10 130H290M10 170H290" stroke="rgba(255,255,255,0.15)" strokeWidth="2"/>
+                  <path d="M30 10V190M90 10V190M150 10V190M210 10V190M270 10V190" stroke="rgba(255,255,255,0.15)" strokeWidth="2"/>
+                  <line x1="10" y1="200" x2="300" y2="20" stroke="rgba(255,255,255,0.3)" strokeWidth="4"/>
+                  <circle cx="150" cy="120" r="10" fill="#006a61" fillOpacity="0.4" stroke="#006a61" strokeWidth="2"/>
+                  <circle cx="150" cy="120" r="4" fill="#006a61"/>
+                  <text x="165" y="124" fill="white" fontSize="9" fontWeight="bold">BART STATION</text>
+                  <path d="M210 70 C210 60 220 50 230 50 C240 50 250 60 250 70 C250 85 230 105 230 105 C230 105 210 85 210 70 Z" fill="#bda88f"/>
+                  <circle cx="230" cy="70" r="4" fill="#0b1c30"/>
+                  <text x="210" y="42" fill="#bda88f" fontSize="10" fontWeight="bold">OUR OFFICE</text>
+                </svg>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* 6. Unified Footer Section */}
+        <footer className="footer-cinematic bg-[#0a121d] text-slate-400 py-16 px-6 relative z-20 border-t border-white/5">
+          <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-8">
+            <div className="col-span-2 flex flex-col justify-between">
+              <div>
+                <a className="font-serif text-2xl font-normal text-white uppercase tracking-wider" style={{ fontFamily: "'Ogg Medium', Georgia, serif" }} href="#cinema" onClick={(e) => handleNavClick(e, 0)}>
+                  Finova Ltd
+                </a>
+                <p className="text-xs text-slate-500 mt-2 max-w-sm">Secure SaaS accounting ledgers designed with absolute logical isolation.</p>
+              </div>
+              <div className="text-[10px] text-slate-655 mt-6 md:mt-24 font-mono">
+                &copy; 2026 Finova Systems. All rights reserved.
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider">Product</h4>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/dashboard">Dashboard</Link>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/expenses">Transactions</Link>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/budgets">Budgets</Link>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/goals">Savings Goals</Link>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider">Resources</h4>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/copilot">AI Copilot</Link>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/assistant">AI Assistant</Link>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/thank-you">Help Desk</Link>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider">Legal</h4>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/privacy">Privacy Policy</Link>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/privacy">Terms of Service</Link>
+              <Link className="text-xs text-slate-400 hover:text-white transition-colors" to="/privacy">Cookie Policy</Link>
+            </div>
+          </div>
         </footer>
 
-      </div>
-    </div>
-  );
-}
+      </main>
 
-// Simple placeholder icons
-function ShoppingBagIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-      <path d="M3 6h18" />
-      <path d="M16 10a4 4 0 0 1-8 0" />
-    </svg>
+      {/* Brand New: Viewport sticky Mobile bottom CTA bar */}
+      {showStickyCta && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0b1c30]/95 border-t border-white/10 px-5 py-3 flex items-center justify-between backdrop-blur-md">
+          <span className="text-white text-xs font-bold uppercase tracking-wider">Start Tracking</span>
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-4 py-2 bg-[#fdf1e1] hover:bg-white text-[#0b1c30] font-bold text-[10px] rounded-full uppercase tracking-wider active:scale-95 transition-transform cursor-pointer"
+          >
+            Get Started
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
