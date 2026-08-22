@@ -1,3 +1,4 @@
+import path from 'path';
 import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -7,7 +8,7 @@ import { authenticate } from './src/middleware/auth';
 import { errorHandler } from './src/middleware/error';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5002;
@@ -23,11 +24,17 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 
 // ── CORS — only allow our configured frontend origin ──────────────────────────
-const ALLOWED_ORIGINS = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  'http://localhost:5173',  // Always allow dev
-  'http://localhost:4173',  // Vite preview
-];
+const isProduction = process.env.NODE_ENV === 'production';
+
+const ALLOWED_ORIGINS: string[] = [];
+if (process.env.CLIENT_URL) {
+  ALLOWED_ORIGINS.push(process.env.CLIENT_URL);
+}
+if (!isProduction) {
+  // Always allow dev origins in non-production
+  ALLOWED_ORIGINS.push('http://localhost:5173');
+  ALLOWED_ORIGINS.push('http://localhost:4173');
+}
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -46,10 +53,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging in development
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
-  next();
-});
+if (!isProduction) {
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // Import route modules
 import authRouter from './src/routes/auth';
@@ -123,7 +132,9 @@ ensureDefaultWorkspaces().then(() => {
   startSchedulerJobs(24 * 60 * 60 * 1000);
 
   app.listen(PORT, () => {
-    console.log(`\n🚀 Fintech Finova API (Hot-Reloaded) running at http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health\n`);
+    console.log(`\n🚀 Finova API running on port ${PORT}`);
+    if (!isProduction) {
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health\n`);
+    }
   });
 });

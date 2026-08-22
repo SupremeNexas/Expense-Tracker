@@ -166,12 +166,12 @@ export default function LandingPage() {
 
     const s = smoothScroll.current;
     const frame2 = segmentInOut(s, 560, 900, 1300, 1620);
-    const frame3 = segmentInOut(s, 1760, 2140, 2540, 2700);
+    const frame3 = segmentInOut(s, 1580, 1900, 2300, 2560);
     const progress = clamp(s / 2700);
     const introExit = smoothstep(90, 650, s);
-    const sightsEnterRaw = smoothstep(2760, 3560, s);
-    const sightsEnter = Math.pow(sightsEnterRaw, 1.55);
-    const sightsControlsEnter = smoothstep(3360, 3660, s);
+    const sightsEnterRaw = smoothstep(2400, 2900, s);
+    const sightsEnter = Math.pow(sightsEnterRaw, 1.2);
+    const sightsControlsEnter = smoothstep(2700, 2900, s);
     const blurActive = clamp(frame2.active + frame3.active);
     const frame2Opacity = frame2.active * (1 - frame3.enter);
     const splitDrift = Math.pow(frame2.enter, 1.5);
@@ -371,9 +371,9 @@ export default function LandingPage() {
                 </a>
                 <nav className="site-nav" aria-label="Main menu">
                   <a href="#cinema" onClick={(e) => handleNavClick(e, 0)}>Intro</a>
-                  <a href="#bridge" onClick={(e) => handleNavClick(e, 1100)}>Ledger</a>
-                  <a href="#bazaar" onClick={(e) => handleNavClick(e, 2200)}>Dashboard</a>
-                  <a href="#routes" onClick={(e) => handleNavClick(e, 3300)}>Features</a>
+                  <a href="#bridge" onClick={(e) => handleNavClick(e, 900)}>Ledger</a>
+                  <a href="#bazaar" onClick={(e) => handleNavClick(e, 1900)}>Dashboard</a>
+                  <a href="#routes" onClick={(e) => handleNavClick(e, 2900)}>Features</a>
                 </nav>
                 <button
                   className="language-switcher"
@@ -381,7 +381,6 @@ export default function LandingPage() {
                   onClick={() => navigate('/auth')}
                 >
                   <span>SIGN IN</span>
-                  <span aria-hidden="true"> ↗</span>
                 </button>
               </header>
 
@@ -393,80 +392,80 @@ export default function LandingPage() {
                   alt="Aesthetic skyline landscape backdrop visual for budget section"
                 />
 
-                {/* Sights Slider - Dual Row Opposing Scroll */}
-                <section className="sights-slider" aria-label="Finova features slider">
-                  {/* Row 1 (scrolls standard direction) */}
-                  <div
-                    ref={trackRef}
-                    className={`sights-track track-1 ${isJumping ? 'is-jumping' : ''}`}
-                    onTransitionEnd={handleTransitionEnd}
-                  >
-                    {clonedSights.map((sight, idx) => {
-                      const isActive = idx === activeSight;
-                      return (
-                        <article
-                          key={idx}
-                          className={`sight-card ${isActive ? 'is-active' : ''}`}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={sight.ariaLabel}
-                          onClick={() => setActiveSight(idx)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setActiveSight(idx);
-                            }
-                          }}
-                        >
-                          <span className="sight-kicker">{sight.kicker}</span>
-                          <img className="sight-pin" src={sight.pin} alt={`Visual badge for ${sight.h3}`} />
-                          <h3>{sight.h3}</h3>
-                          <p>{sight.p}</p>
-                        </article>
-                      );
-                    })}
-                  </div>
-
-                  {/* Row 2 (scrolls opposite direction) */}
-                  <div
-                    ref={track2Ref}
-                    className={`sights-track track-2 ${isJumping ? 'is-jumping' : ''}`}
-                  >
-                    {clonedSights2.map((sight, idx) => {
-                      // Row 2 active index mirrors activeSight
-                      const activeSight2 = clonedSights2.length - 1 - activeSight;
-                      const isActive = idx === activeSight2;
-                      return (
-                        <article
-                          key={idx}
-                          className={`sight-card ${isActive ? 'is-active' : ''}`}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={sight.ariaLabel}
-                          onClick={() => setActiveSight(clonedSights2.length - 1 - idx)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setActiveSight(clonedSights2.length - 1 - idx);
-                            }
-                          }}
-                        >
-                          <span className="sight-kicker">{sight.kicker}</span>
-                          <img className="sight-pin" src={sight.pin} alt={`Visual badge for ${sight.h3}`} />
-                          <h3>{sight.h3}</h3>
-                          <p>{sight.p}</p>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </section>
-
                 <img
                   className="scene-img back-img back-bazaar"
                   src="https://raft-blast-61784561.figma.site/_assets/v11/864afe00e41e2fa20a5aa546e15cb807e0f81384.png"
                   alt="Financial analytics chart visualization preview"
                 />
               </div>
+
+              {/* Sights Slider - Dual Row Opposing Scroll */}
+              <section className="sights-slider" aria-label="Finova features slider">
+                {/* Row 1 (scrolls standard direction) */}
+                <div
+                  ref={trackRef}
+                  className={`sights-track track-1 ${isJumping ? 'is-jumping' : ''}`}
+                  onTransitionEnd={handleTransitionEnd}
+                >
+                  {clonedSights.map((sight, idx) => {
+                    const isActive = idx === activeSight;
+                    return (
+                      <article
+                        key={idx}
+                        className={`sight-card ${isActive ? 'is-active' : ''}`}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={sight.ariaLabel}
+                        onClick={() => setActiveSight(idx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setActiveSight(idx);
+                          }
+                        }}
+                      >
+                        <span className="sight-kicker">{sight.kicker}</span>
+                        <img className="sight-pin" src={sight.pin} alt={`Visual badge for ${sight.h3}`} />
+                        <h3>{sight.h3}</h3>
+                        <p>{sight.p}</p>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                {/* Row 2 (scrolls opposite direction) */}
+                <div
+                  ref={track2Ref}
+                  className={`sights-track track-2 ${isJumping ? 'is-jumping' : ''}`}
+                >
+                  {clonedSights2.map((sight, idx) => {
+                    // Row 2 active index mirrors activeSight
+                    const activeSight2 = clonedSights2.length - 1 - activeSight;
+                    const isActive = idx === activeSight2;
+                    return (
+                      <article
+                        key={idx}
+                        className={`sight-card ${isActive ? 'is-active' : ''}`}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={sight.ariaLabel}
+                        onClick={() => setActiveSight(clonedSights2.length - 1 - idx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setActiveSight(clonedSights2.length - 1 - idx);
+                          }
+                        }}
+                      >
+                        <span className="sight-kicker">{sight.kicker}</span>
+                        <img className="sight-pin" src={sight.pin} alt={`Visual badge for ${sight.h3}`} />
+                        <h3>{sight.h3}</h3>
+                        <p>{sight.p}</p>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
 
               {/* Slider Controls */}
               <div ref={sightsControlsRef} className="sights-controls" aria-label="Slider controls">
@@ -525,7 +524,7 @@ export default function LandingPage() {
                   className="px-8 py-3 bg-[#006a61] hover:bg-[#00524a] text-[#fdf1e1] font-bold rounded-full transition-all duration-200 active:scale-95 text-xs uppercase tracking-wider cursor-pointer"
                   style={{ minHeight: '44px', background: '#006a61', color: '#fdf1e1', border: '1px solid rgba(253,241,225,0.42)' }}
                 >
-                  Get Started Free &rarr;
+                  Get Started Free
                 </button>
               </div>
             </section>
@@ -555,7 +554,6 @@ export default function LandingPage() {
                 Real-time charts, category limits, pending bills, and active subscriptions stay within a single glance of your ledger.
               </p>
               <button className="note-button" onClick={() => navigate('/auth')}>
-                <span aria-hidden="true">↗</span>
                 <span>Open Finova</span>
               </button>
             </section>
@@ -655,10 +653,6 @@ export default function LandingPage() {
                   {
                     q: "How does shared ledgers expense splitting work?",
                     a: "You can create shared groups for flatshares, trips, or projects, add transactions, and settle balances instantly with zero accounting overhead."
-                  },
-                  {
-                    q: "What is your support SLA response promise?",
-                    a: "Premium workspaces receive guaranteed responses within 2 hours. Free accounts are answered within 24 hours."
                   }
                 ].map((faq, idx) => {
                   const isOpen = faqOpen === idx;
@@ -717,33 +711,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* 5. SLA Promise & Headquarters Map */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-white/10 pt-16 items-center">
-              <div className="space-y-6 flex-shrink-0">
-                <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#fdf1e1] bg-[#006a61] px-3 py-1 rounded-full uppercase inline-block">Our SLA Commitment</span>
-                <h3 className="text-2xl font-serif text-white uppercase tracking-wider" style={{ fontFamily: "'Ogg Medium', Georgia, serif" }}>Support Guarantee</h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  We guarantee a <strong className="text-emerald-400 font-bold">2-hour human engineering SLA</strong> response guarantee for all technical support requests and security bug reports received on premium workspaces. Free account queries receive answers within 24 hours.
-                </p>
-                <div className="text-xs text-slate-400">
-                  <strong>Office HQ Address:</strong> 548 Market St, Suite 9081, San Francisco, CA 94104
-                  <br /><strong>Transit Directions:</strong> Take BART to Montgomery Street Station, head north on Sansome St, turn left on Pine St, then turn right on Market St.
-                </div>
-              </div>
-              <div className="relative p-6 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
-                <svg className="w-full max-w-sm h-64 grayscale opacity-80" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Headquarters street map diagram">
-                  <path d="M10 10H290M10 50H290M10 90H290M10 130H290M10 170H290" stroke="rgba(255,255,255,0.15)" strokeWidth="2"/>
-                  <path d="M30 10V190M90 10V190M150 10V190M210 10V190M270 10V190" stroke="rgba(255,255,255,0.15)" strokeWidth="2"/>
-                  <line x1="10" y1="200" x2="300" y2="20" stroke="rgba(255,255,255,0.3)" strokeWidth="4"/>
-                  <circle cx="150" cy="120" r="10" fill="#006a61" fillOpacity="0.4" stroke="#006a61" strokeWidth="2"/>
-                  <circle cx="150" cy="120" r="4" fill="#006a61"/>
-                  <text x="165" y="124" fill="white" fontSize="9" fontWeight="bold">BART STATION</text>
-                  <path d="M210 70 C210 60 220 50 230 50 C240 50 250 60 250 70 C250 85 230 105 230 105 C230 105 210 85 210 70 Z" fill="#bda88f"/>
-                  <circle cx="230" cy="70" r="4" fill="#0b1c30"/>
-                  <text x="210" y="42" fill="#bda88f" fontSize="10" fontWeight="bold">OUR OFFICE</text>
-                </svg>
-              </div>
-            </div>
 
           </div>
         </section>

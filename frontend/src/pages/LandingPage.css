@@ -26,7 +26,7 @@
 
 .site-shell-cinematic .cinema-scroll {
   position: relative;
-  height: calc(100vh + 3700px);
+  height: calc(100vh + 3100px);
 }
 
 .site-shell-cinematic .stage {
@@ -201,7 +201,7 @@
   transform-origin: 0 0;
   pointer-events: auto;
   will-change: transform;
-  z-index: 2;
+  z-index: 7;
   display: flex !important;
   flex-direction: column !important;
   gap: 24px !important;
@@ -310,14 +310,14 @@
 
 .site-shell-cinematic .sights-controls {
   position: absolute;
-  left: 48px;
+  left: 50%;
   right: auto;
   top: calc(var(--sights-screen-top) + 440px + 64px);
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 14px;
   opacity: var(--sights-controls-opacity);
-  transform: translate3d(0, var(--sights-y), 0);
+  transform: translate3d(-50%, var(--sights-y), 0);
   pointer-events: none;
   will-change: transform, opacity;
   z-index: 5;
@@ -349,7 +349,7 @@
 .site-shell-cinematic .hero-title {
   position: absolute;
   left: 50%;
-  top: clamp(122px, 19vh, 205px);
+  top: clamp(230px, 26vh, 320px);
   width: min(94vw, 1780px);
   margin: 0;
   color: #fdf1e1;
@@ -362,7 +362,7 @@
   transform: translate3d(-50%, var(--title-y), 0) scale(var(--title-scale));
   opacity: var(--title-opacity);
   will-change: transform, opacity;
-  z-index: 3;
+  z-index: 5;
 }
 
 .site-shell-cinematic .bridge-img {
@@ -467,7 +467,7 @@
 .site-shell-cinematic .story-panel {
   position: absolute;
   left: 50%;
-  top: 45%;
+  top: 50%;
   width: min(760px, calc(100vw - 42px));
   text-align: center;
   pointer-events: none;
@@ -484,6 +484,9 @@
   font-weight: 500;
   line-height: 0.95;
   text-shadow: 0 16px 38px var(--shadow);
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .site-shell-cinematic .story-panel p {
@@ -497,13 +500,11 @@
 }
 
 .site-shell-cinematic .story-panel-bridge {
-  top: 60%;
   opacity: var(--panel2-opacity);
   transform: translate3d(-50%, var(--panel2-y), 0);
 }
 
 .site-shell-cinematic .story-panel-bazaar {
-  top: 29%;
   opacity: var(--panel3-opacity);
   transform: translate3d(-50%, var(--panel3-y), 0);
 }
@@ -556,6 +557,7 @@
   line-height: 1;
 }
 
+.site-shell-cinematic .note-button,
 .site-shell-cinematic .language-switcher {
   padding: 0 28px !important;
   font-size: 16px !important;
@@ -574,9 +576,9 @@
 }
 
 @media (max-width: 1100px) {
-  .site-shell-cinematic .hero-title { top: 15vh; font-size: 7.5rem; }
-  .site-shell-cinematic .bridge-img { width: 138vw; }
-  .site-shell-cinematic .frame-two-img { width: 132vw; }
+  .site-shell-cinematic .hero-title { top: clamp(170px, 18vh, 240px); font-size: 7.5rem; }
+  .site-shell-cinematic .bridge-img { width: 125vw; }
+  .site-shell-cinematic .frame-two-img { width: 120vw; }
   .site-shell-cinematic .story-panel h2 { font-size: 3.2rem; }
   .site-shell-cinematic .facts { gap: 34px; margin-top: 44px; }
   .site-shell-cinematic .facts dt { font-size: 3.2rem; }
@@ -588,16 +590,14 @@
   .site-shell-cinematic .site-header { grid-template-columns: 1fr auto; gap: 18px; padding: 24px; }
   .site-shell-cinematic .site-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 18px; overflow-x: auto; scrollbar-width: none; }
   .site-shell-cinematic .site-nav::-webkit-scrollbar { display: none; }
-  .site-shell-cinematic .hero-title { top: 16vh; font-size: 4.5rem; }
-  .site-shell-cinematic .bridge-img { bottom: 2vh; width: 190vw; }
-  .site-shell-cinematic .frame-two-img { width: 176vw; }
-  .site-shell-cinematic .intro-copy { bottom: 42px; }
+  .site-shell-cinematic .hero-title { top: 165px; font-size: 3rem; }
+  .site-shell-cinematic .bridge-img { bottom: 2vh; width: 100vw; }
+  .site-shell-cinematic .frame-two-img { width: 100vw; }
+  .site-shell-cinematic .intro-copy { bottom: 96px; }
   .site-shell-cinematic .intro-copy p, .site-shell-cinematic .story-panel p { font-size: 1rem; }
   .site-shell-cinematic .hero-tags { gap: 8px; }
   .site-shell-cinematic .hero-tags span { min-height: 38px; padding: 0 16px; font-size: 0.88rem; }
-  .site-shell-cinematic .story-panel { top: 42%; }
-  .site-shell-cinematic .story-panel-bazaar { top: 26%; }
-  .site-shell-cinematic .story-panel h2 { font-size: 2.45rem; }
+  .site-shell-cinematic .story-panel h2 { font-size: 2.15rem; }
   .site-shell-cinematic .facts { gap: 18px; margin-top: 34px; }
   .site-shell-cinematic .facts dt { font-size: 2.5rem; }
   .site-shell-cinematic .sights-slider { padding: 0; }

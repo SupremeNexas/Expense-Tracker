@@ -6,7 +6,7 @@ import { body } from 'express-validator';
 import { validate } from '../middleware/validation';
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../db/prisma';
-import { JWT_SECRET, authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { authenticate, AuthenticatedRequest, getJwtSecret } from '../middleware/auth';
 import { seedCategoriesForUser, seedSampleDataForUser } from '../../prisma/seed';
 
 const router = Router();
@@ -29,8 +29,9 @@ const passwordRules = body('password')
 
 // Helper to generate access & refresh tokens
 const generateTokens = (user: { id: string; email: string }) => {
-  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '15m' });
-  const refreshToken = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+  const jwtSecret = getJwtSecret();
+  const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ id: user.id, email: user.email }, jwtSecret, { expiresIn: '7d' });
   return { token, refreshToken };
 };
 
@@ -150,7 +151,7 @@ router.post('/refresh', [
 ], validate, async (req: any, res: Response) => {
   try {
     const { refreshToken } = req.body;
-    const decoded = jwt.verify(refreshToken, JWT_SECRET) as { id: string; email: string };
+    const decoded = jwt.verify(refreshToken, getJwtSecret()) as { id: string; email: string };
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {

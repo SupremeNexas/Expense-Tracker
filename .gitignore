@@ -60,3 +60,4 @@ cypress/screenshots/
 cypress/videos/
 .vercel
 .env*
+.prisma/

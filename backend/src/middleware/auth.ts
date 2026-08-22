@@ -1,7 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'f1nt3ch_53cr3t_2026_jwt_k3y';
+let _jwtSecret: string | undefined;
+
+/**
+ * Retrieves JWT_SECRET from environment at call time.
+ * Throws if JWT_SECRET is not set — prevents accidental use of insecure defaults.
+ */
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('FATAL: JWT_SECRET environment variable is not set. Server cannot start securely.');
+  }
+  return secret;
+}
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -20,7 +32,7 @@ export const authenticate = (req: AuthenticatedRequest, res: Response, next: Nex
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: string; email: string };
     req.user = decoded;
     next();
   } catch (err) {
