@@ -72,7 +72,7 @@ router.post('/register', authLimiter, [
     });
 
     await seedCategoriesForUser(user.id);
-    await seedSampleDataForUser(user.id);
+    await seedSampleDataForUser(user.id, user.email);
 
     const { token, refreshToken } = generateTokens(user);
 
@@ -259,7 +259,7 @@ router.post('/google', authLimiter, [
 
       // Seed default categories and sample data for new users
       await seedCategoriesForUser(user.id);
-      await seedSampleDataForUser(user.id);
+      await seedSampleDataForUser(user.id, user.email);
       console.log(`[Google Auth] New user created and seeded: ${user.id}`);
     }
 
@@ -439,7 +439,7 @@ router.post('/seed', authenticate, async (req: AuthenticatedRequest, res: Respon
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
     await seedCategoriesForUser(req.user.id);
-    await seedSampleDataForUser(req.user.id);
+    await seedSampleDataForUser(req.user.id, req.user.email);
 
     res.json({ message: 'Demo data seeded successfully' });
   } catch (err) {
