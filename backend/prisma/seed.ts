@@ -64,7 +64,28 @@ export async function seedCategoriesForUser(userId: string) {
   console.log(`✅ Default categories seeded for user ${userId}`);
 }
 
-export async function seedSampleDataForUser(userId: string) {
+const DEMO_ACCOUNT_EMAIL = 'demo@example.com';
+
+export async function isDemoUser(userId: string, email: string) {
+  return email === DEMO_ACCOUNT_EMAIL;
+}
+
+export async function seedSampleDataForUser(userId: string, email: string) {
+  // Only seed demo data for the demo account; real users get clean state
+  const isDemo = await isDemoUser(userId, email);
+  if (!isDemo) {
+    // For non-demo users, just clear any existing data without seeding
+    await prisma.transaction.deleteMany({ where: { userId } });
+    await prisma.budget.deleteMany({ where: { userId } });
+    await prisma.goal.deleteMany({ where: { userId } });
+    await prisma.subscription.deleteMany({ where: { userId } });
+    await prisma.bill.deleteMany({ where: { userId } });
+    await prisma.wallet.deleteMany({ where: { userId } });
+    console.log(`🔧 Cleared existing data for non-demo user ${userId} (${email})`);
+    return;
+  }
+
+  // Original demo data seeding logic for demo account
   // Clear existing transactions/budgets/goals first to prevent duplicate seeding issues
   await prisma.transaction.deleteMany({ where: { userId } });
   await prisma.budget.deleteMany({ where: { userId } });
@@ -75,15 +96,45 @@ export async function seedSampleDataForUser(userId: string) {
 
   const workspaceId = await getOrCreatePersonalWorkspace(userId);
 
+  // Fetch the user to get their base currency
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { baseCurrency: true }
+  });
+  const baseCurrency = user?.baseCurrency || 'USD';
+
+  // Helper to scale amounts based on baseCurrency relative to INR (since raw seed values are in INR scale)
+  const scale = (amountInINR: number): number => {
+    const rates: Record<string, number> = {
+      USD: 1.0,
+      INR: 83.5,
+      EUR: 0.92,
+      GBP: 0.78,
+      JPY: 155.2,
+      CAD: 1.36,
+      AUD: 1.51,
+      SGD: 1.35
+    };
+    const inrRate = rates.INR;
+    const targetRate = rates[baseCurrency.toUpperCase()] || rates.USD;
+    const value = amountInINR * (targetRate / inrRate);
+    return Math.round(value * 100) / 100;
+  };
+
+  const isINR = baseCurrency === 'INR';
+  const bankName = isINR ? 'HDFC Bank Account' : 'Checking Account';
+  const cardName = isINR ? 'ICICI Amazon Pay Card' : 'Amazon Rewards Visa';
+
   // 1. Create default wallets
   const mainWallet = await prisma.wallet.create({
     data: {
       userId,
       workspaceId,
-      name: 'HDFC Bank Account',
+      name: bankName,
       type: 'BANK',
-      balance: 145000.50,
+      balance: scale(145000.50),
       color: '#3B82F6',
+      currency: baseCurrency,
     }
   });
 
@@ -93,8 +144,9 @@ export async function seedSampleDataForUser(userId: string) {
       workspaceId,
       name: 'Cash Wallet',
       type: 'CASH',
-      balance: 4500.00,
+      balance: scale(4500.00),
       color: '#6B7280',
+      currency: baseCurrency,
     }
   });
 
@@ -102,10 +154,11 @@ export async function seedSampleDataForUser(userId: string) {
     data: {
       userId,
       workspaceId,
-      name: 'ICICI Amazon Pay Card',
+      name: cardName,
       type: 'CREDIT_CARD',
-      balance: -12500.00, // debt
+      balance: scale(-12500.00), // debt
       color: '#EC4899',
+      currency: baseCurrency,
     }
   });
 
@@ -125,12 +178,12 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       title: 'Monthly Salary Credit',
-      amount: 125000.00,
+      amount: scale(125000.00),
       type: 'INCOME',
       categoryId: catMap.get('Salary') || categories[0].id,
       walletId: mainWallet.id,
       date: new Date(year, month - 1, 1),
-      paymentMethod: 'Bank Transfer',
+      paymentMethod: isINR ? 'Bank Transfer' : 'Direct Deposit',
       notes: 'Direct deposit',
     }
   });
@@ -140,12 +193,12 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       title: 'Monthly Salary Credit',
-      amount: 125000.00,
+      amount: scale(125000.00),
       type: 'INCOME',
       categoryId: catMap.get('Salary') || categories[0].id,
       walletId: mainWallet.id,
       date: new Date(year, month, 1),
-      paymentMethod: 'Bank Transfer',
+      paymentMethod: isINR ? 'Bank Transfer' : 'Direct Deposit',
       notes: 'Direct deposit',
     }
   });
@@ -155,32 +208,32 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       title: 'Dividend Payout',
-      amount: 4500.00,
+      amount: scale(4500.00),
       type: 'INCOME',
       categoryId: catMap.get('Investment') || categories[0].id,
       walletId: mainWallet.id,
       date: new Date(year, month, 15),
-      paymentMethod: 'UPI',
+      paymentMethod: isINR ? 'UPI' : 'ACH Transfer',
       notes: 'Mutual fund returns',
     }
   });
 
   // Create Expenses
   const templates = [
-    { title: 'Reliance Fresh Groceries', catName: 'Food', min: 1200, max: 4000, wallet: mainWallet.id, pm: 'UPI' },
-    { title: 'Zomato Food Delivery', catName: 'Food', min: 300, max: 1200, wallet: creditCard.id, pm: 'Credit Card' },
-    { title: 'Dinner at Olive Bistro', catName: 'Food', min: 2000, max: 6000, wallet: creditCard.id, pm: 'Credit Card' },
-    { title: 'Uber Ride Office', catName: 'Travel', min: 300, max: 800, wallet: creditCard.id, pm: 'Credit Card' },
-    { title: 'Auto Fare Local', catName: 'Travel', min: 50, max: 200, wallet: cashWallet.id, pm: 'Cash' },
-    { title: 'HP Petrol Pump Refill', catName: 'Fuel', min: 2000, max: 4500, wallet: creditCard.id, pm: 'Credit Card' },
-    { title: 'Zara Store Shopping', catName: 'Shopping', min: 3000, max: 9000, wallet: creditCard.id, pm: 'Credit Card' },
-    { title: 'Amazon Shopping Sale', catName: 'Shopping', min: 1000, max: 15000, wallet: mainWallet.id, pm: 'UPI' },
-    { title: 'Electricity Bill', catName: 'Bills', min: 2500, max: 5000, wallet: mainWallet.id, pm: 'Bank Transfer' },
-    { title: 'Broadband Wifi Bill', catName: 'Bills', min: 999, max: 1200, wallet: mainWallet.id, pm: 'UPI' },
-    { title: 'Gym Membership', catName: 'Entertainment', min: 1500, max: 3000, wallet: creditCard.id, pm: 'Credit Card' },
-    { title: 'Netflix Premium Subscription', catName: 'Entertainment', min: 649, max: 649, wallet: creditCard.id, pm: 'Credit Card' },
-    { title: 'Apollo Pharmacy Medicines', catName: 'Health', min: 200, max: 1500, wallet: cashWallet.id, pm: 'Cash' },
-    { title: 'Udemy Online Course', catName: 'Education', min: 499, max: 1200, wallet: mainWallet.id, pm: 'UPI' },
+    { title: isINR ? 'Reliance Fresh Groceries' : 'Whole Foods Groceries', catName: 'Food', min: scale(1200), max: scale(4000), wallet: mainWallet.id, pm: isINR ? 'UPI' : 'Debit Card' },
+    { title: isINR ? 'Zomato Food Delivery' : 'DoorDash Food Delivery', catName: 'Food', min: scale(300), max: scale(1200), wallet: creditCard.id, pm: 'Credit Card' },
+    { title: 'Dinner at Olive Bistro', catName: 'Food', min: scale(2000), max: scale(6000), wallet: creditCard.id, pm: 'Credit Card' },
+    { title: 'Uber Ride Office', catName: 'Travel', min: scale(300), max: scale(800), wallet: creditCard.id, pm: 'Credit Card' },
+    { title: isINR ? 'Auto Fare Local' : 'Local Cab / Taxi', catName: 'Travel', min: scale(50), max: scale(200), wallet: cashWallet.id, pm: 'Cash' },
+    { title: isINR ? 'HP Petrol Pump Refill' : 'Chevron Gas Station', catName: 'Fuel', min: scale(2000), max: scale(4500), wallet: creditCard.id, pm: 'Credit Card' },
+    { title: 'Zara Store Shopping', catName: 'Shopping', min: scale(3000), max: scale(9000), wallet: creditCard.id, pm: 'Credit Card' },
+    { title: isINR ? 'Amazon Shopping Sale' : 'Amazon Shopping Sale', catName: 'Shopping', min: scale(1000), max: scale(15000), wallet: mainWallet.id, pm: isINR ? 'UPI' : 'Debit Card' },
+    { title: 'Electricity Bill', catName: 'Bills', min: scale(2500), max: scale(5000), wallet: mainWallet.id, pm: 'Bank Transfer' },
+    { title: 'Broadband Wifi Bill', catName: 'Bills', min: scale(999), max: scale(1200), wallet: mainWallet.id, pm: isINR ? 'UPI' : 'Bank Transfer' },
+    { title: 'Gym Membership', catName: 'Entertainment', min: scale(1500), max: scale(3000), wallet: creditCard.id, pm: 'Credit Card' },
+    { title: 'Netflix Premium Subscription', catName: 'Entertainment', min: scale(649), max: scale(649), wallet: creditCard.id, pm: 'Credit Card' },
+    { title: isINR ? 'Apollo Pharmacy Medicines' : 'CVS Pharmacy Medicines', catName: 'Health', min: scale(200), max: scale(1500), wallet: cashWallet.id, pm: 'Cash' },
+    { title: 'Udemy Online Course', catName: 'Education', min: scale(499), max: scale(1200), wallet: mainWallet.id, pm: isINR ? 'UPI' : 'Debit Card' },
   ];
 
   let seed = 7;
@@ -228,7 +281,7 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       categoryId: catMap.get('Food')!,
-      amount: 25000.00,
+      amount: scale(25000.00),
       period: 'MONTHLY',
       startDate: new Date(year, month, 1),
       endDate: new Date(year, month + 1, 0),
@@ -240,7 +293,7 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       categoryId: catMap.get('Shopping')!,
-      amount: 15000.00,
+      amount: scale(15000.00),
       period: 'MONTHLY',
       startDate: new Date(year, month, 1),
       endDate: new Date(year, month + 1, 0),
@@ -252,7 +305,7 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       categoryId: catMap.get('Travel')!,
-      amount: 8000.00,
+      amount: scale(8000.00),
       period: 'MONTHLY',
       startDate: new Date(year, month, 1),
       endDate: new Date(year, month + 1, 0),
@@ -267,13 +320,13 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       name: 'MacBook Pro 16" M4',
-      targetAmount: 249000.00,
-      currentAmount: 85000.00,
+      targetAmount: scale(249000.00),
+      currentAmount: scale(85000.00),
       targetDate: new Date(year + 1, 0, 1),
       contributions: {
         create: [
-          { amount: 50000.00, notes: 'Initial savings' },
-          { amount: 35000.00, notes: 'June bonus contribution' },
+          { amount: scale(50000.00), notes: 'Initial savings' },
+          { amount: scale(35000.00), notes: 'June bonus contribution' },
         ]
       }
     }
@@ -283,14 +336,14 @@ export async function seedSampleDataForUser(userId: string) {
     data: {
       userId,
       workspaceId,
-      name: 'Goa Vacation Fund',
-      targetAmount: 60000.00,
-      currentAmount: 45000.00,
+      name: isINR ? 'Goa Vacation Fund' : 'Hawaii Vacation Fund',
+      targetAmount: scale(60000.00),
+      currentAmount: scale(45000.00),
       targetDate: new Date(year, month + 3, 1),
       contributions: {
         create: [
-          { amount: 20000.00, notes: 'Trip savings starts' },
-          { amount: 25000.00, notes: 'July contribution' }
+          { amount: scale(20000.00), notes: 'Trip savings starts' },
+          { amount: scale(25000.00), notes: 'July contribution' }
         ]
       }
     }
@@ -304,7 +357,7 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       name: 'Spotify Premium Duo',
-      amount: 149.00,
+      amount: scale(149.00),
       billingCycle: 'MONTHLY',
       nextBillingDate: new Date(year, month, 28),
       walletId: creditCard.id,
@@ -316,8 +369,8 @@ export async function seedSampleDataForUser(userId: string) {
     data: {
       userId,
       workspaceId,
-      name: 'Amazon Prime India',
-      amount: 1499.00,
+      name: isINR ? 'Amazon Prime India' : 'Amazon Prime Membership',
+      amount: scale(1499.00),
       billingCycle: 'YEARLY',
       nextBillingDate: new Date(year + 1, month, 10),
       walletId: creditCard.id,
@@ -331,7 +384,7 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       name: 'House Rent Payment',
-      amount: 28000.00,
+      amount: scale(28000.00),
       dueDate: new Date(year, month, 7),
       isPaid: false,
       category: 'Rent',
@@ -343,7 +396,7 @@ export async function seedSampleDataForUser(userId: string) {
       userId,
       workspaceId,
       name: 'Internet & Broadband Charge',
-      amount: 1199.00,
+      amount: scale(1199.00),
       dueDate: new Date(year, month, 12),
       isPaid: false,
       category: 'Utilities',
@@ -385,7 +438,7 @@ async function main() {
 
   // Seed user items
   await seedCategoriesForUser(user.id);
-  await seedSampleDataForUser(user.id);
+  await seedSampleDataForUser(user.id, user.email);
 
   console.log('✅ Seeding complete.');
 }

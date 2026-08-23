@@ -7,6 +7,7 @@ import Modal from '../components/UI/Modal';
 import { CreditCard as CreditCardType } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
+import SpecularButton from '../components/UI/SpecularButton';
 import { CreditCardForm } from '../components/CreditCards/CreditCardForm';
 import EmptyState from '../components/UI/EmptyState';
 import { SkeletonCard } from '../components/UI/Skeleton';
@@ -109,12 +110,27 @@ export default function CreditCardsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30]">Credit Liabilities</h1>
           <p className="text-sm text-gray-500 mt-1">Track limits, credit card balances, and upcoming due cycles.</p>
         </div>
-        <button
+        <SpecularButton
+          size="sm"
+          radius={14}
+          tint="#ffffff"
+          tintOpacity={0.1}
+          blur={0}
+          textColor="#111411"
+          lineColor="#111411"
+          baseColor="#fdf1e1"
+          intensity={1.2}
+          shineSize={12}
+          shineFade={35}
+          thickness={1}
+          speed={0.3}
+          followMouse
+          proximity={200}
           onClick={() => setIsModalOpen(true)}
-          className="bg-[#0b1c30] text-white hover:opacity-90 gap-2 cursor-pointer py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center shadow-md transition-all"
         >
-          <Plus className="w-4 h-4" /> Add Card
-        </button>
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Add Card
+        </SpecularButton>
       </div>
 
       {isLoading ? (
@@ -140,27 +156,27 @@ export default function CreditCardsPage() {
         <>
           {/* CardSwap Carousel Showcase for Multiple Cards */}
           {cards.length > 0 && (
-            <div className="soft-card p-8 rounded-2xl relative overflow-hidden bg-gradient-to-r from-slate-900 to-[#0b1c30] text-white shadow-xl flex flex-col lg:flex-row items-center justify-between min-h-[440px]">
+            <div className="soft-card p-8 rounded-2xl relative overflow-hidden bg-gradient-to-r from-[#f5f0e6] to-[#e8d8c5] text-[#0b1c30] shadow-xl flex flex-col lg:flex-row items-center justify-between min-h-[440px]">
               <div className="w-full lg:max-w-md z-10 space-y-4 text-left">
-                <span className="text-xs uppercase tracking-[0.25em] font-extrabold text-emerald-400 bg-emerald-950/50 border border-emerald-800/60 px-3 py-1 rounded-full inline-block">
+                <span className="text-xs uppercase tracking-[0.25em] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full inline-block">
                   DYNAMIC VAULT DECK
                 </span>
-                <h2 className="text-4xl font-extrabold text-white tracking-tight">
+                <h2 className="text-4xl font-extrabold text-[#0b1c30] tracking-tight">
                   Your Active Liabilities
                 </h2>
-                <p className="text-slate-300 text-sm leading-relaxed">
+                <p className="text-slate-600 text-sm leading-relaxed">
                   Hover over the rotating card vault to freeze transitions, or click any layer to cycle your registered lines of credit and inspect due limits.
                 </p>
                 <div className="flex gap-4 pt-2">
-                  <div className="border-l-2 border-emerald-400 pl-3">
-                    <span className="text-2xl font-bold text-white block">{cards.length}</span>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">REGISTERED CARDS</span>
+                  <div className="border-l-2 border-emerald-500 pl-3">
+                    <span className="text-2xl font-bold text-[#0b1c30] block">{cards.length}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">REGISTERED CARDS</span>
                   </div>
-                  <div className="border-l-2 border-indigo-400 pl-3">
-                    <span className="text-2xl font-bold text-white block">
+                  <div className="border-l-2 border-indigo-500 pl-3">
+                    <span className="text-2xl font-bold text-[#0b1c30] block">
                       {formatCurrency(cards.reduce((acc, curr) => acc + Number(curr.total_due || 0), 0), user?.baseCurrency)}
                     </span>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">TOTAL COMBINED DUE</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">TOTAL COMBINED DUE</span>
                   </div>
                 </div>
               </div>

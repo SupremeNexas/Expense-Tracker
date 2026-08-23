@@ -382,42 +382,7 @@ export const StaggeredMenu = React.forwardRef(({
           return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c }} />);
         })()}
       </div>
-      {showTrigger && (
-        <div className="staggered-menu-trigger-container">
-          <button
-            ref={toggleBtnRef}
-            className="btn-premium-inv px-8 font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95"
-            style={{
-              backgroundColor: '#0b1c30',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '16px',
-              padding: '12px 24px',
-              fontSize: '14px'
-            }}
-            aria-label={open ? 'Close menu' : 'Open menu'}
-            aria-expanded={open}
-            aria-controls="staggered-menu-panel"
-            onClick={toggleMenu}
-            type="button"
-          >
-            <span ref={iconRef} className="sm-icon" aria-hidden="true" style={{ width: '16px', height: '16px', position: 'relative' }}>
-              <span ref={plusHRef} className="sm-icon-line" style={{ width: '16px', height: '2px', backgroundColor: 'currentColor', position: 'absolute', top: '7px', left: '0' }} />
-              <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ width: '2px', height: '16px', backgroundColor: 'currentColor', position: 'absolute', top: '0', left: '7px' }} />
-            </span>
-            <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true" style={{ position: 'relative', height: '1.2em', overflow: 'hidden', display: 'inline-block', lineHeight: 1.2 }}>
-              <span ref={textInnerRef} className="sm-toggle-textInner" style={{ display: 'flex', flexDirection: 'column' }}>
-                {textLines.map((l, i) => (
-                  <span className="sm-toggle-line" key={i} style={{ display: 'block', height: '1.2em' }}>
-                    {l === 'Menu' ? 'ADD' : l.toUpperCase()}
-                  </span>
-                ))}
-              </span>
-            </span>
-          </button>
-        </div>
-      )}
-      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
+            <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
         <div className="sm-panel-inner">
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (

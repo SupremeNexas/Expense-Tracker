@@ -12,7 +12,8 @@
       "name": "backend-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:backend"],
-      "port": 5002
+      "port": 5002,
+      "autoPort": true
     }
   ]
 }

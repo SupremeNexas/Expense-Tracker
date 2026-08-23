@@ -195,7 +195,7 @@
   right: 0;
   top: var(--sights-top);
   padding: 0;
-  opacity: 1;
+  opacity: var(--sights-opacity, 0);
   visibility: var(--sights-visibility);
   transform: translate3d(var(--sights-enter-x), var(--sights-y), 0) scale(var(--sights-scale));
   transform-origin: 0 0;
@@ -212,7 +212,6 @@
   gap: clamp(16px, 1.15vw, 24px);
   align-items: stretch;
   transform: translate3d(calc(var(--sights-shift) - 18vw), 0, 0);
-  transition: transform 640ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
@@ -349,12 +348,12 @@
 .site-shell-cinematic .hero-title {
   position: absolute;
   left: 50%;
-  top: clamp(230px, 26vh, 320px);
+  top: clamp(160px, 20vh, 240px);
   width: min(94vw, 1780px);
   margin: 0;
   color: #fdf1e1;
   font-family: 'Ogg Medium', serif;
-  font-size: 14rem;
+  font-size: 12rem;
   font-weight: 500;
   line-height: 0.78;
   text-align: center;
@@ -422,7 +421,7 @@
 .site-shell-cinematic .intro-copy {
   position: absolute;
   left: 50%;
-  bottom: clamp(56px, 28vh, 400px);
+  bottom: clamp(56px, 24vh, 320px);
   width: min(560px, calc(100vw - 40px));
   text-align: center;
   transform: translate3d(-50%, var(--intro-copy-y), 0);
@@ -535,6 +534,11 @@
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.42);
 }
 
+.site-shell-cinematic .note-button {
+  margin-top: 36px;
+  pointer-events: auto;
+}
+
 .site-shell-cinematic .note-button,
 .site-shell-cinematic .language-switcher {
   min-height: 50px;
@@ -571,7 +575,7 @@
 /* ── Media Queries ──────────────────────────────────────────────────── */
 
 @media (max-width: 1500px) {
-  .site-shell-cinematic .hero-title { font-size: 11rem; }
+  .site-shell-cinematic .hero-title { font-size: 10rem; }
   .site-shell-cinematic .story-panel h2 { font-size: 4.1rem; }
 }
 

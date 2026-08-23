@@ -31,8 +31,49 @@ class LocalRateProvider implements ExchangeRateProvider {
   }
 }
 
+/**
+ * Live API exchange rates provider with caching and self-healing local fallback.
+ */
+class LiveExchangeRateProvider implements ExchangeRateProvider {
+  private cache: Record<string, { rates: Record<string, number>; expiry: number }> = {};
+  private fallbackProvider = new LocalRateProvider();
+  private CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours caching to prevent API spam
+
+  async getRates(base: string): Promise<Record<string, number>> {
+    const formattedBase = base.toUpperCase();
+    const now = Date.now();
+
+    // Check cache
+    if (this.cache[formattedBase] && this.cache[formattedBase].expiry > now) {
+      return this.cache[formattedBase].rates;
+    }
+
+    try {
+      console.log(`[Exchange Rates] Fetching live rates from open.er-api.com for base: ${formattedBase}...`);
+      const response = await fetch(`https://open.er-api.com/v6/latest/${formattedBase}`);
+      if (!response.ok) {
+        throw new Error(`HTTP status code: ${response.status}`);
+      }
+      const data = (await response.json()) as any;
+      if (data && data.result === 'success' && data.rates) {
+        const rates = data.rates as Record<string, number>;
+        this.cache[formattedBase] = {
+          rates,
+          expiry: now + this.CACHE_DURATION_MS
+        };
+        return rates;
+      }
+      throw new Error('API reported unsuccessful rate retrieval');
+    } catch (err) {
+      console.warn(`[Exchange Rates] Failed to fetch live rates for base ${formattedBase}:`, err, 'Falling back to local rate matrix.');
+      // Fetch fallback matrix
+      return this.fallbackProvider.getRates(formattedBase);
+    }
+  }
+}
+
 // Global active provider instance
-let activeRatesProvider: ExchangeRateProvider = new LocalRateProvider();
+let activeRatesProvider: ExchangeRateProvider = new LiveExchangeRateProvider();
 
 export function setRatesProvider(provider: ExchangeRateProvider): void {
   activeRatesProvider = provider;
@@ -46,6 +87,12 @@ export async function convertCurrency(
   from: string,
   to: string
 ): Promise<number> {
+  if (amount === undefined || amount === null || typeof amount !== 'number' || isNaN(amount)) {
+    throw new Error('Invalid amount provided for currency conversion');
+  }
+  if (!from || typeof from !== 'string' || !to || typeof to !== 'string') {
+    throw new Error('From and to currency codes must be non-empty strings');
+  }
   const fCode = from.toUpperCase();
   const tCode = to.toUpperCase();
   if (fCode === tCode) return amount;
@@ -68,6 +115,9 @@ export async function convertCurrency(
  * Returns complete rates list for a given base currency
  */
 export async function getExchangeRates(base: string): Promise<Record<string, number>> {
+  if (!base || typeof base !== 'string') {
+    throw new Error('Base currency must be a valid non-empty string');
+  }
   try {
     return await activeRatesProvider.getRates(base);
   } catch (err) {

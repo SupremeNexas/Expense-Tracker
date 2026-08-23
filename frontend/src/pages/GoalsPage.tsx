@@ -11,6 +11,7 @@ import EmptyState from '../components/UI/EmptyState';
 import { SkeletonCard } from '../components/UI/Skeleton';
 import { Input } from '../components/UI/Input';
 import { Button } from '../components/UI/Button';
+
 export default function GoalsPage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -62,7 +63,7 @@ export default function GoalsPage() {
   });
 
   const contributeMutation = useMutation({
-    mutationFn: ({ id, amount, notes }: { id: string; amount: number; notes: string }) => 
+    mutationFn: ({ id, amount, notes }: { id: string; amount: number; notes: string }) =>
       api.request(`/goals/${id}/contribute`, {
         method: 'POST',
         body: { amount, notes }
@@ -124,7 +125,7 @@ export default function GoalsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Savings Goals</h1>
           <p className="text-sm text-gray-400 mt-1">Fund and track milestones like vacations, device upgrades, or emergency reserves.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="btn-premium btn-premium-primary gap-2 cursor-pointer py-2 text-sm"
         >
@@ -144,7 +145,7 @@ export default function GoalsPage() {
           title="No savings goals found"
           description="Fund a laptop, high-yield deposit, or debt payoff target to track progress."
           action={
-            <button 
+            <button
               onClick={() => setIsModalOpen(true)}
               className="btn-premium btn-premium-primary text-xs py-1.5 px-4 cursor-pointer"
             >
@@ -171,7 +172,7 @@ export default function GoalsPage() {
                       <span>{daysLeft > 0 ? `${daysLeft} days remaining` : 'Target Passed'}</span>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleDelete(g.id)}
                     className="p-1 rounded-lg hover:bg-red-500/10 text-red-500 cursor-pointer"
                   >
@@ -186,8 +187,8 @@ export default function GoalsPage() {
                     <span>Target: {formatCurrency(target, user?.baseCurrency)}</span>
                   </div>
                   <div className="w-full bg-black/5 dark:bg-white/5 h-2.5 rounded-full overflow-hidden border border-black/[0.02] dark:border-white/[0.02]">
-                    <div 
-                      className="bg-emerald-500 h-full transition-all duration-500" 
+                    <div
+                      className="bg-emerald-500 h-full transition-all duration-500"
                       style={{ width: `${percent}%` }}
                     />
                   </div>
@@ -197,7 +198,7 @@ export default function GoalsPage() {
                 </div>
 
                 {/* Contribute trigger button */}
-                <button 
+                <button
                   onClick={() => {
                     setSelectedGoal(g);
                     setIsContributeOpen(true);
@@ -214,8 +215,8 @@ export default function GoalsPage() {
       )}
 
       {/* Goal creation modal */}
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title=""
       >
@@ -237,33 +238,33 @@ export default function GoalsPage() {
               Goal Information
             </div>
 
-            <Input 
+            <Input
               label="Goal Name"
-              type="text" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              placeholder="e.g. MacBook Pro M4, Europe Trip" 
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. MacBook Pro M4, Europe Trip"
               required
               autoFocus
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input 
+              <Input
                 label="Target Amount"
-                type="number" 
-                value={targetAmount} 
-                onChange={e => setTargetAmount(e.target.value)} 
-                placeholder="100000" 
+                type="number"
+                value={targetAmount}
+                onChange={e => setTargetAmount(e.target.value)}
+                placeholder="100000"
                 icon={<span className="text-sm font-semibold text-gray-400 dark:text-gray-500">₹</span>}
                 required
               />
 
-              <Input 
+              <Input
                 label="Initial Savings"
-                type="number" 
-                value={currentAmount} 
-                onChange={e => setCurrentAmount(e.target.value)} 
-                placeholder="0" 
+                type="number"
+                value={currentAmount}
+                onChange={e => setCurrentAmount(e.target.value)}
+                placeholder="0"
                 icon={<span className="text-sm font-semibold text-gray-400 dark:text-gray-500">₹</span>}
               />
             </div>
@@ -277,11 +278,11 @@ export default function GoalsPage() {
               Timeline
             </div>
 
-            <Input 
+            <Input
               label="Target Date Deadline"
-              type="date" 
-              value={deadline} 
-              onChange={e => setDeadline(e.target.value)} 
+              type="date"
+              value={deadline}
+              onChange={e => setDeadline(e.target.value)}
               required
             />
           </div>
@@ -299,8 +300,8 @@ export default function GoalsPage() {
       </Modal>
 
       {/* Goal contribution modal */}
-      <Modal 
-        isOpen={isContributeOpen} 
+      <Modal
+        isOpen={isContributeOpen}
         onClose={() => setIsContributeOpen(false)}
         title=""
       >
@@ -317,23 +318,23 @@ export default function GoalsPage() {
           </div>
 
           <div className="space-y-4">
-            <Input 
+            <Input
               label="Amount to Save"
-              type="number" 
-              value={contribAmount} 
-              onChange={e => setContribAmount(e.target.value)} 
-              placeholder="5000" 
+              type="number"
+              value={contribAmount}
+              onChange={e => setContribAmount(e.target.value)}
+              placeholder="5000"
               icon={<span className="text-sm font-semibold text-gray-400 dark:text-gray-500">₹</span>}
               required
               min="1"
             />
 
-            <Input 
+            <Input
               label="Memo / Notes"
-              type="text" 
-              value={contribNotes} 
-              onChange={e => setContribNotes(e.target.value)} 
-              placeholder="e.g. Transferred from Bank Account" 
+              type="text"
+              value={contribNotes}
+              onChange={e => setContribNotes(e.target.value)}
+              placeholder="e.g. Transferred from Bank Account"
             />
           </div>
 

@@ -166,12 +166,12 @@ export default function LandingPage() {
 
     const s = smoothScroll.current;
     const frame2 = segmentInOut(s, 560, 900, 1300, 1620);
-    const frame3 = segmentInOut(s, 1580, 1900, 2300, 2560);
+    const frame3 = segmentInOut(s, 1580, 1900, 2150, 2355);
     const progress = clamp(s / 2700);
     const introExit = smoothstep(90, 650, s);
-    const sightsEnterRaw = smoothstep(2400, 2900, s);
+    const sightsEnterRaw = smoothstep(2360, 2750, s);
     const sightsEnter = Math.pow(sightsEnterRaw, 1.2);
-    const sightsControlsEnter = smoothstep(2700, 2900, s);
+    const sightsControlsEnter = smoothstep(2550, 2750, s);
     const blurActive = clamp(frame2.active + frame3.active);
     const frame2Opacity = frame2.active * (1 - frame3.enter);
     const splitDrift = Math.pow(frame2.enter, 1.5);
@@ -243,11 +243,24 @@ export default function LandingPage() {
     }
 
     container.style.setProperty('--sights-visibility', sightsEnter > 0.01 ? "visible" : "hidden");
-    container.style.setProperty('--sights-y', "0px");
-    container.style.setProperty('--sights-enter-x', `${((1 - sightsEnter) * 420).toFixed(4)}vw`);
+    container.style.setProperty('--sights-y', `${((1 - sightsEnter) * 60).toFixed(4)}px`);
+    container.style.setProperty('--sights-enter-x', "0px");
     container.style.setProperty('--sights-scale', (1 / backScale).toFixed(4));
     container.style.setProperty('--sights-top', `${sightsParentTop.toFixed(4)}px`);
     container.style.setProperty('--sights-screen-top', `${sightsScreenTop.toFixed(4)}px`);
+
+    const track = trackRef.current;
+    const track2 = track2Ref.current;
+    if (track && track2 && track.children[0]) {
+      const cardWidth = track.children[0].getBoundingClientRect().width;
+      const gap = parseFloat(window.getComputedStyle(track).columnGap || '0');
+      const baseIndex = 5;
+      const baseShift = -(cardWidth + gap) * baseIndex;
+      const scrollShift = s * 0.35;
+
+      track.style.setProperty('--sights-shift', `${baseShift - scrollShift}px`);
+      track2.style.setProperty('--sights-shift', `${baseShift + scrollShift}px`);
+    }
 
     const scrollDelta = Math.abs(smoothScroll.current - targetScroll.current);
     const mouseXDelta = Math.abs(mouseX.current - targetMouseX.current);
@@ -292,31 +305,28 @@ export default function LandingPage() {
 
   // Update slider shift responsive position of relative cards for both rows
   useEffect(() => {
-    const updateShift = () => {
+    const updateLayout = () => {
       const track = trackRef.current;
       const track2 = track2Ref.current;
 
       if (track && track.children[0]) {
         const cardWidth = track.children[0].getBoundingClientRect().width;
         const gap = parseFloat(window.getComputedStyle(track).columnGap || '0');
+        const baseIndex = 5;
+        const baseShift = -(cardWidth + gap) * baseIndex;
+        const scrollShift = smoothScroll.current * 0.35;
 
-        // Row 1 goes standard direction (based on activeSight)
-        const sightsShift = -(cardWidth + gap) * activeSight;
-        track.style.setProperty('--sights-shift', `${sightsShift}px`);
-
-        // Row 2 goes in the opposite direction
+        track.style.setProperty('--sights-shift', `${baseShift - scrollShift}px`);
         if (track2) {
-          const activeSight2 = clonedSights.length - 1 - activeSight;
-          const sightsShift2 = -(cardWidth + gap) * activeSight2;
-          track2.style.setProperty('--sights-shift', `${sightsShift2}px`);
+          track2.style.setProperty('--sights-shift', `${baseShift + scrollShift}px`);
         }
       }
     };
 
-    updateShift();
-    window.addEventListener('resize', updateShift);
-    return () => window.removeEventListener('resize', updateShift);
-  }, [activeSight, clonedSights.length]);
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
+  }, [clonedSights.length]);
 
   // Jump logic for infinite loop slider
   const jumpSightSlider = (targetIndex: number) => {
@@ -348,7 +358,7 @@ export default function LandingPage() {
 
   const handleNavClick = (e: React.MouseEvent, scrollPos: number) => {
     e.preventDefault();
-    window.scrollTo({ top: scrollPos, behavior: 'smooth' });
+    window.scrollTo(0, scrollPos);
   };
 
   return (
@@ -466,16 +476,6 @@ export default function LandingPage() {
                   })}
                 </div>
               </section>
-
-              {/* Slider Controls */}
-              <div ref={sightsControlsRef} className="sights-controls" aria-label="Slider controls">
-                <button className="sight-nav sight-prev" onClick={handlePrev} aria-label="Previous sight">
-                  ←
-                </button>
-                <button className="sight-nav sight-next" onClick={handleNext} aria-label="Next sight">
-                  →
-                </button>
-              </div>
 
               {/* Hero Title */}
               <h1 className="hero-title">Finova</h1>

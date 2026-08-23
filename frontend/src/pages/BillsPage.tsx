@@ -10,6 +10,7 @@ import useAuthStore from '../store/authStore';
 import { BillForm } from '../components/Bills/BillForm';
 import EmptyState from '../components/UI/EmptyState';
 import { SkeletonList } from '../components/UI/Skeleton';
+import SpecularButton from '../components/UI/SpecularButton';
 
 export default function BillsPage() {
   const queryClient = useQueryClient();
@@ -37,8 +38,8 @@ export default function BillsPage() {
   });
 
   const togglePaidMutation = useMutation({
-    mutationFn: ({ id, isPaid }: { id: string; isPaid: boolean }) => 
-      api.request(`/bills/${id}/pay`, { method: 'POST' }), // Uses our backend paid endpoint
+    mutationFn: (id: string) =>
+      api.request(`/bills/${id}/pay`, { method: 'POST' }),
     onSuccess: () => {
       showToast('Bill status updated!', 'success');
       queryClient.invalidateQueries({ queryKey: ['bills'] });
@@ -90,12 +91,27 @@ export default function BillsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Utility Bills</h1>
           <p className="text-sm text-gray-400 mt-1">Audit, pay, and schedule your incoming utility obligations.</p>
         </div>
-        <button 
+        <SpecularButton
+          size="sm"
+          radius={14}
+          tint="#ffffff"
+          tintOpacity={0.1}
+          blur={0}
+          textColor="#111411"
+          lineColor="#111411"
+          baseColor="#fdf1e1"
+          intensity={1.2}
+          shineSize={12}
+          shineFade={35}
+          thickness={1}
+          speed={0.3}
+          followMouse
+          proximity={200}
           onClick={() => setIsModalOpen(true)}
-          className="btn-premium btn-premium-primary gap-2 cursor-pointer py-2 text-sm"
         >
-          <Plus className="w-4 h-4" /> Add Bill
-        </button>
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Add Bill
+        </SpecularButton>
       </div>
 
       {/* Bills display lists */}

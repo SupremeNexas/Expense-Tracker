@@ -6,8 +6,8 @@
   --font-body: 'Inter', sans-serif;
   --font-display: 'Inter', sans-serif;
 
-  --color-background: #f8f9ff;
-  --color-foreground: #0b1c30;
+  --color-background: #fdfaf6;
+  --color-foreground: #4a433a;
 
   --color-primary: #000000;
   --color-primary-foreground: #ffffff;
@@ -15,7 +15,7 @@
   --color-secondary: #006a61;
   --color-secondary-foreground: #ffffff;
 
-  --color-border: #e5eeff;
+  --color-border: #e8e2d8;
   --radius: 0.75rem;
 }
 
@@ -43,29 +43,29 @@ body {
     user-select: none;
   }
   .btn-premium-primary {
-    background-color: #10B981;
+    background-color: #a89476; /* Muted Gold/Beige */
     color: #ffffff;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(168, 148, 118, 0.2);
+    box-shadow: 0 2px 10px rgba(168, 148, 118, 0.2);
   }
   .btn-premium-primary:hover {
-    background-color: #059669;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    background-color: #8c7a5f;
+    box-shadow: 0 4px 14px rgba(168, 148, 118, 0.3);
   }
   .btn-premium-secondary {
-    background-color: rgba(16, 185, 129, 0.1);
-    color: #10B981;
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background-color: rgba(168, 148, 118, 0.1);
+    color: #8c7a5f;
+    border: 1px solid rgba(168, 148, 118, 0.2);
   }
   .btn-premium-secondary:hover {
-    background-color: rgba(16, 185, 129, 0.18);
+    background-color: rgba(168, 148, 118, 0.18);
   }
 
   /* Stitch Template Soft Card */
   .soft-card {
     background: #ffffff;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5eeff;
+    box-shadow: 0 1px 3px 0 rgba(168, 148, 118, 0.05);
+    border: 1px solid #e8e2d8;
     border-radius: 0.75rem;
   }
 
@@ -202,8 +202,7 @@ body {
 /* Global Specular Button Direction
    Placed outside Tailwind layers so it overrides utility-class buttons. */
 .specular-button-flat,
-.btn-premium,
-.btn-premium-primary {
+.btn-premium {
   position: relative !important;
   border-radius: 14px !important;
   border: 1px solid rgba(17, 20, 17, 0.16) !important;

@@ -47,6 +47,7 @@ export default function TransactionMenu() {
   const menuItems = [
     { label: 'Add Expense', ariaLabel: 'Add Expense', link: '#', onClick: () => handleOpen('EXPENSE') },
     { label: 'Add Income', ariaLabel: 'Add Income', link: '#', onClick: () => handleOpen('INCOME') },
+    { label: 'Add Recurring', ariaLabel: 'Add Recurring Expense', link: '#', onClick: () => handleOpen('EXPENSE') },
     { label: 'Scan Receipt', ariaLabel: 'Scan Receipt', link: '#', onClick: () => handleOpen('RECEIPT') },
   ];
 

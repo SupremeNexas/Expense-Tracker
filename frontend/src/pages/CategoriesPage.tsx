@@ -6,6 +6,7 @@ import { useToast } from '../components/UI/Toast';
 import Modal from '../components/UI/Modal';
 import { Category } from '../types';
 import { CategoryForm } from '../components/Categories/CategoryForm';
+import SpecularButton from '../components/UI/SpecularButton';
 
 const COLOR_PRESETS = [
   '#10B981', // Emerald
@@ -98,12 +99,27 @@ export default function CategoriesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Ledger Categories</h1>
           <p className="text-sm text-gray-400 mt-1">Classify and group your inflow/outflow transactions.</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="btn-premium btn-premium-primary gap-2 cursor-pointer py-2 text-sm"
-        >
-          <Plus className="w-4 h-4" /> Add Category
-        </button>
+        <SpecularButton
+            size="sm"
+            radius={14}
+            tint="#ffffff"
+            tintOpacity={0.1}
+            blur={0}
+            textColor="#111411"
+            lineColor="#111411"
+            baseColor="#fdf1e1"
+            intensity={1.2}
+            shineSize={12}
+            shineFade={35}
+            thickness={1}
+            speed={0.3}
+            followMouse
+            proximity={200}
+            onClick={() => handleOpenModal()}
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Add Category
+          </SpecularButton>
       </div>
 
       {/* Grid of Categories */}

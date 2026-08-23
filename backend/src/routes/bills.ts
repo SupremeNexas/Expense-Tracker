@@ -70,6 +70,32 @@ router.post('/', authenticate, billRules, validate, async (req: AuthenticatedReq
   }
 });
 
+// POST /api/bills/:id/pay - Toggle bill paid status
+router.post('/:id/pay', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const bill = await prisma.bill.findFirst({
+      where: { id: req.params.id as string, userId: req.user.id as string }
+    });
+
+    if (!bill) return res.status(404).json({ error: 'Bill not found' });
+
+    // Toggle: if currently paid, mark unpaid; otherwise mark paid
+    const newPaidStatus = !bill.isPaid;
+
+    const updated = await prisma.bill.update({
+      where: { id: req.params.id as string },
+      data: { isPaid: newPaidStatus }
+    });
+
+    res.json(mapBill(updated));
+  } catch (err) {
+    console.error('Error toggling bill paid status:', err);
+    res.status(500).json({ error: 'Failed to update bill status' });
+  }
+});
+
 // PUT /api/bills/:id
 router.put('/:id', authenticate, billRules, validate, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -100,22 +126,5 @@ router.put('/:id', authenticate, billRules, validate, async (req: AuthenticatedR
   }
 });
 
-// DELETE /api/bills/:id
-router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    const bill = await prisma.bill.findFirst({
-      where: { id: req.params.id as string, userId: req.user.id as string }
-    });
-
-    if (!bill) return res.status(404).json({ error: 'Bill not found' });
-
-    await prisma.bill.delete({ where: { id: req.params.id as string } });
-    res.json({ message: 'Deleted' });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete bill' });
-  }
-});
 
 export default router;

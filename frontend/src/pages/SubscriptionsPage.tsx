@@ -7,6 +7,7 @@ import Modal from '../components/UI/Modal';
 import { Subscription } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
+import SpecularButton from '../components/UI/SpecularButton';
 import { SubscriptionForm } from '../components/Subscriptions/SubscriptionForm';
 import EmptyState from '../components/UI/EmptyState';
 import { SkeletonList } from '../components/UI/Skeleton';
@@ -106,12 +107,27 @@ export default function SubscriptionsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Subscription Audits</h1>
           <p className="text-sm text-gray-400 mt-1">Track monthly software burn, hosting plans, and streaming trials.</p>
         </div>
-        <button 
+        <SpecularButton
+          size="sm"
+          radius={14}
+          tint="#ffffff"
+          tintOpacity={0.1}
+          blur={0}
+          textColor="#111411"
+          lineColor="#111411"
+          baseColor="#fdf1e1"
+          intensity={1.2}
+          shineSize={12}
+          shineFade={35}
+          thickness={1}
+          speed={0.3}
+          followMouse
+          proximity={200}
           onClick={() => setIsModalOpen(true)}
-          className="btn-premium btn-premium-primary gap-2 cursor-pointer py-2 text-sm"
         >
-          <Plus className="w-4 h-4" /> Add Subscription
-        </button>
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Add Subscription
+        </SpecularButton>
       </div>
 
       {/* Burn rate metrics cards */}

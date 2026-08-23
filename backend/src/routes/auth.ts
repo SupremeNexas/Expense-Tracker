@@ -85,7 +85,8 @@ router.post('/register', authLimiter, [
         email: user.email,
         avatar: user.avatar,
         baseCurrency: user.baseCurrency,
-        authProvider: user.authProvider
+        authProvider: user.authProvider,
+        onboardingComplete: user.onboardingComplete
       }
     });
   } catch (err) {
@@ -136,7 +137,8 @@ router.post('/login', authLimiter, [
         email: user.email,
         avatar: user.avatar,
         baseCurrency: user.baseCurrency,
-        authProvider: user.authProvider
+        authProvider: user.authProvider,
+        onboardingComplete: user.onboardingComplete
       }
     });
   } catch (err) {
@@ -274,7 +276,8 @@ router.post('/google', authLimiter, [
         email: user.email,
         avatar: user.avatar,
         baseCurrency: user.baseCurrency,
-        authProvider: user.authProvider
+        authProvider: user.authProvider,
+        onboardingComplete: user.onboardingComplete
       }
     });
   } catch (err: any) {

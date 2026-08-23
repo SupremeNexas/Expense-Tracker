@@ -23,12 +23,24 @@ export const useAuthStore = create<AuthState>((set) => ({
   authLoading: true,
   skipAuthChecked: false,
 
-  setSkipAuth: (skip: boolean) => {
+  setSkipAuth: async (skip: boolean) => {
     if (skip) {
-      localStorage.setItem('fintech_skip_auth', 'true');
-      set({ user: { id: 'test-user', email: 'test@example.com', name: 'Demo User', baseCurrency: 'USD', onboardingComplete: true } as User });
+      try {
+        localStorage.setItem('fintech_skip_auth', 'true');
+        const res = await api.login({ email: 'demo@example.com', password: 'password123' });
+        setToken(res.token);
+        if (res.refreshToken) {
+          localStorage.setItem('fintech_refresh_token', res.refreshToken);
+        }
+        set({ user: res.user });
+      } catch (err) {
+        console.warn('Failed to login programmatically with seed account:', err);
+        set({ user: { id: 'test-user', email: 'test@example.com', name: 'Demo User', baseCurrency: 'USD', onboardingComplete: true } as User });
+      }
     } else {
       localStorage.removeItem('fintech_skip_auth');
+      setToken(null);
+      localStorage.removeItem('fintech_refresh_token');
       set({ user: null });
     }
   },
@@ -75,25 +87,37 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkAuth: async () => {
     set({ authLoading: true });
 
-    if (localStorage.getItem('fintech_skip_auth') === 'true') {
-      setToken(null);
-      set({
-        user: {
-          id: 'test-user',
-          email: 'test@example.com',
-          name: 'Demo User',
-          baseCurrency: 'USD',
-          onboardingComplete: true
-        } as User,
-        authLoading: false
-      });
-      return;
-    }
+    const isSkipAuth = localStorage.getItem('fintech_skip_auth') === 'true';
 
     try {
       const user = await api.getMe();
       set({ user, authLoading: false });
     } catch (e: any) {
+      if (isSkipAuth) {
+        try {
+          const res = await api.login({ email: 'demo@example.com', password: 'password123' });
+          setToken(res.token);
+          if (res.refreshToken) {
+            localStorage.setItem('fintech_refresh_token', res.refreshToken);
+          }
+          set({ user: res.user, authLoading: false });
+          return;
+        } catch (err) {
+          console.warn('[Auth] Failed to login programmatically with seed account:', err);
+          set({
+            user: {
+              id: 'test-user',
+              email: 'test@example.com',
+              name: 'Demo User',
+              baseCurrency: 'USD',
+              onboardingComplete: true
+            } as User,
+            authLoading: false
+          });
+          return;
+        }
+      }
+
       // Network error (server down) — don't wipe the user session
       if (e?.message !== 'UNAUTHORIZED' && !e?.message?.includes('401')) {
         console.warn('[Auth] Server unreachable, keeping cached session state');

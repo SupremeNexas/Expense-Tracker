@@ -348,6 +348,10 @@
   pointer-events: none;
   user-select: none;
   opacity: var(--sm-num-opacity, 0);
+  max-width: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Tablet (≤1024px) ────────────────────────────────────────────────── */
@@ -404,6 +408,7 @@
   .sm-panel-list[data-numbering] .sm-panel-item::after {
     font-size: 14px;
     right: 1.5em;
+    max-width: 2.5em;
   }
 }
 

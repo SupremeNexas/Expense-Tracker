@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { body } from 'express-validator';
+import { body, query, param } from 'express-validator';
 import { prisma } from '../db/prisma';
 import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
 import { Prisma } from '@prisma/client';
@@ -11,13 +11,34 @@ import { convertCurrency } from '../services/currency/converter';
 const router = Router();
 
 const expenseRules = [
-  body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 200 }),
+  body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 200 }).withMessage('Title must be at most 200 characters'),
   body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be a positive number'),
-  body('category_id').notEmpty().withMessage('Category is required'),
+  body('category_id').notEmpty().withMessage('Category is required').isUUID().withMessage('Category ID must be a valid UUID'),
   body('date').isISO8601().withMessage('Valid date is required (YYYY-MM-DD)'),
-  body('notes').optional().trim().isLength({ max: 500 }),
-  body('payment_method').optional().trim(),
-  body('wallet_id').optional().trim(),
+  body('notes').optional().trim().isLength({ max: 500 }).withMessage('Notes must be at most 500 characters'),
+  body('payment_method').optional().trim().isLength({ max: 100 }).withMessage('Payment method must be at most 100 characters'),
+  body('wallet_id').optional().trim().isUUID().withMessage('Wallet ID must be a valid UUID'),
+  body('type').optional().isIn(['EXPENSE', 'INCOME']).withMessage('Type must be EXPENSE or INCOME'),
+  body('tags').optional().isArray().withMessage('Tags must be an array of strings'),
+  body('tags.*').optional().isString().trim().notEmpty().withMessage('Each tag must be a non-empty string'),
+];
+
+const listExpensesRules = [
+  query('month').optional().isInt({ min: 1, max: 12 }).withMessage('Month must be an integer between 1 and 12'),
+  query('year').optional().isInt({ min: 1000, max: 9999 }).withMessage('Year must be a 4-digit integer'),
+  query('category_id').optional().isUUID().withMessage('Category ID must be a valid UUID'),
+  query('search').optional().isString().trim(),
+  query('sort').optional().isIn(['date', 'title', 'amount', 'category']).withMessage('Invalid sort field'),
+  query('order').optional().isIn(['asc', 'desc']).withMessage('Order must be asc or desc'),
+];
+
+const idParamRules = [
+  param('id').isUUID().withMessage('Invalid transaction ID format'),
+];
+
+const plaidExchangeRules = [
+  body('public_token').trim().notEmpty().withMessage('Public token is required').isString().withMessage('Public token must be a string'),
+  body('institution').optional().trim().notEmpty().withMessage('Institution name cannot be empty').isString().withMessage('Institution name must be a string').isLength({ max: 100 }).withMessage('Institution name must be at most 100 characters'),
 ];
 
 // Helper to get or create a default wallet for a workspace
@@ -98,7 +119,7 @@ router.get('/wallets', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER
 });
 
 // GET /api/expenses - List transactions scoped by workspace
-router.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
+router.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), listExpensesRules, validate, async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -173,7 +194,7 @@ router.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), as
 });
 
 // GET /api/expenses/:id
-router.get('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
+router.get('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), idParamRules, validate, async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -302,7 +323,7 @@ router.post('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), expenseRule
 });
 
 // PUT /api/expenses/:id - Edit transaction
-router.put('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), expenseRules, validate, async (req: WorkspaceRequest, res: Response) => {
+router.put('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), idParamRules, expenseRules, validate, async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { title, amount, category_id, date, notes = '', payment_method = 'Card', tags = [], wallet_id, type = 'EXPENSE' } = req.body;
@@ -407,7 +428,7 @@ router.put('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), expenseRu
 });
 
 // DELETE /api/expenses/:id
-router.delete('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), async (req: WorkspaceRequest, res: Response) => {
+router.delete('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), idParamRules, validate, async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -449,6 +470,125 @@ router.delete('/:id', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), async 
   } catch (err) {
     console.error('Error deleting expense:', err);
     res.status(500).json({ error: 'Failed to delete expense' });
+  }
+});
+
+// ── Plaid Bank Sync Simulation ────────────────────────────────────────────────
+// POST /api/expenses/plaid/link-token - Generate a mock link token for simulated onboarding
+router.post('/plaid/link-token', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), async (req: WorkspaceRequest, res: Response) => {
+  res.json({ link_token: "mock-link-token-" + Math.floor(Math.random() * 1000000) });
+});
+
+// POST /api/expenses/plaid/exchange-token - Exchange a public token for a mock wallet and sync transactions
+router.post('/plaid/exchange-token', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR']), plaidExchangeRules, validate, async (req: WorkspaceRequest, res: Response) => {
+  try {
+    if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
+    const { public_token, institution = 'Chase Bank' } = req.body;
+
+    // Create new wallet representing the linked bank account
+    const wallet = await prisma.wallet.create({
+      data: {
+        userId: req.user.id,
+        workspaceId: req.workspaceId,
+        name: institution,
+        type: 'BANK',
+        balance: 4520.50,
+        color: '#3B82F6', // Indigo/Blue
+        currency: 'USD'
+      }
+    });
+
+    // Ensure default categories are matched by checking workspace or finding general ones
+    let foodCategory = await prisma.category.findFirst({
+      where: { name: 'Food', OR: [{ workspaceId: req.workspaceId }, { userId: null }] }
+    });
+    if (!foodCategory) {
+      foodCategory = await prisma.category.create({
+        data: { name: 'Food', color: '#EF4444', icon: 'Utensils', type: 'EXPENSE', workspaceId: req.workspaceId }
+      });
+    }
+
+    let incomeCategory = await prisma.category.findFirst({
+      where: { name: 'Income', OR: [{ workspaceId: req.workspaceId }, { userId: null }] }
+    });
+    if (!incomeCategory) {
+      incomeCategory = await prisma.category.create({
+        data: { name: 'Income', color: '#10B981', icon: 'Briefcase', type: 'INCOME', workspaceId: req.workspaceId }
+      });
+    }
+
+    let utilitiesCategory = await prisma.category.findFirst({
+      where: { name: 'Utilities', OR: [{ workspaceId: req.workspaceId }, { userId: null }] }
+    });
+    if (!utilitiesCategory) {
+      utilitiesCategory = await prisma.category.create({
+        data: { name: 'Utilities', color: '#F59E0B', icon: 'Zap', type: 'EXPENSE', workspaceId: req.workspaceId }
+      });
+    }
+
+    let entertainmentCategory = await prisma.category.findFirst({
+      where: { name: 'Entertainment', OR: [{ workspaceId: req.workspaceId }, { userId: null }] }
+    });
+    if (!entertainmentCategory) {
+      entertainmentCategory = await prisma.category.create({
+        data: { name: 'Entertainment', color: '#8B5CF6', icon: 'Film', type: 'EXPENSE', workspaceId: req.workspaceId }
+      });
+    }
+
+    // Add some realistic mock transactions linked to this wallet
+    const mockTxData = [
+      { title: 'Monthly Salary Deposit', amount: 3500.00, type: 'INCOME', categoryId: incomeCategory.id, tags: ['Salary', 'Direct Deposit'] },
+      { title: 'Whole Foods Market', amount: 154.20, type: 'EXPENSE', categoryId: foodCategory.id, tags: ['Groceries'] },
+      { title: 'Netflix USA Monthly', amount: 15.49, type: 'EXPENSE', categoryId: utilitiesCategory.id, tags: ['Subscription'] },
+      { title: 'Starbucks Coffee', amount: 6.80, type: 'EXPENSE', categoryId: foodCategory.id, tags: ['Coffee'] },
+      { title: 'Movie Night Ticket', amount: 24.50, type: 'EXPENSE', categoryId: entertainmentCategory.id, tags: ['Leisure'] }
+    ];
+
+    const createdTransactions = [];
+    for (const tx of mockTxData) {
+      const t = await prisma.transaction.create({
+        data: {
+          userId: req.user.id,
+          workspaceId: req.workspaceId,
+          title: tx.title,
+          amount: new Prisma.Decimal(tx.amount),
+          type: tx.type,
+          categoryId: tx.categoryId,
+          walletId: wallet.id,
+          paymentMethod: 'Bank Transfer',
+          tags: tx.tags,
+          date: new Date(),
+          notes: 'Auto-synchronized via Plaid Link'
+        }
+      });
+      createdTransactions.push(t);
+    }
+
+    // Log the wallet creation auditable action
+    await logAction(
+      req.user.id,
+      req.workspaceId,
+      'WALLET_CREATE',
+      'Wallet',
+      wallet.id,
+      null,
+      wallet
+    );
+
+    res.json({
+      success: true,
+      wallet: {
+        id: wallet.id,
+        name: wallet.name,
+        type: wallet.type,
+        balance: Number(wallet.balance),
+        currency: wallet.currency
+      },
+      transactions_count: createdTransactions.length
+    });
+  } catch (err) {
+    console.error('Plaid mock exchange token failed:', err);
+    res.status(500).json({ error: 'Failed to exchange mock Plaid token' });
   }
 });
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Calendar, ShieldCheck, AlertTriangle } from 'lucide-react';
+import SpecularButton from '../components/UI/SpecularButton';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
 import Modal from '../components/UI/Modal';
@@ -118,12 +119,27 @@ export default function BudgetsPage() {
             ))}
           </select>
 
-          <button 
+          <SpecularButton
+            size="sm"
+            radius={14}
+            tint="#ffffff"
+            tintOpacity={0.1}
+            blur={0}
+            textColor="#111411"
+            lineColor="#111411"
+            baseColor="#fdf1e1"
+            intensity={1.2}
+            shineSize={12}
+            shineFade={35}
+            thickness={1}
+            speed={0.3}
+            followMouse
+            proximity={200}
             onClick={() => setIsModalOpen(true)}
-            className="btn-premium btn-premium-primary gap-2 cursor-pointer py-2 text-sm"
           >
-            <Plus className="w-4 h-4" /> Add Budget
-          </button>
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Add Budget
+          </SpecularButton>
         </div>
       </div>
 

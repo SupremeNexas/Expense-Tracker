@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 5173,
+    port: Number(process.env.PORT) || 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:5002',
@@ -16,12 +16,16 @@ export default defineConfig({
     }
   },
   build: {
-    rolldownOptions: {
+    rollupOptions: {
       output: {
-        codeSplitting: true,
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        }
       }
     },
     // lucide-react icon library bundles at ~620KB (155KB gzipped) — this is expected
-    chunkSizeWarningLimit: 700,
+    chunkSizeWarningLimit: 1000,
   }
 });

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import TransactionMenu from '../Transactions/TransactionMenu';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { useToast } from '../UI/Toast';
 
@@ -14,6 +14,7 @@ export function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuthStore();
   const { showToast } = useToast();
 
@@ -57,7 +58,7 @@ export function Layout({ children }: LayoutProps) {
         <Header setMobileOpen={setMobileOpen} collapsed={collapsed} />
 
         {/* Transaction Multi-button Menu — fixed to viewport right edge */}
-        <TransactionMenu />
+        {location.pathname !== '/dashboard' && <TransactionMenu />}
 
         {/* Inner page content container */}
         <main className="flex-1 px-6 pt-20 pb-12 overflow-y-auto" data-lenis-prevent>

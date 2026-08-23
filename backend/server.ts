@@ -39,7 +39,8 @@ if (!isProduction) {
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g. Postman, mobile apps)
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+    const isLocalhost = origin && /^https?:\/\/localhost:\d+$/.test(origin);
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || (!isProduction && isLocalhost)) {
       callback(null, true);
     } else {
       callback(new Error(`CORS: Origin ${origin} is not allowed`));
