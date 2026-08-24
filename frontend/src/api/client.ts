@@ -144,6 +144,7 @@ export const api = {
   getGroups: () => request('/groups'),
   createGroup: (data: any) => request('/groups', { method: 'POST', body: data }),
   getGroupDetails: (id: string) => request(`/groups/${id}`),
+  deleteGroup: (id: string) => request(`/groups/${id}`, { method: 'DELETE' }),
   addGroupMember: (id: string, data: any) => request(`/groups/${id}/members`, { method: 'POST', body: data }),
   addGroupExpense: (id: string, data: any) => request(`/groups/${id}/expenses`, { method: 'POST', body: data }),
   addGroupSettlement: (id: string, data: any) => request(`/groups/${id}/settlements`, { method: 'POST', body: data }),

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Users, DollarSign, Handshake, Mail, Coins, X } from 'lucide-react';
+import { Plus, Users, DollarSign, Handshake, Mail, Coins, X, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
 import { formatCurrency } from '../utils/currency';
@@ -81,7 +81,7 @@ export default function GroupsPage() {
   });
 
   const settleMutation = useMutation({
-    mutationFn: ({ paidToId, amount }: { paidToId: string; amount: number }) => 
+    mutationFn: ({ paidToId, amount }: { paidToId: string; amount: number }) =>
       api.addGroupSettlement(selectedGroup.id, {
         paid_to_user_id: paidToId,
         amount,
@@ -93,6 +93,20 @@ export default function GroupsPage() {
     },
     onError: (err: any) => {
       showToast(err.message || 'Failed to log settlement', 'error');
+    }
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: (id: string) => api.deleteGroup(id),
+    onSuccess: () => {
+      showToast('Group deleted successfully!', 'success');
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      if (selectedGroup?.id === id) {
+        setSelectedGroup(null);
+      }
+    },
+    onError: (err: any) => {
+      showToast(err.message || 'Failed to delete group', 'error');
     }
   });
 
@@ -188,18 +202,34 @@ export default function GroupsPage() {
               </div>
             ) : (
               groups.map((g: any) => (
-                <div 
+                <div
                   key={g.id}
                   onClick={() => setSelectedGroup(g)}
                   className={`p-3 rounded-xl border cursor-pointer transition-colors text-left
-                    ${selectedGroup?.id === g.id 
-                      ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500 font-semibold' 
+                    ${selectedGroup?.id === g.id
+                      ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500 font-semibold'
                       : 'border-black/[0.04] dark:border-white/[0.04] hover:bg-black/[0.01] dark:hover:bg-white/[0.01]'
                     }
                   `}
                 >
-                  <div className="text-sm">{g.name}</div>
-                  <div className="text-[10px] text-gray-400 mt-1">{g.member_count} members synced</div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm">{g.name}</div>
+                      <div className="text-[10px] text-gray-400 mt-1">{g.member_count} members synced</div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete group "${g.name}"?`)) {
+                          deleteGroupMutation.mutate(g.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 hover:text-red-600 cursor-pointer transition-colors"
+                      title="Delete group"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}

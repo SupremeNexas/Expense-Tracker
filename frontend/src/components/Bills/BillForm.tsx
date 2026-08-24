@@ -8,15 +8,24 @@ interface BillFormProps {
   onSubmit: (data: { name: string; amount: number; due_date: string; status: string; category: string }) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  initialData?: {
+    name: string;
+    amount: number;
+    due_date: string;
+    status: string;
+    category: string;
+  };
 }
 
-export function BillForm({ onSubmit, onCancel, isSubmitting = false }: BillFormProps) {
+export function BillForm({ onSubmit, onCancel, isSubmitting = false, initialData }: BillFormProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    amount: '',
-    due_date: new Date().toISOString().substring(0, 10),
-    status: 'pending',
-    category: 'Utilities'
+    name: initialData?.name || '',
+    amount: initialData?.amount ? String(initialData.amount) : '',
+    due_date: initialData?.due_date
+      ? new Date(initialData.due_date).toISOString().substring(0, 10)
+      : new Date().toISOString().substring(0, 10),
+    status: initialData?.status || 'pending',
+    category: initialData?.category || 'Utilities'
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

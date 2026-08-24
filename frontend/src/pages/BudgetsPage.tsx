@@ -58,7 +58,7 @@ export default function BudgetsPage() {
 
   const handleFormSubmit = (data: { category_id: string; amount: number }) => {
     createMutation.mutate({
-      categoryId: data.category_id,
+      category_id: data.category_id,
       amount: data.amount,
       period: 'monthly',
       month,
