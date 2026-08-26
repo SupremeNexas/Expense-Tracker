@@ -73,6 +73,7 @@ import subscriptionsRouter from './src/routes/subscriptions';
 import analyticsRouter from './src/routes/analytics';
 import insightsRouter from './src/routes/insights';
 import groupsRouter from './src/routes/groups';
+import friendsRouter from './src/routes/friends';
 import aiRouter from './src/routes/ai';
 
 // Enterprise & Platform Scaling (Phase 5)
@@ -96,6 +97,7 @@ const mountRoutes = (prefix: string) => {
   app.use(`${prefix}/analytics`, authenticate, analyticsRouter);
   app.use(`${prefix}/insights`, authenticate, insightsRouter);
   app.use(`${prefix}/groups`, authenticate, groupsRouter);
+  app.use(`${prefix}/friends`, authenticate, friendsRouter);
   app.use(`${prefix}/ai`, authenticate, aiRouter);
 
   // Workspace Collaboration, Rules & Auditing

@@ -55,6 +55,9 @@ model User {
   sentSettlements      GroupSettlement[]      @relation("SentSettlements")
   receivedSettlements  GroupSettlement[]      @relation("ReceivedSettlements")
   
+  sentRequests         Friend[]               @relation("SentRequests")
+  receivedRequests     Friend[]               @relation("ReceivedRequests")
+
   // Enterprise Relations
   workspaceMembers     WorkspaceMember[]
   auditLogs            AuditLog[]
@@ -457,4 +460,23 @@ model AuditLog {
 
   @@index([workspaceId, createdAt])
   @@map("audit_logs")
+}
+
+model Friend {
+  id           String   @id @default(uuid())
+  fromUserId   String   @map("from_user_id")
+  toUserId     String   @map("to_user_id")
+  status       String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  acknowledged Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  fromUser     User     @relation("SentRequests", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser       User     @relation("ReceivedRequests", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@map("friends")
 }

@@ -7,7 +7,7 @@ import Modal from '../components/UI/Modal';
 import { Bill } from '../types';
 import { formatCurrency } from '../utils/currency';
 import useAuthStore from '../store/authStore';
-import { BillForm } from '../components/Bills/BillForm';
+import BillForm from '../components/Bills/BillForm';
 import EmptyState from '../components/UI/EmptyState';
 import { SkeletonList } from '../components/UI/Skeleton';
 import SpecularButton from '../components/UI/SpecularButton';
@@ -71,10 +71,7 @@ export default function BillsPage() {
   };
 
   const handleTogglePaid = (bill: Bill) => {
-    togglePaidMutation.mutate({
-      id: bill.id,
-      isPaid: !bill.is_paid
-    });
+    togglePaidMutation.mutate(bill.id);
   };
 
   const handleDelete = (id: string, billName: string) => {
@@ -113,6 +110,19 @@ export default function BillsPage() {
           Add Bill
         </SpecularButton>
       </div>
+
+      {/* Bill creation form modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="New Recurring Bill"
+      >
+        <BillForm
+          onSubmit={handleFormSubmit}
+          onCancel={() => setIsModalOpen(false)}
+          isSubmitting={createMutation.isPending}
+        />
+      </Modal>
 
       {/* Bills display lists */}
       {isLoading ? (
@@ -194,7 +204,7 @@ export default function BillsPage() {
         onClose={() => setIsModalOpen(false)}
         title="New Recurring Bill"
       >
-        <BillForm 
+        <BillForm
           onSubmit={handleFormSubmit}
           onCancel={() => setIsModalOpen(false)}
           isSubmitting={createMutation.isPending}

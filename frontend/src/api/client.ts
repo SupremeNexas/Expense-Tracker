@@ -69,7 +69,7 @@ export const api = {
   // Auth
   login: (data: any) => request('/auth/login', { method: 'POST', body: data }),
   register: (data: any) => request('/auth/register', { method: 'POST', body: data }),
-  googleLogin: (idToken: string) => request('/auth/google', { method: 'POST', body: { idToken } }),
+  googleLogin: (idToken: string, invitedBy?: string | null) => request('/auth/google', { method: 'POST', body: { idToken, invitedBy } }),
   getMe: () => request('/auth/me'),
   updateProfile: (data: any) => request('/auth/profile', { method: 'PUT', body: data }),
   updateCurrency: (currency: string) => request('/auth/currency', { method: 'PUT', body: { currency } }),
@@ -148,4 +148,18 @@ export const api = {
   addGroupMember: (id: string, data: any) => request(`/groups/${id}/members`, { method: 'POST', body: data }),
   addGroupExpense: (id: string, data: any) => request(`/groups/${id}/expenses`, { method: 'POST', body: data }),
   addGroupSettlement: (id: string, data: any) => request(`/groups/${id}/settlements`, { method: 'POST', body: data }),
+
+  // Friends
+  getFriends: () => request('/friends'),
+  getPendingFriends: () => request('/friends/pending'),
+  sendFriendRequest: (toUserIdOrEmail: string) => {
+    if (toUserIdOrEmail.includes('@')) {
+      return request('/friends', { method: 'POST', body: { email: toUserIdOrEmail } });
+    } else {
+      return request('/friends', { method: 'POST', body: { toUserId: toUserIdOrEmail } });
+    }
+  },
+  acceptFriendRequest: (requestId: string) => request(`/friends/${requestId}/accept`, { method: 'PUT' }),
+  rejectFriendRequest: (requestId: string) => request(`/friends/${requestId}/reject`, { method: 'PUT' }),
+  removeFriend: (friendshipId: string) => request(`/friends/${friendshipId}`, { method: 'DELETE' }),
 };

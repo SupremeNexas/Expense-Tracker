@@ -16,7 +16,7 @@ const verifyMember = async (req: GroupRequest, res: Response, next: NextFunction
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-    const group: any = await prisma.group.findUnique({
+    const group = await prisma.group.findUnique({
       where: { id: req.params.id as string },
       include: { members: true }
     });
@@ -26,11 +26,43 @@ const verifyMember = async (req: GroupRequest, res: Response, next: NextFunction
       return res.status(403).json({ error: 'Not a group member' });
     }
 
-    req.group = group;
+    req.group = group as any;
     next();
   } catch (err) {
     res.status(500).json({ error: 'Failed to verify membership' });
   }
+};
+
+// Separate middleware to verify the requester is the group owner
+const verifyGroupOwner = async (req: GroupRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const group = await prisma.group.findUnique({
+      where: { id: req.params.id as string },
+      include: { members: true }
+    });
+
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    req.group = group as any;
+
+    if (group.createdBy !== req.user!.id) {
+      return res.status(403).json({ error: 'Only the group owner can perform this action' });
+    }
+
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to verify group ownership' });
+  }
+};
+
+// Middleware to verify the requester is the group owner (used after verifyMember or verifyGroupOwner)
+const verifyOwner = (req: GroupRequest, res: Response, next: NextFunction) => {
+  if (!req.group) return res.status(404).json({ error: 'Group not found' });
+  if (req.group.createdBy !== req.user!.id) {
+    return res.status(403).json({ error: 'Only the group owner can perform this action' });
+  }
+  next();
 };
 
 // CREATE GROUP
@@ -195,13 +227,18 @@ router.get('/:id', authenticate, verifyMember, async (req: GroupRequest, res: Re
   }
 });
 
-// ADD MEMBER (Using email)
-router.post('/:id/members', authenticate, verifyMember, [
-  body('email').isEmail().withMessage('Valid email required')
+// ADD MEMBER (Using email) — owner only
+router.post('/:id/members', authenticate, verifyGroupOwner, [
+  body('email').trim().notEmpty().withMessage('Email required')
 ], validate, async (req: GroupRequest, res: Response) => {
   try {
+    const email = req.body.email;
+
+    // Normalize email: trim whitespace and convert to lowercase for consistent lookups
+    const normalizedEmail = email.trim().toLowerCase();
+
     const userToAdd = await prisma.user.findUnique({
-      where: { email: req.body.email }
+      where: { email: normalizedEmail }
     });
     if (!userToAdd) return res.status(404).json({ error: 'User not found with this email' });
 
@@ -223,6 +260,7 @@ router.post('/:id/members', authenticate, verifyMember, [
       member: { id: userToAdd.id, name: userToAdd.name, email: userToAdd.email }
     });
   } catch (err) {
+    console.error('Error adding member:', err);
     res.status(500).json({ error: 'Failed to add member' });
   }
 });
@@ -299,6 +337,37 @@ router.post('/:id/settlements', authenticate, verifyMember, [
     res.status(201).json({ message: 'Settlement recorded' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to record settlement' });
+  }
+});
+
+// DELETE GROUP
+router.delete('/:id', authenticate, verifyMember, async (req: GroupRequest, res: Response) => {
+  try {
+    const groupId = req.params.id as string;
+
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+      include: { members: true }
+    });
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+
+    // Delete dependent records first
+    await prisma.groupSettlement.deleteMany({ where: { groupId } });
+    await prisma.groupExpense.deleteMany({ where: { groupId } });
+
+    // Disconnect all members (members is an implicit many-to-many relation,
+    // there is no separate GroupMember model to delete directly)
+    await prisma.group.update({
+      where: { id: groupId },
+      data: { members: { set: [] } }
+    });
+
+    await prisma.group.delete({ where: { id: groupId } });
+
+    res.json({ message: 'Group deleted', deletedGroupId: groupId });
+  } catch (err) {
+    console.error('Error deleting group:', err);
+    res.status(500).json({ error: 'Failed to delete group' });
   }
 });
 

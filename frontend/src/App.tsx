@@ -17,6 +17,7 @@ const SubscriptionsPage = React.lazy(() => import('./pages/SubscriptionsPage'));
 const CreditCardsPage   = React.lazy(() => import('./pages/CreditCardsPage'));
 const BillsPage         = React.lazy(() => import('./pages/BillsPage'));
 const GroupsPage        = React.lazy(() => import('./pages/GroupsPage'));
+const FriendsPage       = React.lazy(() => import('./pages/FriendsPage'));
 const GoalsPage         = React.lazy(() => import('./pages/GoalsPage'));
 const CopilotPage       = React.lazy(() => import('./pages/CopilotPage'));
 const AIAssistantPage   = React.lazy(() => import('./pages/AIAssistantPage'));
@@ -98,7 +99,7 @@ function AppRoutes() {
       <Routes>
         {/* SaaS Landing Page is public at root */}
         <Route path="/" element={<LandingPage />} />
-        
+
         {/* Auth page */}
         <Route path="/auth" element={<AuthPage />} />
 
@@ -119,6 +120,7 @@ function AppRoutes() {
         <Route path="/credit-cards"       element={<ProtectedRoute><CreditCardsPage /></ProtectedRoute>} />
         <Route path="/bills"              element={<ProtectedRoute><BillsPage /></ProtectedRoute>} />
         <Route path="/groups"             element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+        <Route path="/friends"            element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
         <Route path="/goals"              element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
         <Route path="/copilot"            element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
         <Route path="/assistant"          element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />

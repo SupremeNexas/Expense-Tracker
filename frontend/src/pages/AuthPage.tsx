@@ -35,6 +35,17 @@ export default function AuthPage() {
   const navigate = useNavigate();
 
   const [isLogin, setIsLogin] = useState(true);
+  const [invitedBy, setInvitedBy] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const inviteVal = params.get('invitedBy') || params.get('invite');
+    if (inviteVal) {
+      setInvitedBy(inviteVal);
+      setIsLogin(false);
+    }
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -124,7 +135,7 @@ export default function AuthPage() {
 
     setGoogleLoading(true);
     try {
-      await googleLogin(response.credential);
+      await googleLogin(response.credential, invitedBy);
       showToast('Signed in with Google!', 'success');
       navigate('/dashboard');
     } catch (err: any) {
@@ -164,7 +175,8 @@ export default function AuthPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          baseCurrency: formData.baseCurrency
+          baseCurrency: formData.baseCurrency,
+          invitedBy
         });
         showToast('Account created successfully!', 'success');
       }
@@ -329,6 +341,32 @@ export default function AuthPage() {
             id="google-btn-container"
             className="w-full flex justify-center [&>iframe]:!w-full [&>iframe]:!max-w-none"
           />
+        </div>
+
+        <div className="mt-6 text-center text-xs text-gray-500">
+          {isLogin ? (
+            <span>
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => setIsLogin(false)}
+                className="text-indigo-600 font-semibold hover:underline bg-transparent border-none cursor-pointer"
+              >
+                Sign up
+              </button>
+            </span>
+          ) : (
+            <span>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => setIsLogin(true)}
+                className="text-indigo-600 font-semibold hover:underline bg-transparent border-none cursor-pointer"
+              >
+                Sign in
+              </button>
+            </span>
+          )}
         </div>
       </motion.div>
     </div>

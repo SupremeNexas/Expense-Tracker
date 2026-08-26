@@ -11,7 +11,7 @@ interface AuthState {
   setSkipAuth?: (skip: boolean) => void;
   login: (credentials: any) => Promise<void>;
   register: (data: any) => Promise<void>;
-  googleLogin: (idToken: string) => Promise<void>;
+  googleLogin: (idToken: string, invitedBy?: string | null) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
@@ -64,8 +64,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   // Accepts the Google ID Token (credential) returned by GSI
-  googleLogin: async (idToken: string) => {
-    const res = await api.googleLogin(idToken);
+  googleLogin: async (idToken: string, invitedBy?: string | null) => {
+    const res = await api.googleLogin(idToken, invitedBy);
     setToken(res.token);
     if (res.refreshToken) {
       localStorage.setItem('fintech_refresh_token', res.refreshToken);

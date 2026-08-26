@@ -16,13 +16,14 @@ const subRules = [
 
 // Helper to map DB Subscription to frontend structure
 function mapSubscription(s: any) {
+  const rawDate = s.nextBillingDate || s.renewal_date || s.next_billing_date;
   return {
     id: s.id,
     name: s.name,
     cost: Number(s.amount),
-    billing_cycle: s.billingCycle.toLowerCase(),
-    renewal_date: s.nextBillingDate,
-    is_active: s.isActive,
+    billing_cycle: s.billingCycle ? s.billingCycle.toLowerCase() : (s.billing_cycle || ''),
+    renewal_date: rawDate ? new Date(rawDate).toISOString().split('T')[0] : '',
+    is_active: s.isActive !== undefined ? s.isActive : s.is_active,
     payment_source: 'Primary Card'
   };
 }

@@ -65,7 +65,7 @@ export default function SubscriptionsPage() {
       name: data.name,
       cost: data.cost,
       billing_cycle: data.billing_cycle,
-      renewal_date: new Date(data.renewal_date).toISOString(),
+      renewal_date: data.renewal_date,
       is_active: true
     });
   };

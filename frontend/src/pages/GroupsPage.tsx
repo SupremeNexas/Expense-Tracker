@@ -98,7 +98,7 @@ export default function GroupsPage() {
 
   const deleteGroupMutation = useMutation({
     mutationFn: (id: string) => api.deleteGroup(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       showToast('Group deleted successfully!', 'success');
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       if (selectedGroup?.id === id) {
@@ -120,7 +120,7 @@ export default function GroupsPage() {
   const handleAddMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberEmail.trim()) return;
-    addMemberMutation.mutate(newMemberEmail);
+    addMemberMutation.mutate(newMemberEmail); // Pass string directly
   };
 
   const handleAddExpense = (e: React.FormEvent) => {
@@ -258,13 +258,15 @@ export default function GroupsPage() {
                 <div className="text-[10px] text-gray-400 font-semibold mt-0.5">{groupDetails.members.length} MEMBERS SYNCED</div>
               </div>
               <div className="flex gap-2">
-                <button 
+                <button
+                  type="button"
                   onClick={() => setShowAddMember(true)}
                   className="btn-premium btn-premium-secondary py-1.5 px-4 text-xs cursor-pointer"
                 >
                   Add Member
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={() => setShowAddExpense(true)}
                   className="btn-premium btn-premium-primary py-1.5 px-4 text-xs cursor-pointer"
                 >
@@ -275,7 +277,7 @@ export default function GroupsPage() {
 
             {/* Member add popup */}
             {showAddMember && (
-              <div className="premium-card p-4 border-emerald-500/20 bg-emerald-500/5">
+              <div className="premium-card p-4 border-emerald-500/20 bg-emerald-500/5 relative z-10">
                 <form onSubmit={handleAddMember} className="flex gap-3 items-center">
                   <div className="relative flex-1">
                     <Mail className="absolute left-3 w-4 h-4 text-gray-400 top-1/2 -translate-y-1/2" />

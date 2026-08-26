@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import {
   LayoutDashboard, Receipt, Repeat, CreditCard, CalendarClock, Users,
-  Wallet, Tags, PieChart, Settings, LogOut, ChevronLeft, ChevronRight
+  Wallet, Tags, Settings, LogOut, ChevronLeft, ChevronRight, UserPlus
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
@@ -22,6 +22,7 @@ const navItems = [
   { path: '/credit-cards', label: 'Credit Cards', icon: CreditCard },
   { path: '/bills', label: 'Recurring Bills', icon: CalendarClock },
   { path: '/groups', label: 'Shared Groups', icon: Users },
+  { path: '/friends', label: 'Friends', icon: UserPlus },
   { path: '/budgets', label: 'Budgets', icon: Wallet },
   { path: '/categories', label: 'Categories', icon: Tags },
   { path: '/workspace-settings', label: 'Settings', icon: Settings },

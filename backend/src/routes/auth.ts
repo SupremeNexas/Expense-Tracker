@@ -42,7 +42,7 @@ router.post('/register', authLimiter, [
   passwordRules
 ], validate, async (req: any, res: Response) => {
   try {
-    const { name, email, password, baseCurrency = 'USD' } = req.body;
+    const { name, email, password, baseCurrency = 'USD', invitedBy } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -73,6 +73,29 @@ router.post('/register', authLimiter, [
 
     await seedCategoriesForUser(user.id);
     await seedSampleDataForUser(user.id, user.email);
+
+    if (invitedBy) {
+      const inviter = await prisma.user.findUnique({
+        where: { email: invitedBy.trim().toLowerCase() }
+      });
+      if (inviter && inviter.id !== user.id) {
+        await prisma.friend.upsert({
+          where: {
+            fromUserId_toUserId: {
+              fromUserId: inviter.id,
+              toUserId: user.id
+            }
+          },
+          update: { status: 'ACCEPTED', acknowledged: true },
+          create: {
+            fromUserId: inviter.id,
+            toUserId: user.id,
+            status: 'ACCEPTED',
+            acknowledged: true
+          }
+        });
+      }
+    }
 
     const { token, refreshToken } = generateTokens(user);
 
@@ -176,7 +199,7 @@ router.post('/refresh', [
 router.post('/google', authLimiter, [
   body('idToken').notEmpty().withMessage('Google ID token is required')
 ], validate, async (req: any, res: Response) => {
-  const { idToken } = req.body;
+  const { idToken, invitedBy } = req.body;
 
   if (!GOOGLE_CLIENT_ID) {
     console.error('[Google Auth] GOOGLE_CLIENT_ID is not configured in backend .env');
@@ -261,6 +284,29 @@ router.post('/google', authLimiter, [
       await seedCategoriesForUser(user.id);
       await seedSampleDataForUser(user.id, user.email);
       console.log(`[Google Auth] New user created and seeded: ${user.id}`);
+
+      if (invitedBy) {
+        const inviter = await prisma.user.findUnique({
+          where: { email: invitedBy.trim().toLowerCase() }
+        });
+        if (inviter && inviter.id !== user.id) {
+          await prisma.friend.upsert({
+            where: {
+              fromUserId_toUserId: {
+                fromUserId: inviter.id,
+                toUserId: user.id
+              }
+            },
+            update: { status: 'ACCEPTED', acknowledged: true },
+            create: {
+              fromUserId: inviter.id,
+              toUserId: user.id,
+              status: 'ACCEPTED',
+              acknowledged: true
+            }
+          });
+        }
+      }
     }
 
     // ── 3. Issue JWT + refresh token ─────────────────────────────────────────
