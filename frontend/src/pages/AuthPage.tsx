@@ -30,7 +30,7 @@ declare global {
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
 
 export default function AuthPage() {
-  const { login, register, googleLogin, setSkipAuth } = useAuthStore();
+  const { login, register, googleLogin } = useAuthStore();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -202,7 +202,7 @@ export default function AuthPage() {
         transition={{ duration: 0.35, ease: 'easeOut' }}
         className="w-full max-w-[440px] bg-white border border-[#E5E7EB] rounded-[32px] p-8 sm:p-10 shadow-[0_4px_20px_rgb(0,0,0,0.03)]"
       >
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8">
           <div className="w-12 h-12 rounded-full bg-[#111113] flex items-center justify-center">
             <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="4" y="3" width="4" height="18" rx="2" fill="currentColor" />
@@ -210,18 +210,6 @@ export default function AuthPage() {
               <rect x="9" y="10" width="7" height="4" rx="2" fill="currentColor" />
             </svg>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setSkipAuth?.(true);
-              showToast('Demo mode enabled.', 'success');
-              navigate('/dashboard');
-            }}
-            disabled={isAnyLoading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all duration-150 cursor-pointer text-xs font-bold uppercase tracking-wider shadow-sm active:scale-95 disabled:opacity-50"
-          >
-            Skip Auth <ArrowRight className="w-4 h-4" />
-          </button>
         </div>
 
         <div className="mb-8">

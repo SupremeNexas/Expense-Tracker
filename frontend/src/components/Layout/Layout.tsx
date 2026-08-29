@@ -18,15 +18,6 @@ export function Layout({ children }: LayoutProps) {
   const { user } = useAuthStore();
   const { showToast } = useToast();
 
-  const handleMenuClick = (link: string) => {
-    if (user?.isPremium) {
-      navigate(link);
-    } else {
-      showToast('Premium feature — bypassed for demo', 'info');
-      navigate(link);
-    }
-  };
-
   return (
     <div className="min-h-screen flex bg-transparent relative">
       {/* Background Graphic matching Landing page */}

@@ -7,8 +7,6 @@ const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:50
 interface AuthState {
   user: User | null;
   authLoading: boolean;
-  skipAuthChecked?: boolean;
-  setSkipAuth?: (skip: boolean) => void;
   login: (credentials: any) => Promise<void>;
   register: (data: any) => Promise<void>;
   googleLogin: (idToken: string, invitedBy?: string | null) => Promise<void>;
@@ -21,29 +19,6 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   authLoading: true,
-  skipAuthChecked: false,
-
-  setSkipAuth: async (skip: boolean) => {
-    if (skip) {
-      try {
-        localStorage.setItem('fintech_skip_auth', 'true');
-        const res = await api.login({ email: 'demo@example.com', password: 'password123' });
-        setToken(res.token);
-        if (res.refreshToken) {
-          localStorage.setItem('fintech_refresh_token', res.refreshToken);
-        }
-        set({ user: res.user });
-      } catch (err) {
-        console.warn('Failed to login programmatically with seed account:', err);
-        set({ user: { id: 'test-user', email: 'test@example.com', name: 'Demo User', baseCurrency: 'USD', onboardingComplete: true } as User });
-      }
-    } else {
-      localStorage.removeItem('fintech_skip_auth');
-      setToken(null);
-      localStorage.removeItem('fintech_refresh_token');
-      set({ user: null });
-    }
-  },
 
   login: async (credentials) => {
     const res = await api.login(credentials);
@@ -76,7 +51,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     setToken(null);
     localStorage.removeItem('fintech_refresh_token');
-    localStorage.removeItem('fintech_skip_auth');
     // Revoke Google session so the picker appears fresh next login
     if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       (window as any).google.accounts.id.disableAutoSelect();
@@ -87,37 +61,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkAuth: async () => {
     set({ authLoading: true });
 
-    const isSkipAuth = localStorage.getItem('fintech_skip_auth') === 'true';
-
     try {
       const user = await api.getMe();
       set({ user, authLoading: false });
     } catch (e: any) {
-      if (isSkipAuth) {
-        try {
-          const res = await api.login({ email: 'demo@example.com', password: 'password123' });
-          setToken(res.token);
-          if (res.refreshToken) {
-            localStorage.setItem('fintech_refresh_token', res.refreshToken);
-          }
-          set({ user: res.user, authLoading: false });
-          return;
-        } catch (err) {
-          console.warn('[Auth] Failed to login programmatically with seed account:', err);
-          set({
-            user: {
-              id: 'test-user',
-              email: 'test@example.com',
-              name: 'Demo User',
-              baseCurrency: 'USD',
-              onboardingComplete: true
-            } as User,
-            authLoading: false
-          });
-          return;
-        }
-      }
-
       // Network error (server down) — don't wipe the user session
       if (e?.message !== 'UNAUTHORIZED' && !e?.message?.includes('401')) {
         console.warn('[Auth] Server unreachable, keeping cached session state');
