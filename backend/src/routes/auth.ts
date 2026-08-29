@@ -21,7 +21,7 @@ const authLimiter = rateLimit({
 } as any);
 
 // ─── Google OAuth Client ─────────────────────────────────────────────────────
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '357084347273-8405ggecqias20eduh7df8iv04eldtjm.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const passwordRules = body('password')

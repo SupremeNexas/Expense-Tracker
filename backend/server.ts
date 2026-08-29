@@ -26,7 +26,9 @@ app.use('/api/', apiLimiter);
 // ── CORS — only allow our configured frontend origin ──────────────────────────
 const isProduction = process.env.NODE_ENV === 'production';
 
-const ALLOWED_ORIGINS: string[] = [];
+const ALLOWED_ORIGINS: string[] = [
+  'https://expense-tracker-eight-pi-69.vercel.app'
+];
 if (process.env.CLIENT_URL) {
   ALLOWED_ORIGINS.push(process.env.CLIENT_URL);
 }
