@@ -211,9 +211,18 @@ router.post('/google', authLimiter, [
   try {
     // ── 1. Verify the ID token with Google ──────────────────────────────────
     console.log('[Google Auth] Verifying ID token with Google...');
+    const allowedAudiences: string[] = [];
+    if (process.env.GOOGLE_CLIENT_ID) {
+      allowedAudiences.push(process.env.GOOGLE_CLIENT_ID);
+    }
+    const defaultClientId = '357084347273-8405ggecqias20eduh7df8iv04eldtjm.apps.googleusercontent.com';
+    if (!allowedAudiences.includes(defaultClientId)) {
+      allowedAudiences.push(defaultClientId);
+    }
+
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: GOOGLE_CLIENT_ID,
+      audience: allowedAudiences,
     });
 
     const payload = ticket.getPayload();
@@ -340,7 +349,7 @@ router.post('/google', authLimiter, [
       return res.status(400).json({ error: 'Malformed Google token received.' });
     }
 
-    res.status(500).json({ error: 'Google authentication failed. Please try again.' });
+    res.status(500).json({ error: `Google authentication failed: ${err?.message || 'Please try again.'}` });
   }
 });
 

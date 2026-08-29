@@ -66,6 +66,24 @@ export default function AuthPage() {
       return;
     }
 
+    // Google OAuth 2.0 does not allow IP address origins like 127.0.0.1
+    const currentOrigin = window.location.origin;
+    if (currentOrigin.includes('127.0.0.1')) {
+      setGoogleError('Google Sign-In does not support IP addresses (127.0.0.1). Please use http://localhost:5173 to access this app.');
+      return;
+    }
+
+    // The default client ID is only authorized for http://localhost:5173 and specific production domains
+    const defaultClientId = '357084347273-8405ggecqias20eduh7df8iv04eldtjm.apps.googleusercontent.com';
+    const isDefaultClientId = GOOGLE_CLIENT_ID === defaultClientId;
+    const allowedLocalhost = 'http://localhost:5173';
+    const isProductionOrigin = currentOrigin.startsWith('https://expense-tracker-eight-pi-69.vercel.app');
+
+    if (isDefaultClientId && currentOrigin !== allowedLocalhost && !isProductionOrigin) {
+      setGoogleError(`Host mismatch: The default Google Client ID is only authorized for ${allowedLocalhost}. You are currently on ${currentOrigin}. Please change your port to 5173 or register your own client ID in Google Cloud Console.`);
+      return;
+    }
+
     try {
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
