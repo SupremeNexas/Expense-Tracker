@@ -42,7 +42,8 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g. Postman, mobile apps)
     const isLocalhost = origin && /^https?:\/\/localhost:\d+$/.test(origin);
-    if (!origin || ALLOWED_ORIGINS.includes(origin) || (!isProduction && isLocalhost)) {
+    const isVercelDomain = origin && /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin);
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || (!isProduction && isLocalhost) || isVercelDomain) {
       callback(null, true);
     } else {
       callback(new Error(`CORS: Origin ${origin} is not allowed`));
