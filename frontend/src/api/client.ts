@@ -44,8 +44,22 @@ async function request(endpoint: string, options: any = {}): Promise<any> {
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    const message = error.error || error.message || `HTTP ${response.status}`;
+    const error = await response.json().catch(() => ({}));
+    let message = '';
+
+    if (Array.isArray(error.details) && error.details.length > 0) {
+      message = error.details.map((d: any) => d.message || d.msg).filter(Boolean).join('. ');
+    }
+    if (!message) {
+      message = error.error || error.message;
+    }
+    if (!message) {
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        message = 'Backend server is unreachable. Please make sure the server is running on port 5002.';
+      } else {
+        message = `Request failed (HTTP ${response.status})`;
+      }
+    }
 
     // Only wipe the token + force-logout on 401s from *protected* endpoints.
     // Auth endpoints (login, register, google) return 401 for "wrong password"

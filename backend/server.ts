@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
@@ -7,8 +8,15 @@ import rateLimit from 'express-rate-limit';
 import { authenticate } from './src/middleware/auth';
 import { errorHandler } from './src/middleware/error';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+// Load environment variables dynamically across dev (ts) and build (dist)
+const envCandidatePaths = [
+  path.resolve(__dirname, '.env'),
+  path.resolve(__dirname, '../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'backend/.env')
+];
+const foundEnvPath = envCandidatePaths.find(p => fs.existsSync(p));
+dotenv.config(foundEnvPath ? { path: foundEnvPath } : undefined);
 
 const app = express();
 const PORT = process.env.PORT || 5002;

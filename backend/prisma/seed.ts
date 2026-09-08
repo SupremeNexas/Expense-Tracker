@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../src/db/prisma';
 import * as bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 const DEFAULT_CATEGORIES = [
   { name: 'Food', color: '#10B981', icon: 'utensils', type: 'EXPENSE' },

@@ -220,6 +220,24 @@ router.post('/google', authLimiter, [
       allowedAudiences.push(defaultClientId);
     }
 
+    // Extract audience dynamically from the token payload to support custom frontend Client IDs
+    try {
+      const decodedPayload = jwt.decode(idToken) as { aud?: string | string[] } | null;
+      if (decodedPayload?.aud) {
+        if (typeof decodedPayload.aud === 'string' && !allowedAudiences.includes(decodedPayload.aud)) {
+          allowedAudiences.push(decodedPayload.aud);
+        } else if (Array.isArray(decodedPayload.aud)) {
+          decodedPayload.aud.forEach(audItem => {
+            if (typeof audItem === 'string' && !allowedAudiences.includes(audItem)) {
+              allowedAudiences.push(audItem);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[Google Auth] Could not pre-parse token audience:', e);
+    }
+
     const ticket = await googleClient.verifyIdToken({
       idToken,
       audience: allowedAudiences,
@@ -344,6 +362,9 @@ router.post('/google', authLimiter, [
     }
     if (err?.message?.includes('Invalid token signature')) {
       return res.status(401).json({ error: 'Invalid Google token. Please sign in again.' });
+    }
+    if (err?.message?.includes('Wrong recipient')) {
+      return res.status(401).json({ error: 'Google token recipient mismatch. Please try again.' });
     }
     if (err?.message?.includes('Wrong number of segments')) {
       return res.status(400).json({ error: 'Malformed Google token received.' });
