@@ -11,7 +11,8 @@
     "db:start": "./run_db.sh start",
     "db:stop": "./run_db.sh stop",
     "db:seed": "npm run db:seed --prefix backend",
-    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "build": "npm run build --prefix backend && cd frontend && npm run build",
+    "vercel-build": "cd frontend && npm run build",
     "typecheck": "npx --prefix backend tsc --project backend/tsconfig.json --noEmit && npx --prefix frontend tsc --project frontend/tsconfig.json --noEmit"
   },
   "keywords": [
