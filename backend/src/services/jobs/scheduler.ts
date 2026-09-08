@@ -95,6 +95,57 @@ export async function runSchedulerIntervalChecks(): Promise<void> {
       }
     }
 
+    // 3. Auto-generate transactions for due RecurringTransaction rules (Income & Expense)
+    const activeRecurring = await prisma.recurringTransaction.findMany({
+      where: {
+        isActive: true,
+        nextDate: { lte: now }
+      }
+    });
+
+    for (const rec of activeRecurring) {
+      console.log(`Auto-logging recurring rule [${rec.type}]: ${rec.title}`);
+
+      await prisma.transaction.create({
+        data: {
+          userId: rec.userId,
+          workspaceId: rec.workspaceId,
+          title: rec.title,
+          amount: rec.amount,
+          type: rec.type,
+          categoryId: rec.categoryId,
+          walletId: rec.walletId,
+          paymentMethod: 'Auto-Debit / Scheduled',
+          tags: ['recurring', rec.type.toLowerCase()],
+          date: now,
+          isRecurring: true,
+          notes: `Auto-generated from recurring rule: ${rec.title}`
+        }
+      });
+
+      const balanceChange = rec.type === 'INCOME' ? Number(rec.amount) : -Number(rec.amount);
+      await prisma.wallet.update({
+        where: { id: rec.walletId },
+        data: { balance: { increment: balanceChange } }
+      });
+
+      const nextDate = new Date(rec.nextDate);
+      if (rec.frequency === 'DAILY') nextDate.setDate(nextDate.getDate() + 1);
+      else if (rec.frequency === 'WEEKLY') nextDate.setDate(nextDate.getDate() + 7);
+      else if (rec.frequency === 'YEARLY') nextDate.setFullYear(nextDate.getFullYear() + 1);
+      else nextDate.setMonth(nextDate.getMonth() + 1);
+
+      const shouldDeactivate = rec.endDate && nextDate > new Date(rec.endDate);
+
+      await prisma.recurringTransaction.update({
+        where: { id: rec.id },
+        data: {
+          nextDate,
+          isActive: shouldDeactivate ? false : rec.isActive
+        }
+      });
+    }
+
     console.log('✅ Background jobs finished checking.');
   } catch (err) {
     console.error('Scheduler failed during background check:', err);

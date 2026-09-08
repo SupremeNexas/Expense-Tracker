@@ -44,8 +44,16 @@ export function ExpenseCard({ expense, onEdit, onDelete }: ExpenseCardProps) {
             <span>•</span>
             <span className="flex items-center gap-1">
               <CreditCard className="w-3.5 h-3.5" />
-              {expense.payment_method || 'UPI'}
+              {expense.payment_method || expense.paymentMethod || 'Card'}
             </span>
+            {(expense.wallet_name || (expense as any).wallet?.name) && (
+              <>
+                <span>•</span>
+                <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.04] text-[10px] text-gray-400 font-medium">
+                  {expense.wallet_name || (expense as any).wallet?.name}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Tags */}

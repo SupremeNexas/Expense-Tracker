@@ -5,55 +5,96 @@ import { Prisma } from '@prisma/client';
 
 const router = Router();
 
-// GET /api/analytics/summary - Workspace scoped spending summary
+// GET /api/analytics/summary - Workspace scoped spending & income summary
 router.get('/summary', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { month, year } = req.query;
 
-    const whereClause: Prisma.TransactionWhereInput = {
-      workspaceId: req.workspaceId,
-      type: 'EXPENSE'
-    };
-
+    const dateFilter: Prisma.DateTimeFilter = {};
     if (month && year) {
       const m = parseInt(month as string);
       const y = parseInt(year as string);
       const start = new Date(y, m - 1, 1);
       const end = new Date(y, m, 0, 23, 59, 59);
-      whereClause.date = { gte: start, lte: end };
+      dateFilter.gte = start;
+      dateFilter.lte = end;
     } else if (year) {
       const y = parseInt(year as string);
       const start = new Date(y, 0, 1);
       const end = new Date(y, 11, 31, 23, 59, 59);
-      whereClause.date = { gte: start, lte: end };
+      dateFilter.gte = start;
+      dateFilter.lte = end;
     }
 
-    const summaryResults = await prisma.transaction.aggregate({
-      where: whereClause,
+    const expenseWhereClause: Prisma.TransactionWhereInput = {
+      workspaceId: req.workspaceId,
+      type: 'EXPENSE',
+      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+    };
+
+    const incomeWhereClause: Prisma.TransactionWhereInput = {
+      workspaceId: req.workspaceId,
+      type: 'INCOME',
+      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+    };
+
+    const expenseSummary = await prisma.transaction.aggregate({
+      where: expenseWhereClause,
       _sum: { amount: true },
       _count: { id: true },
       _avg: { amount: true }
     });
 
-    const highest = await prisma.transaction.findFirst({
-      where: whereClause,
+    const incomeSummary = await prisma.transaction.aggregate({
+      where: incomeWhereClause,
+      _sum: { amount: true },
+      _count: { id: true },
+      _avg: { amount: true }
+    });
+
+    const highestExpense = await prisma.transaction.findFirst({
+      where: expenseWhereClause,
       include: { category: true },
       orderBy: { amount: 'desc' }
     });
 
+    const highestIncome = await prisma.transaction.findFirst({
+      where: incomeWhereClause,
+      include: { category: true },
+      orderBy: { amount: 'desc' }
+    });
+
+    const totalExpense = Math.round(Number(expenseSummary._sum.amount || 0) * 100) / 100;
+    const totalIncome = Math.round(Number(incomeSummary._sum.amount || 0) * 100) / 100;
+
     res.json({
-      total: Math.round(Number(summaryResults._sum.amount || 0) * 100) / 100,
-      count: summaryResults._count.id || 0,
-      average: Math.round(Number(summaryResults._avg.amount || 0) * 100) / 100,
-      highest: highest ? {
-        id: highest.id,
-        title: highest.title,
-        amount: Number(highest.amount),
-        date: highest.date,
-        category_name: highest.category.name,
-        category_color: highest.category.color,
-        category_icon: highest.category.icon
+      total: totalExpense,
+      totalExpenses: totalExpense,
+      totalIncome: totalIncome,
+      net: Math.round((totalIncome - totalExpense) * 100) / 100,
+      count: (expenseSummary._count.id || 0) + (incomeSummary._count.id || 0),
+      expenseCount: expenseSummary._count.id || 0,
+      incomeCount: incomeSummary._count.id || 0,
+      average: Math.round(Number(expenseSummary._avg.amount || 0) * 100) / 100,
+      incomeAverage: Math.round(Number(incomeSummary._avg.amount || 0) * 100) / 100,
+      highest: highestExpense ? {
+        id: highestExpense.id,
+        title: highestExpense.title,
+        amount: Number(highestExpense.amount),
+        date: highestExpense.date,
+        category_name: highestExpense.category.name,
+        category_color: highestExpense.category.color,
+        category_icon: highestExpense.category.icon
+      } : null,
+      highestIncome: highestIncome ? {
+        id: highestIncome.id,
+        title: highestIncome.title,
+        amount: Number(highestIncome.amount),
+        date: highestIncome.date,
+        category_name: highestIncome.category.name,
+        category_color: highestIncome.category.color,
+        category_icon: highestIncome.category.icon
       } : null
     });
   } catch (err) {
@@ -66,7 +107,8 @@ router.get('/summary', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER
 router.get('/by-category', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
-    const { month, year } = req.query;
+    const { month, year, type = 'EXPENSE' } = req.query;
+    const targetType = String(type).toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE';
 
     const dateFilter: Prisma.TransactionWhereInput = {};
     if (month && year) {
@@ -82,9 +124,10 @@ router.get('/by-category', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VI
       dateFilter.date = { gte: start, lte: end };
     }
 
-    // Fetch system and workspace categories
+    // Fetch system and workspace categories matching type
     const categories = await prisma.category.findMany({
       where: {
+        type: targetType,
         OR: [
           { userId: req.user.id },
           { userId: null },
@@ -98,7 +141,7 @@ router.get('/by-category', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VI
         where: {
           workspaceId: req.workspaceId,
           categoryId: cat.id,
-          type: 'EXPENSE',
+          type: targetType,
           ...dateFilter
         },
         _sum: { amount: true },
@@ -115,7 +158,7 @@ router.get('/by-category', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VI
       };
     }));
 
-    // Sort by total descending and filter out zero spends to keep analytics clean
+    // Sort by total descending and filter out zero values to keep analytics clean
     breakdown.sort((a, b) => b.total - a.total);
     const activeBreakdown = breakdown.filter(b => b.total > 0);
 
@@ -161,16 +204,22 @@ router.get('/trend', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']
           type: 'INCOME',
           date: { gte: start, lte: end }
         },
-        _sum: { amount: true }
+        _sum: { amount: true },
+        _count: { id: true }
       });
+
+      const expTotal = Math.round(Number(expenseAgg._sum.amount || 0) * 100) / 100;
+      const incTotal = Math.round(Number(incomeAgg._sum.amount || 0) * 100) / 100;
 
       trend.push({
         month: label,
         monthNum: m,
         year: y,
-        total: Math.round(Number(expenseAgg._sum.amount || 0) * 100) / 100,
-        income: Math.round(Number(incomeAgg._sum.amount || 0) * 100) / 100,
-        count: expenseAgg._count.id || 0,
+        total: expTotal,
+        expense: expTotal,
+        income: incTotal,
+        net: Math.round((incTotal - expTotal) * 100) / 100,
+        count: (expenseAgg._count.id || 0) + (incomeAgg._count.id || 0),
       });
     }
 

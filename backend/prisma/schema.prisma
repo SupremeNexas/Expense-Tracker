@@ -54,13 +54,19 @@ model User {
   groupSplits          GroupExpenseSplit[]
   sentSettlements      GroupSettlement[]      @relation("SentSettlements")
   receivedSettlements  GroupSettlement[]      @relation("ReceivedSettlements")
-  
+
   sentRequests         Friend[]               @relation("SentRequests")
   receivedRequests     Friend[]               @relation("ReceivedRequests")
+  friendSentSettlements FriendSettlement[]    @relation("FriendSentSettlements")
+  friendReceivedSettlements FriendSettlement[] @relation("FriendReceivedSettlements")
 
   // Enterprise Relations
   workspaceMembers     WorkspaceMember[]
   auditLogs            AuditLog[]
+
+  // Friend balance relations
+  friendBalancesFrom   FriendBalance[]        @relation("FriendFrom")
+  friendBalancesTo     FriendBalance[]        @relation("FriendTo")
 
   @@map("users")
 }
@@ -133,7 +139,8 @@ model Wallet {
 
   user                 User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace            Workspace?             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  transactions         Transaction[]
+  transactions         Transaction[]          @relation("SourceWallet")
+  transfersReceived    Transaction[]          @relation("DestinationWallet")
   recurringTransactions RecurringTransaction[]
   subscriptions        Subscription[]
 
@@ -187,9 +194,10 @@ model Transaction {
   workspaceId   String?  @map("workspace_id")
   title         String
   amount        Decimal  @db.Decimal(12, 2)
-  type          String   @default("EXPENSE") // EXPENSE, INCOME
+  type          String   @default("EXPENSE") // EXPENSE, INCOME, TRANSFER
   categoryId    String   @map("category_id")
   walletId      String   @map("wallet_id")
+  toWalletId    String?  @map("to_wallet_id")
   paymentMethod String?  @map("payment_method")
   tags          String[]
   notes         String?
@@ -205,12 +213,14 @@ model Transaction {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   category  Category   @relation(fields: [categoryId], references: [id])
-  wallet    Wallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  wallet    Wallet     @relation("SourceWallet", fields: [walletId], references: [id], onDelete: Cascade)
+  toWallet  Wallet?    @relation("DestinationWallet", fields: [toWalletId], references: [id], onDelete: Cascade)
   receipts  Receipt[]
 
   @@index([workspaceId, date])
   @@index([workspaceId, categoryId])
   @@index([workspaceId, walletId])
+  @@index([workspaceId, toWalletId])
   @@map("transactions")
 }
 
@@ -419,6 +429,7 @@ model GroupSettlement {
   paidToId  String   @map("paid_to_id")
   amount    Decimal  @db.Decimal(12, 2)
   date      DateTime
+  notes     String?
   createdAt DateTime @default(now()) @map("created_at")
 
   group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -468,15 +479,57 @@ model Friend {
   toUserId     String   @map("to_user_id")
   status       String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
   acknowledged Boolean  @default(false)
+  // Balance tracking for Splitwise-style shared expenses
+  netBalance   Decimal  @default(0.00) @map("net_balance") @db.Decimal(12, 2)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relationships
   fromUser     User     @relation("SentRequests", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUser       User     @relation("ReceivedRequests", fields: [toUserId], references: [id], onDelete: Cascade)
+  settlements  FriendSettlement[]
 
   @@unique([fromUserId, toUserId])
   @@index([fromUserId])
   @@index([toUserId])
   @@map("friends")
+}
+
+model FriendSettlement {
+  id           String   @id @default(uuid())
+  friendshipId String   @map("friendship_id")
+  paidById     String   @map("paid_by_id")
+  paidToId     String   @map("paid_to_id")
+  amount       Decimal  @db.Decimal(12, 2)
+  date         DateTime @default(now())
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  friendship   Friend   @relation(fields: [friendshipId], references: [id], onDelete: Cascade)
+  paidBy       User     @relation("FriendSentSettlements", fields: [paidById], references: [id], onDelete: Cascade)
+  paidTo       User     @relation("FriendReceivedSettlements", fields: [paidToId], references: [id], onDelete: Cascade)
+
+  @@index([friendshipId])
+  @@map("friend_settlements")
+}
+
+// FriendBalance tracks debts between friends (Splitwise-style)
+// The `fromUserId` owes `toUserId` the amount
+model FriendBalance {
+  id            String   @id @default(uuid())
+  fromUserId    String   @map("from_user_id")
+  toUserId      String   @map("to_user_id")
+  amount        Decimal  @default(0.00) @db.Decimal(12, 2)
+  currency      String   @default("USD")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  fromUser      User     @relation("FriendFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser        User     @relation("FriendTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@map("friend_balances")
 }

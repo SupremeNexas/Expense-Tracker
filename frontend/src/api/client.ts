@@ -76,13 +76,60 @@ export const api = {
 
   // Expenses
   getExpenses: (params: Record<string, any> = {}) => {
-    const query = new URLSearchParams(params as any).toString();
+    const cleanParams: Record<string, string> = {};
+    Object.keys(params).forEach(key => {
+      const val = params[key];
+      if (val !== undefined && val !== null && val !== '') {
+        cleanParams[key] = String(val);
+      }
+    });
+    const query = new URLSearchParams(cleanParams).toString();
     return request(`/expenses${query ? `?${query}` : ''}`);
   },
   getExpense: (id: string) => request(`/expenses/${id}`),
   createExpense: (data: any) => request('/expenses', { method: 'POST', body: data }),
   updateExpense: (id: string, data: any) => request(`/expenses/${id}`, { method: 'PUT', body: data }),
   deleteExpense: (id: string) => request(`/expenses/${id}`, { method: 'DELETE' }),
+
+  // CSV Import & Export
+  exportExpenses: async (params: Record<string, any> = {}) => {
+    const cleanParams: Record<string, string> = {};
+    Object.keys(params).forEach(key => {
+      const val = params[key];
+      if (val !== undefined && val !== null && val !== '' && val !== 'ALL' && val !== 'all' && val !== 'any') {
+        cleanParams[key] = String(val);
+      }
+    });
+    const query = new URLSearchParams(cleanParams).toString();
+    const token = getToken();
+    const workspaceId = localStorage.getItem('fintech_workspace_id');
+
+    const response = await fetch(`/api/expenses/export${query ? `?${query}` : ''}`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(workspaceId ? { 'x-workspace-id': workspaceId } : {})
+      }
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Failed to export CSV' }));
+      throw new Error(err.error || 'Failed to export CSV');
+    }
+
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `finova_transactions_${new Date().toISOString().substring(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  },
+  previewCSVImport: (data: { csvText?: string; columnMapping?: Record<string, string>; rows?: string[][] }) =>
+    request('/expenses/import/preview', { method: 'POST', body: data }),
+  commitCSVImport: (data: { rows: any[]; skipDuplicates?: boolean }) =>
+    request('/expenses/import/commit', { method: 'POST', body: data }),
 
   // Categories
   getCategories: () => request('/categories'),
@@ -137,8 +184,17 @@ export const api = {
     return request(`/analytics/budget-status${query ? `?${query}` : ''}`);
   },
 
-  // Insights
+  // AI Scanner
+  scanBill: (formData: FormData) => request('/ai/scan-bill', { method: 'POST', body: formData }),
+
+  // Insights & Financial Alerts
   getInsights: () => request('/insights'),
+  getAlerts: () => request('/alerts'),
+  getSpendingLimits: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams(params as any).toString();
+    return request(`/alerts/spending-limits${query ? `?${query}` : ''}`);
+  },
+  dismissAlert: (alertId: string) => request('/alerts/dismiss', { method: 'POST', body: { alertId } }),
 
   // Groups
   getGroups: () => request('/groups'),
@@ -148,10 +204,40 @@ export const api = {
   addGroupMember: (id: string, data: any) => request(`/groups/${id}/members`, { method: 'POST', body: data }),
   addGroupExpense: (id: string, data: any) => request(`/groups/${id}/expenses`, { method: 'POST', body: data }),
   addGroupSettlement: (id: string, data: any) => request(`/groups/${id}/settlements`, { method: 'POST', body: data }),
+  getGroupSimplifiedDebts: (id: string) => request(`/groups/${id}/simplified-debts`),
+
+  // Recurring Transactions (Income & Expense rules)
+  getRecurring: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams(params as any).toString();
+    return request(`/recurring${query ? `?${query}` : ''}`);
+  },
+  createRecurring: (data: any) => request('/recurring', { method: 'POST', body: data }),
+  updateRecurring: (id: string, data: any) => request(`/recurring/${id}`, { method: 'PUT', body: data }),
+  deleteRecurring: (id: string) => request(`/recurring/${id}`, { method: 'DELETE' }),
+  processRecurring: (id: string) => request(`/recurring/${id}/process`, { method: 'POST' }),
+
+  // Transfers
+  getTransfers: (params: Record<string, any> = {}) => {
+    const cleanParams: Record<string, string> = {};
+    Object.keys(params).forEach(key => {
+      const val = params[key];
+      if (val !== undefined && val !== null && val !== '') {
+        cleanParams[key] = String(val);
+      }
+    });
+    const query = new URLSearchParams(cleanParams).toString();
+    return request(`/transfers${query ? `?${query}` : ''}`);
+  },
+  getTransfer: (id: string) => request(`/transfers/${id}`),
+  createTransfer: (data: any) => request('/transfers', { method: 'POST', body: data }),
+  updateTransfer: (id: string, data: any) => request(`/transfers/${id}`, { method: 'PUT', body: data }),
+  deleteTransfer: (id: string) => request(`/transfers/${id}`, { method: 'DELETE' }),
 
   // Friends
   getFriends: () => request('/friends'),
   getPendingFriends: () => request('/friends/pending'),
+  getFriendBalances: () => request('/friends/balances'),
+  getFriendSummary: () => request('/friends/summary'),
   sendFriendRequest: (toUserIdOrEmail: string) => {
     if (toUserIdOrEmail.includes('@')) {
       return request('/friends', { method: 'POST', body: { email: toUserIdOrEmail } });
@@ -162,4 +248,10 @@ export const api = {
   acceptFriendRequest: (requestId: string) => request(`/friends/${requestId}/accept`, { method: 'PUT' }),
   rejectFriendRequest: (requestId: string) => request(`/friends/${requestId}/reject`, { method: 'PUT' }),
   removeFriend: (friendshipId: string) => request(`/friends/${friendshipId}`, { method: 'DELETE' }),
+  addFriendExpense: (friendshipId: string, data: any) => request(`/friends/${friendshipId}/expense`, { method: 'POST', body: data }),
+  settleWithFriend: (friendshipId: string, data: number | { amount: number; notes?: string; date?: string; paid_by_user_id?: string }) => {
+    const payload = typeof data === 'number' ? { amount: data } : data;
+    return request(`/friends/${friendshipId}/settle`, { method: 'POST', body: payload });
+  },
+  getFriendSettlements: (friendshipId: string) => request(`/friends/${friendshipId}/settlements`),
 };

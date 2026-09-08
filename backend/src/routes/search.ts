@@ -12,16 +12,19 @@ const router = Router();
  */
 router.get('/', authenticate, requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
-    const { 
-      q, 
-      category, 
-      wallet, 
-      minAmount, 
-      maxAmount, 
-      startDate, 
-      endDate, 
-      sortBy = 'date', 
-      sortOrder = 'desc' 
+    const {
+      q,
+      category,
+      wallet,
+      minAmount,
+      maxAmount,
+      startDate,
+      endDate,
+      paymentMethod,
+      tags,
+      type,
+      sortBy = 'date',
+      sortOrder = 'desc'
     } = req.query;
 
     const whereClause: any = {
@@ -33,7 +36,10 @@ router.get('/', authenticate, requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 
       whereClause.OR = [
         { title: { contains: qStr, mode: 'insensitive' } },
         { notes: { contains: qStr, mode: 'insensitive' } },
-        { category: { name: { contains: qStr, mode: 'insensitive' } } }
+        { location: { contains: qStr, mode: 'insensitive' } },
+        { category: { name: { contains: qStr, mode: 'insensitive' } } },
+        { wallet: { name: { contains: qStr, mode: 'insensitive' } } },
+        { tags: { has: qStr } }
       ];
     }
 
@@ -49,6 +55,21 @@ router.get('/', authenticate, requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 
       };
     }
 
+    if (paymentMethod) {
+      whereClause.paymentMethod = { contains: paymentMethod as string, mode: 'insensitive' };
+    }
+
+    if (tags) {
+      const tagList = String(tags).split(',').map(t => t.trim()).filter(Boolean);
+      if (tagList.length > 0) {
+        whereClause.tags = { hasSome: tagList };
+      }
+    }
+
+    if (type && String(type).toUpperCase() !== 'ALL') {
+      whereClause.type = String(type).toUpperCase();
+    }
+
     if (minAmount || maxAmount) {
       whereClause.amount = {};
       if (minAmount) whereClause.amount.gte = Number(minAmount);
@@ -58,7 +79,11 @@ router.get('/', authenticate, requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 
     if (startDate || endDate) {
       whereClause.date = {};
       if (startDate) whereClause.date.gte = new Date(startDate as string);
-      if (endDate) whereClause.date.lte = new Date(endDate as string);
+      if (endDate) {
+        const eDate = new Date(endDate as string);
+        if (String(endDate).length === 10) eDate.setHours(23, 59, 59, 999);
+        whereClause.date.lte = eDate;
+      }
     }
 
     const transactions = await prisma.transaction.findMany({

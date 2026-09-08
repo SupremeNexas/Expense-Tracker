@@ -1,11 +1,11 @@
-import { useState, useLocation } from 'react';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useToast } from '../UI/Toast';
 import StaggeredMenu from '../StaggeredMenu/StaggeredMenu';
 import Modal from '../UI/Modal';
 import ExpenseForm from '../Expenses/ExpenseForm';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function TransactionMenu() {
   const [modalType, setModalType] = useState(null); // 'EXPENSE', 'INCOME', 'RECEIPT'

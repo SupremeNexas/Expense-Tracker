@@ -77,7 +77,10 @@ import analyticsRouter from './src/routes/analytics';
 import insightsRouter from './src/routes/insights';
 import groupsRouter from './src/routes/groups';
 import friendsRouter from './src/routes/friends';
+import alertsRouter from './src/routes/alerts';
 import aiRouter from './src/routes/ai';
+import recurringRouter from './src/routes/recurring';
+import transfersRouter from './src/routes/transfers';
 
 // Enterprise & Platform Scaling (Phase 5)
 import workspacesRouter from './src/routes/workspaces';
@@ -97,11 +100,14 @@ const mountRoutes = (prefix: string) => {
   app.use(`${prefix}/bills`, authenticate, billsRouter);
   app.use(`${prefix}/goals`, authenticate, goalsRouter);
   app.use(`${prefix}/subscriptions`, authenticate, subscriptionsRouter);
+  app.use(`${prefix}/recurring`, authenticate, recurringRouter);
+  app.use(`${prefix}/transfers`, authenticate, transfersRouter);
   app.use(`${prefix}/analytics`, authenticate, analyticsRouter);
   app.use(`${prefix}/insights`, authenticate, insightsRouter);
   app.use(`${prefix}/groups`, authenticate, groupsRouter);
   app.use(`${prefix}/friends`, authenticate, friendsRouter);
   app.use(`${prefix}/ai`, authenticate, aiRouter);
+  app.use(`${prefix}/alerts`, authenticate, alertsRouter);
 
   // Workspace Collaboration, Rules & Auditing
   app.use(`${prefix}/workspaces`, authenticate, workspacesRouter);

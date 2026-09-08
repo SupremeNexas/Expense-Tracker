@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import {
   LayoutDashboard, Receipt, Repeat, CreditCard, CalendarClock, Users,
-  Wallet, Tags, Settings, LogOut, ChevronLeft, ChevronRight, UserPlus
+  Wallet, Tags, Settings, LogOut, ChevronLeft, ChevronRight, UserPlus, TrendingUp, ArrowLeftRight
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
@@ -17,6 +17,8 @@ interface SidebarProps {
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/income', label: 'Income', icon: TrendingUp },
+  { path: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
   { path: '/expenses', label: 'Transactions', icon: Receipt },
   { path: '/subscriptions', label: 'Subscriptions', icon: Repeat },
   { path: '/credit-cards', label: 'Credit Cards', icon: CreditCard },

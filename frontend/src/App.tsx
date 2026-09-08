@@ -9,6 +9,8 @@ import { SmoothScroll } from './components/UI/SmoothScroll';
 const LandingPage       = React.lazy(() => import('./pages/LandingPage'));
 const AuthPage          = React.lazy(() => import('./pages/AuthPage'));
 const DashboardPage     = React.lazy(() => import('./pages/DashboardPage'));
+const IncomePage        = React.lazy(() => import('./pages/IncomePage'));
+const TransfersPage     = React.lazy(() => import('./pages/TransfersPage'));
 const ExpensesPage      = React.lazy(() => import('./pages/ExpensesPage'));
 const CategoriesPage    = React.lazy(() => import('./pages/CategoriesPage'));
 const BudgetsPage       = React.lazy(() => import('./pages/BudgetsPage'));
@@ -112,6 +114,8 @@ function AppRoutes() {
 
         {/* Protected Dashboard and sub-views */}
         <Route path="/dashboard"          element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/income"             element={<ProtectedRoute><IncomePage /></ProtectedRoute>} />
+        <Route path="/transfers"          element={<ProtectedRoute><TransfersPage /></ProtectedRoute>} />
         <Route path="/expenses"           element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
         <Route path="/categories"         element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
         <Route path="/budgets"            element={<ProtectedRoute><BudgetsPage /></ProtectedRoute>} />

@@ -12,9 +12,14 @@ const DEFAULT_CATEGORIES = [
   { name: 'Health', color: '#EF4444', icon: 'heart', type: 'EXPENSE' },
   { name: 'Education', color: '#8B5CF6', icon: 'book-open', type: 'EXPENSE' },
   { name: 'Entertainment', color: '#F59E0B', icon: 'film', type: 'EXPENSE' },
-  { name: 'Salary', color: '#17C964', icon: 'dollar-sign', type: 'INCOME' },
+  { name: 'Salary', color: '#10B981', icon: 'briefcase', type: 'INCOME' },
+  { name: 'Freelance', color: '#3B82F6', icon: 'laptop', type: 'INCOME' },
+  { name: 'Bonus', color: '#8B5CF6', icon: 'award', type: 'INCOME' },
+  { name: 'Interest', color: '#F59E0B', icon: 'percent', type: 'INCOME' },
+  { name: 'Refunds', color: '#06B6D4', icon: 'rotate-ccw', type: 'INCOME' },
   { name: 'Investment', color: '#10B981', icon: 'trending-up', type: 'INCOME' },
   { name: 'Gift', color: '#EC4899', icon: 'gift', type: 'INCOME' },
+  { name: 'Other Income', color: '#6B7280', icon: 'dollar-sign', type: 'INCOME' },
   { name: 'Other', color: '#6B7280', icon: 'more-horizontal', type: 'EXPENSE' },
 ];
 

@@ -3,6 +3,7 @@ import { prisma } from '../db/prisma';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
 import multer from 'multer';
+import path from 'path';
 import { Prisma } from '@prisma/client';
 import {
   getAIProvider,
@@ -17,6 +18,7 @@ import {
   ReceiptResult,
   AIService
 } from '../services/ai';
+import { BillScannerService } from '../services/ai/billScanner';
 import {
   CATEGORIZE_SYSTEM_INSTRUCTION,
   getCategorizePrompt
@@ -190,6 +192,75 @@ router.post('/insights', authenticate, async (req: AuthenticatedRequest, res: Re
     console.error('AI insights endpoint error:', err);
     res.status(500).json({ error: 'AI insights generation failed' });
   }
+});
+
+// POST /api/ai/scan-bill - Extract receipt/bill information into structured draft (ZERO DB WRITES)
+const scanBillUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5 MB max
+}).any();
+
+router.post('/scan-bill', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), (req: WorkspaceRequest, res: Response) => {
+  scanBillUpload(req, res, async (err: any) => {
+    try {
+      if (!req.user || !req.workspaceId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ success: false, error: 'File size exceeds 5MB limit' });
+        }
+        return res.status(400).json({ success: false, error: err.message || 'File upload error' });
+      }
+
+      const files = (req as any).files as Express.Multer.File[] | undefined;
+      if (!files || files.length === 0) {
+        return res.status(400).json({ success: false, error: 'No bill or receipt image file uploaded' });
+      }
+
+      if (files.length > 1) {
+        return res.status(400).json({ success: false, error: 'Please upload exactly one image' });
+      }
+
+      const file = files[0];
+      const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      const allowedExts = ['.jpeg', '.jpg', '.png', '.webp'];
+
+      const ext = path.extname(file.originalname || '').toLowerCase();
+      const mime = (file.mimetype || '').toLowerCase();
+
+      if (!allowedMimes.includes(mime) || !allowedExts.includes(ext)) {
+        return res.status(400).json({ success: false, error: 'Unsupported file type. Allowed formats: JPG, JPEG, PNG, WEBP' });
+      }
+
+      // Magic bytes verification
+      const buf = file.buffer;
+      const isJpeg = buf.length >= 3 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+      const isPng = buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+      const isWebp = buf.length >= 12 && buf.toString('utf8', 0, 4) === 'RIFF' && buf.toString('utf8', 8, 12) === 'WEBP';
+
+      if (!isJpeg && !isPng && !isWebp) {
+        return res.status(400).json({ success: false, error: 'Unsupported file type. Allowed formats: JPG, JPEG, PNG, WEBP' });
+      }
+
+      const result = await BillScannerService.scanBill(
+        req.user.id,
+        req.workspaceId,
+        file.buffer,
+        file.mimetype,
+        file.originalname
+      );
+
+      return res.json(result);
+    } catch (scanErr: any) {
+      if (scanErr?.message === 'UNAVAILABLE') {
+        return res.status(503).json({ success: false, error: 'Receipt scanning is temporarily unavailable.' });
+      }
+      console.error('[ScanBill] Error scanning bill:', scanErr);
+      return res.status(500).json({ success: false, error: 'Failed to process receipt image' });
+    }
+  });
 });
 
 // POST /api/ai/receipt (Legacy `/scan-receipt` refactored and duplicated here for compatibility)

@@ -17,15 +17,22 @@ const categoryRules = [
 router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { type } = req.query;
+
+    const whereClause: any = {
+      OR: [
+        { userId: req.user.id },
+        { userId: null }
+      ]
+    };
+
+    if (type && ['EXPENSE', 'INCOME'].includes(String(type).toUpperCase())) {
+      whereClause.type = String(type).toUpperCase();
+    }
 
     // Fetch user categories + system default categories (where userId is null)
-    const categories = await prisma.category.findMany({
-      where: {
-        OR: [
-          { userId: req.user.id },
-          { userId: null }
-        ]
-      },
+    let categories = await prisma.category.findMany({
+      where: whereClause,
       orderBy: { name: 'asc' }
     });
 

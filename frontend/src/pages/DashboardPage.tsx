@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import StaggeredMenu from '../components/StaggeredMenu/StaggeredMenu';
 import SpecularButton from '../components/UI/SpecularButton';
+import FinancialAlertsBanner from '../components/Dashboard/FinancialAlertsBanner';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -52,9 +53,9 @@ export default function DashboardPage() {
   const { data: categoriesData } = useQuery({ queryKey: ['categories-pie'], queryFn: () => api.getByCategory() });
 
   const totalExpense = summary?.total || 0;
-  const estimatedIncome = trend && trend.length > 0 ? trend[trend.length - 1].income : 125000;
-  const netWorth = estimatedIncome - totalExpense;
-  const savingsRate = estimatedIncome > 0 ? ((netWorth / estimatedIncome) * 100).toFixed(0) : '0';
+  const estimatedIncome = summary?.totalIncome !== undefined ? summary.totalIncome : (trend && trend.length > 0 ? trend[trend.length - 1].income : 0);
+  const netWorth = summary?.net !== undefined ? summary.net : (estimatedIncome - totalExpense);
+  const savingsRate = estimatedIncome > 0 ? (Math.max(0, ((estimatedIncome - totalExpense) / estimatedIncome) * 100)).toFixed(0) : '0';
 
   const chatMutation = useMutation({
     mutationFn: (data: { message: string; history: any[] }) => api.request('/ai/chat', { method: 'POST', body: data }),
@@ -148,6 +149,9 @@ export default function DashboardPage() {
               </SpecularButton>
             </div>
         </div>
+
+        {/* Financial Alerts Banner */}
+        <FinancialAlertsBanner />
 
         {/* Summary Metrics - Bento Grid in Cream Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

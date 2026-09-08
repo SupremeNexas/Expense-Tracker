@@ -1,35 +1,168 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Filter, Search, Receipt } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Plus, Receipt, Download, Upload } from 'lucide-react';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
 import ExpenseList from '../components/Expenses/ExpenseList';
 import ExpenseForm from '../components/Expenses/ExpenseForm';
+import BillScannerModal from '../components/Expenses/BillScannerModal';
+import CSVImportModal from '../components/Expenses/CSVImportModal';
+import TransactionFilterToolbar from '../components/Expenses/TransactionFilterToolbar';
+import PaginationControls from '../components/Expenses/PaginationControls';
 import Modal from '../components/UI/Modal';
-import { Category, Transaction } from '../types';
+import { Category, Wallet, Transaction, TransactionFilters } from '../types';
 
 export default function ExpensesPage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isCSVImportOpen, setIsCSVImportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Transaction | null>(null);
-  
-  // Filters & Search
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterMonth, setFilterMonth] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
 
-  // Queries
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery<Transaction[]>({
-    queryKey: ['expenses'],
-    queryFn: () => api.getExpenses()
+  // Initialize filter state from URL search params for persistent filtering across navigation/reload
+  const [filters, setFilters] = useState<TransactionFilters>({
+    search: searchParams.get('search') || '',
+    categoryId: searchParams.get('categoryId') || '',
+    walletId: searchParams.get('walletId') || '',
+    type: searchParams.get('type') || 'ALL',
+    paymentMethod: searchParams.get('paymentMethod') || '',
+    amountMode: (searchParams.get('amountMode') as any) || 'any',
+    exactAmount: searchParams.get('exactAmount') || '',
+    minAmount: searchParams.get('minAmount') || '',
+    maxAmount: searchParams.get('maxAmount') || '',
+    datePreset: searchParams.get('datePreset') || 'all',
+    startDate: searchParams.get('startDate') || '',
+    endDate: searchParams.get('endDate') || '',
+    tags: searchParams.get('tags') || '',
+    scope: searchParams.get('scope') || 'ALL',
+    sort: searchParams.get('sort') || 'date',
+    order: (searchParams.get('order') as any) || 'desc',
+    page: Number(searchParams.get('page')) || 1,
+    limit: Number(searchParams.get('limit')) || 20,
+  });
+
+  // Calculate count of active filters for badge counter
+  const activeFilterCount = [
+    filters.search,
+    filters.categoryId,
+    filters.walletId,
+    filters.type !== 'ALL' ? filters.type : '',
+    filters.paymentMethod,
+    filters.exactAmount || filters.minAmount || filters.maxAmount ? 'amount' : '',
+    filters.datePreset !== 'all' ? filters.datePreset : '',
+    filters.startDate,
+    filters.endDate,
+    filters.tags,
+    filters.scope !== 'ALL' ? filters.scope : '',
+  ].filter(Boolean).length;
+
+  const handleFilterChange = (updated: Partial<TransactionFilters>) => {
+    setFilters((prev) => {
+      const next = { ...prev, ...updated };
+      const newParams: Record<string, string> = {};
+      Object.keys(next).forEach((key) => {
+        const val = (next as any)[key];
+        if (
+          val !== undefined &&
+          val !== null &&
+          val !== '' &&
+          val !== 'ALL' &&
+          val !== 'all' &&
+          val !== 'any'
+        ) {
+          newParams[key] = String(val);
+        }
+      });
+      setSearchParams(newParams, { replace: true });
+      return next;
+    });
+  };
+
+  const handleClearFilters = () => {
+    const cleared: TransactionFilters = {
+      search: '',
+      categoryId: '',
+      walletId: '',
+      type: 'ALL',
+      paymentMethod: '',
+      amountMode: 'any',
+      exactAmount: '',
+      minAmount: '',
+      maxAmount: '',
+      datePreset: 'all',
+      startDate: '',
+      endDate: '',
+      tags: '',
+      scope: 'ALL',
+      sort: 'date',
+      order: 'desc',
+      page: 1,
+      limit: filters.limit,
+    };
+    setFilters(cleared);
+    setSearchParams({}, { replace: true });
+  };
+
+  // Build API Query Parameters
+  const apiQueryParams: Record<string, any> = {
+    search: filters.search,
+    category_id: filters.categoryId,
+    wallet_id: filters.walletId,
+    type: filters.type,
+    payment_method: filters.paymentMethod,
+    amount: filters.amountMode === 'exact' ? filters.exactAmount : '',
+    minAmount:
+      filters.amountMode === 'range' || filters.amountMode === 'min' ? filters.minAmount : '',
+    maxAmount:
+      filters.amountMode === 'range' || filters.amountMode === 'max' ? filters.maxAmount : '',
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    tags: filters.tags,
+    scope: filters.scope,
+    sort: filters.sort,
+    order: filters.order,
+    page: filters.page,
+    limit: filters.limit,
+    paginate: 'true',
+  };
+
+  // Server-side filtered query
+  const {
+    data: expensesData,
+    isLoading: expensesLoading,
+    isError: expensesError,
+    error: expensesErrObj,
+    refetch: refetchExpenses,
+  } = useQuery({
+    queryKey: ['expenses', apiQueryParams],
+    queryFn: () => api.getExpenses(apiQueryParams),
   });
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => api.getCategories()
+    queryFn: () => api.getCategories(),
   });
+
+  const { data: wallets = [] } = useQuery<Wallet[]>({
+    queryKey: ['wallets'],
+    queryFn: () => api.request('/expenses/wallets'),
+  });
+
+  // Extract items list & pagination metadata safely
+  const expensesList: Transaction[] = Array.isArray(expensesData)
+    ? expensesData
+    : expensesData?.data || [];
+  const totalItems: number = Array.isArray(expensesData)
+    ? expensesData.length
+    : expensesData?.pagination?.total || 0;
+  const totalPages: number = Array.isArray(expensesData)
+    ? 1
+    : expensesData?.pagination?.totalPages || 1;
 
   // Mutations
   const createMutation = useMutation({
@@ -44,7 +177,7 @@ export default function ExpensesPage() {
     },
     onError: (err: any) => {
       showToast(err.message || 'Failed to add transaction', 'error');
-    }
+    },
   });
 
   const updateMutation = useMutation({
@@ -60,7 +193,7 @@ export default function ExpensesPage() {
     },
     onError: (err: any) => {
       showToast(err.message || 'Failed to update transaction', 'error');
-    }
+    },
   });
 
   const deleteMutation = useMutation({
@@ -74,34 +207,7 @@ export default function ExpensesPage() {
     },
     onError: (err: any) => {
       showToast(err.message || 'Failed to delete transaction', 'error');
-    }
-  });
-
-  // Filter local items
-  const filteredExpenses = expenses.filter(exp => {
-    let matches = true;
-
-    // Search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const titleMatches = exp.title.toLowerCase().includes(q);
-      const notesMatches = exp.notes?.toLowerCase().includes(q) || false;
-      const tagMatches = exp.tags?.some(tag => tag.toLowerCase().includes(q)) || false;
-      matches = matches && (titleMatches || notesMatches || tagMatches);
-    }
-
-    // Category
-    if (filterCategory) {
-      matches = matches && (exp.category_id || exp.categoryId) === filterCategory;
-    }
-
-    // Month
-    if (filterMonth) {
-      const expMonth = new Date(exp.date).toISOString().substring(0, 7); // YYYY-MM
-      matches = matches && expMonth === filterMonth;
-    }
-
-    return matches;
+    },
   });
 
   const handleOpenModal = (expense: Transaction | null = null) => {
@@ -128,94 +234,112 @@ export default function ExpensesPage() {
     }
   };
 
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      await api.exportExpenses(apiQueryParams);
+      showToast('Transactions exported successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to export CSV', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 fade-in-up">
       {/* Page Header */}
-      <div className="flex justify-between items-center pb-4 border-b border-black/[0.04] dark:border-white/[0.04]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-black/[0.04] dark:border-white/[0.04]">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Ledger Transactions</h1>
-          <p className="text-sm text-gray-400 mt-1">Review, search, and audit your transaction history.</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Search, filter, import, and audit your transaction history.
+          </p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="btn-premium btn-premium-primary gap-2 cursor-pointer py-2 text-sm"
-        >
-          <Plus className="w-4 h-4" /> Add Transaction
-        </button>
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="premium-card p-4 flex flex-col md:flex-row gap-4 items-center justify-between border-black/[0.05] dark:border-white/[0.05]">
-        {/* Search */}
-        <div className="relative w-full md:w-80 flex items-center">
-          <Search className="absolute left-3 w-4 h-4 text-gray-400" />
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by title, tag, or note..." 
-            className="input-premium pl-9 py-2 text-xs w-full"
-          />
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 items-center w-full md:w-auto">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Filters:</span>
-          </div>
-
-          <select 
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="input-premium py-1.5 px-3 text-xs cursor-pointer w-36"
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={handleExportCSV}
+            disabled={isExporting}
+            className="btn-premium py-2 px-3 text-xs gap-1.5 cursor-pointer border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+            title="Export filtered transactions to CSV"
           >
-            <option value="">All Time</option>
-            <option value={new Date().toISOString().substring(0, 7)}>This Month</option>
-          </select>
-
-          <select 
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="input-premium py-1.5 px-3 text-xs cursor-pointer w-40"
+            <Download className="w-3.5 h-3.5 text-emerald-500" /> Export CSV
+          </button>
+          <button
+            onClick={() => setIsCSVImportOpen(true)}
+            className="btn-premium py-2 px-3 text-xs gap-1.5 cursor-pointer border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+            title="Import transactions from CSV file"
           >
-            <option value="">All Categories</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          {(filterMonth || filterCategory || searchQuery) && (
-            <button 
-              onClick={() => { setFilterMonth(''); setFilterCategory(''); setSearchQuery(''); }}
-              className="text-xs font-semibold text-gray-500 hover:text-black dark:hover:text-white cursor-pointer"
-            >
-              Clear Filters
-            </button>
-          )}
+            <Upload className="w-3.5 h-3.5 text-blue-500" /> Import CSV
+          </button>
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="btn-premium py-2 px-3 text-xs gap-1.5 cursor-pointer border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+          >
+            <Receipt className="w-3.5 h-3.5 text-purple-500" /> Scan Receipt
+          </button>
+          <button
+            onClick={() => handleOpenModal()}
+            className="btn-premium btn-premium-primary gap-1.5 cursor-pointer py-2 px-3.5 text-xs font-semibold"
+          >
+            <Plus className="w-4 h-4" /> Add Transaction
+          </button>
         </div>
       </div>
 
-      {/* Transactions list */}
-      <ExpenseList 
-        expenses={filteredExpenses} 
-        loading={expensesLoading} 
+      {/* Smart Search & Filter Toolbar */}
+      <TransactionFilterToolbar
+        filters={filters}
+        categories={categories}
+        wallets={wallets}
+        onFilterChange={handleFilterChange}
+        onClearFilters={handleClearFilters}
+        activeCount={activeFilterCount}
+      />
+
+      {/* Transactions List */}
+      <ExpenseList
+        expenses={expensesList}
+        loading={expensesLoading}
+        isError={expensesError}
+        error={expensesErrObj}
+        hasFilters={activeFilterCount > 0}
+        onClearFilters={handleClearFilters}
+        onRetry={refetchExpenses}
         onEdit={handleOpenModal}
         onDelete={handleDelete}
       />
 
+      {/* Pagination Controls */}
+      <PaginationControls
+        currentPage={filters.page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        limit={filters.limit}
+        onPageChange={(page) => handleFilterChange({ page })}
+        onLimitChange={(limit) => handleFilterChange({ limit, page: 1 })}
+      />
+
+      {/* Bill Scanner Modal */}
+      <BillScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
+
+      {/* CSV Import Modal */}
+      <CSVImportModal isOpen={isCSVImportOpen} onClose={() => setIsCSVImportOpen(false)} />
+
       {/* Edit/Create Dialog Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={handleCloseModal}
         title={editingExpense ? 'Modify Transaction' : 'New Transaction'}
-        description={editingExpense ? 'Update the details of this transaction.' : 'Record an expense or income.'}
+        description={
+          editingExpense ? 'Update the details of this transaction.' : 'Record an expense or income.'
+        }
         maxWidth="720px"
       >
-        <ExpenseForm 
-          initialData={editingExpense} 
-          onSubmit={handleSubmit} 
-          onCancel={handleCloseModal} 
+        <ExpenseForm
+          initialData={editingExpense}
+          onSubmit={handleSubmit}
+          onCancel={handleCloseModal}
         />
       </Modal>
     </div>
