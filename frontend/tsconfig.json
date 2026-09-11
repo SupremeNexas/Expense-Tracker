@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "types": ["@testing-library/jest-dom"],
     "target": "ES2022",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
