@@ -53,7 +53,8 @@ app.use(cors({
     // Allow requests with no origin (e.g. server-to-server, curl, mobile apps)
     if (!origin) return callback(null, true);
     const isLocalhost = /^https?:\/\/localhost:\d+$/.test(origin);
-    const isAllowed = ALLOWED_ORIGINS.includes(origin) || (!isProduction && isLocalhost);
+    const isVercel = /^https:\/\/.*\.vercel\.app$/.test(origin);
+    const isAllowed = ALLOWED_ORIGINS.includes(origin) || isVercel || (!isProduction && isLocalhost);
     if (isAllowed) {
       callback(null, true);
     } else {

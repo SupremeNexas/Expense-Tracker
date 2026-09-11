@@ -1,9 +1,4 @@
 {
-  "version": 2,
-  "framework": "vite",
-  "installCommand": "cd frontend && npm install",
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/dist",
   "headers": [
     {
       "source": "/(.*)",
@@ -16,7 +11,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://fintech-finova-backend.onrender.com/api/$1" },
+    { "source": "/api/:path*", "destination": "https://fintech-finova-backend.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
