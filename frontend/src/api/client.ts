@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '').replace(/\/api$/, '')}/api`
+  : '/api';
 
 function getToken(): string | null {
   return localStorage.getItem('fintech_token');
@@ -118,7 +120,7 @@ export const api = {
     const token = getToken();
     const workspaceId = localStorage.getItem('fintech_workspace_id');
 
-    const response = await fetch(`/api/expenses/export${query ? `?${query}` : ''}`, {
+    const response = await fetch(`${API_BASE}/expenses/export${query ? `?${query}` : ''}`, {
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...(workspaceId ? { 'x-workspace-id': workspaceId } : {})

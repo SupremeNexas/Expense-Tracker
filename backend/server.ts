@@ -38,20 +38,23 @@ const ALLOWED_ORIGINS: string[] = [
   'https://expense-tracker-eight-pi-69.vercel.app'
 ];
 if (process.env.CLIENT_URL) {
-  ALLOWED_ORIGINS.push(process.env.CLIENT_URL);
+  const clientUrl = process.env.CLIENT_URL.replace(/\/$/, '');
+  if (!ALLOWED_ORIGINS.includes(clientUrl)) {
+    ALLOWED_ORIGINS.push(clientUrl);
+  }
 }
 if (!isProduction) {
-  // Always allow dev origins in non-production
   ALLOWED_ORIGINS.push('http://localhost:5173');
   ALLOWED_ORIGINS.push('http://localhost:4173');
 }
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. Postman, mobile apps)
-    const isLocalhost = origin && /^https?:\/\/localhost:\d+$/.test(origin);
-    const isVercelDomain = origin && /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin);
-    if (!origin || ALLOWED_ORIGINS.includes(origin) || (!isProduction && isLocalhost) || isVercelDomain) {
+    // Allow requests with no origin (e.g. server-to-server, curl, mobile apps)
+    if (!origin) return callback(null, true);
+    const isLocalhost = /^https?:\/\/localhost:\d+$/.test(origin);
+    const isAllowed = ALLOWED_ORIGINS.includes(origin) || (!isProduction && isLocalhost);
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error(`CORS: Origin ${origin} is not allowed`));

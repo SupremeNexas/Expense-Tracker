@@ -73,13 +73,13 @@ export default function AuthPage() {
       return;
     }
 
-    // The default client ID is only authorized for http://localhost:5173
+    // The default client ID is authorized for http://localhost:5173 and https://expense-tracker-eight-pi-69.vercel.app
     const defaultClientId = '357084347273-8405ggecqias20eduh7df8iv04eldtjm.apps.googleusercontent.com';
     const isDefaultClientId = GOOGLE_CLIENT_ID === defaultClientId;
-    const allowedLocalhost = 'http://localhost:5173';
+    const isProductionVercel = currentOrigin.includes('vercel.app') || currentOrigin.includes('localhost');
 
-    if (isDefaultClientId && currentOrigin !== allowedLocalhost) {
-      setGoogleError(`Deployment detected: The default Google Client ID only works for ${allowedLocalhost}. To sign in under ${currentOrigin}, register your own Client ID in the Google Cloud Console and set VITE_GOOGLE_CLIENT_ID in your Vercel Environment Variables.`);
+    if (isDefaultClientId && !isProductionVercel) {
+      setGoogleError(`Deployment detected: To sign in under ${currentOrigin}, register your Client ID in Google Cloud Console and set VITE_GOOGLE_CLIENT_ID in Vercel Environment Variables.`);
       return;
     }
 
