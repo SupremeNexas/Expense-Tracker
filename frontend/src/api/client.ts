@@ -1,7 +1,10 @@
 const getApiBase = (): string => {
   if (import.meta.env.VITE_API_URL) {
-    const raw = import.meta.env.VITE_API_URL.replace(/\/$/, '');
-    return raw.endsWith('/api') ? raw : `${raw}/api`;
+    const raw = import.meta.env.VITE_API_URL.trim().replace(/\/$/, '');
+    if (raw.endsWith('/api') || /\/api\/v\d+$/i.test(raw)) {
+      return raw;
+    }
+    return `${raw}/api`;
   }
   if (typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) {
     return 'https://fintech-finova-backend.onrender.com/api';
