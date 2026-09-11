@@ -32,8 +32,7 @@ export const StaggeredMenu = React.forwardRef(({
   const plusVRef = useRef(null);
   const iconRef = useRef(null);
   const textInnerRef = useRef(null);
-  const textWrapRef = useRef(null);
-  const [textLines, setTextLines] = useState(['Menu', 'Close']);
+  const [, setTextLines] = useState(['Menu', 'Close']);
 
   useImperativeHandle(ref, () => ({
     toggle: () => {

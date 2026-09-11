@@ -5,7 +5,7 @@ import { useToast } from '../UI/Toast';
 import StaggeredMenu from '../StaggeredMenu/StaggeredMenu';
 import Modal from '../UI/Modal';
 import ExpenseForm from '../Expenses/ExpenseForm';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 export default function TransactionMenu() {
   const [modalType, setModalType] = useState(null); // 'EXPENSE', 'INCOME', 'RECEIPT'

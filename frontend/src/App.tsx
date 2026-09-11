@@ -82,7 +82,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function AppRoutes() {
-  const { user, authLoading, checkAuth } = useAuthStore();
+  const { authLoading, checkAuth } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
