@@ -89,7 +89,7 @@ export function CSVImportModal({ isOpen, onClose }: CSVImportModalProps) {
     reader.onload = (e) => {
       const content = e.target?.result as string;
       setCsvText(content || '');
-      fetchPreview(content || {}, selectedFile.name);
+      fetchPreview(content || '', selectedFile.name);
     };
     reader.readAsText(selectedFile);
   };

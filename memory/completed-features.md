@@ -95,6 +95,7 @@ A history of completed features in the Expense Tracker codebase.
 * [x] SaaS Landing Page with hero layouts, pricing models, FAQs.
 * [x] Workspace Dashboard showing spent meters, pie chart distributions, and trend area lines.
 * [x] Transaction manager table with search filters and client-side CSV downloads.
+* [x] CSV import preview flow keeps uploaded file content typed as text for CI-safe transaction imports.
 
 ---
 

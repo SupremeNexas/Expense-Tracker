@@ -39,6 +39,7 @@ model Transaction {
 ## 📋 CSV Exports & Table Filters
 * **Search Filters**: The frontend `ExpensesPage.tsx` table allows text search across fields, filters by category, and filters by month/year.
 * **CSV Export**: Compiles transaction arrays and generates custom CSV files directly on the client side (`nprogress` / download triggers) for user downloads.
+* **CSV Import**: `CSVImportModal.tsx` reads uploaded files as text before sending preview payloads to the backend import parser.
 
 ---
 

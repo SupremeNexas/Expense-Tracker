@@ -33,6 +33,7 @@ The Personal Finance and Expense Tracker repository is production-ready and publ
 ---
 
 ## 🐛 Issues Fixed in v1.0.0
+* CSV import preview now preserves a string payload fallback, keeping the frontend TypeScript CI check green.
 * `/goals` route was missing from `App.tsx` — GoalsPage showed 404
 * Goal creation failed — frontend sent camelCase fields, backend validated snake_case
 * `POST /goals/:id/contribute` endpoint was missing from backend — contribute always 404'd
