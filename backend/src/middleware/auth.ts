@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import { Request } from 'express-serve-static-core';
 import * as jwt from 'jsonwebtoken';
 
 let _jwtSecret: string | undefined;
