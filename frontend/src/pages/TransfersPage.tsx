@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
-import { Wallet, Transaction } from '../types';
+import type { Wallet, Transaction } from '../types';
 import {
   ArrowLeftRight,
   Plus,
@@ -16,6 +16,7 @@ import {
   Building2,
   CreditCard as CardIcon,
   Banknote,
+  Wallet as WalletIcon,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
@@ -182,7 +183,7 @@ export default function TransfersPage() {
       case 'BANK': return <Building2 className="w-4 h-4 text-blue-500" />;
       case 'CREDIT_CARD': return <CardIcon className="w-4 h-4 text-pink-500" />;
       case 'CASH': return <Banknote className="w-4 h-4 text-emerald-500" />;
-      default: return <Wallet className="w-4 h-4 text-indigo-500" />;
+      default: return <WalletIcon className="w-4 h-4 text-indigo-500" />;
     }
   };
 
