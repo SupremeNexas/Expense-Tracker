@@ -1,13 +1,12 @@
 import { Response, NextFunction } from 'express';
-import * as core from 'express-serve-static-core';
 import { prisma } from '../db/prisma';
 import { AuthenticatedRequest } from './auth';
 
 export interface WorkspaceRequest<
-  P = core.ParamsDictionary,
+  P = any,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = core.Query,
+  ReqQuery = any,
   Locals extends Record<string, any> = Record<string, any>
 > extends AuthenticatedRequest<P, ResBody, ReqBody, ReqQuery, Locals> {
   workspaceId?: string;

@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import * as core from 'express-serve-static-core';
 import * as jwt from 'jsonwebtoken';
 
 let _jwtSecret: string | undefined;
@@ -16,11 +15,24 @@ export function getJwtSecret(): string {
   return secret;
 }
 
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+      };
+      workspaceId?: string;
+      workspaceRole?: string;
+    }
+  }
+}
+
 export interface AuthenticatedRequest<
-  P = core.ParamsDictionary,
+  P = any,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = core.Query,
+  ReqQuery = any,
   Locals extends Record<string, any> = Record<string, any>
 > extends Request<P, ResBody, ReqBody, ReqQuery, Locals> {
   user?: {

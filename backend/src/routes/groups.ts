@@ -1,5 +1,4 @@
 import { Router, Response, NextFunction } from 'express';
-import * as core from 'express-serve-static-core';
 import { body } from 'express-validator';
 import { prisma } from '../db/prisma';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
@@ -10,10 +9,10 @@ import { calculateSplits, calculateNetPositions, simplifyGroupDebts, SplitPartic
 const router = Router();
 
 interface GroupRequest<
-  P = core.ParamsDictionary,
+  P = any,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = core.Query,
+  ReqQuery = any,
   Locals extends Record<string, any> = Record<string, any>
 > extends AuthenticatedRequest<P, ResBody, ReqBody, ReqQuery, Locals> {
   group?: any;
