@@ -19,7 +19,6 @@ export const StaggeredMenu = React.forwardRef(({
   changeMenuColorOnOpen = true,
   isFixed = false,
   closeOnClickAway = true,
-  showTrigger = true,
   onMenuOpen,
   onMenuClose
 }, ref) => {
