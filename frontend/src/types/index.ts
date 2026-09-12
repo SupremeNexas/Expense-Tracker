@@ -15,6 +15,7 @@ export interface User {
   onboardingComplete: boolean;
   createdAt: string;
   isPremium?: boolean;
+  plan?: 'FREE' | 'PRO';
   settings?: UserSettings;
 }
 

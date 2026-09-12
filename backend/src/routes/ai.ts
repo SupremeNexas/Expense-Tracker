@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { prisma } from '../db/prisma';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
+import { requirePro } from '../middleware/pro';
 import multer from 'multer';
 import path from 'path';
 import {
@@ -57,7 +58,7 @@ function setCached(key: string, data: any, ttlMs: number = 10 * 60 * 1000) { // 
 }
 
 // POST /api/ai/chat (Conversational Financial Insights - Text LLM + PostgreSQL Retrieval)
-router.post('/chat', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
+router.post('/chat', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), requirePro, async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { message } = req.body;
@@ -85,7 +86,7 @@ router.post('/chat', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']
 });
 
 // POST /api/ai/categorize (Merchant classification - Text LLM / Memory)
-router.post('/categorize', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/categorize', authenticate, requirePro, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const { merchant } = req.body;
@@ -120,7 +121,7 @@ router.post('/categorize', authenticate, async (req: AuthenticatedRequest, res: 
 });
 
 // POST /api/ai/analyze (Comprehensive financial report feed)
-router.post('/analyze', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/analyze', authenticate, requirePro, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
@@ -147,7 +148,7 @@ router.post('/analyze', authenticate, async (req: AuthenticatedRequest, res: Res
 });
 
 // POST /api/ai/forecast
-router.post('/forecast', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/forecast', authenticate, requirePro, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
@@ -167,7 +168,7 @@ router.post('/forecast', authenticate, async (req: AuthenticatedRequest, res: Re
 });
 
 // POST /api/ai/subscriptions
-router.post('/subscriptions', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/subscriptions', authenticate, requirePro, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
@@ -187,7 +188,7 @@ router.post('/subscriptions', authenticate, async (req: AuthenticatedRequest, re
 });
 
 // POST /api/ai/insights
-router.post('/insights', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/insights', authenticate, requirePro, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
@@ -212,7 +213,7 @@ const scanBillUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5 MB max
 }).any();
 
-router.post('/scan-bill', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), (req: WorkspaceRequest, res: Response) => {
+router.post('/scan-bill', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), requirePro, (req: WorkspaceRequest, res: Response) => {
   scanBillUpload(req, res, async (err: any) => {
     try {
       if (!req.user || !req.workspaceId) {
@@ -276,7 +277,7 @@ router.post('/scan-bill', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIE
 });
 
 // POST /api/ai/receipt (Strict Gemini Vision receipt scanning)
-router.post('/receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/receipt', authenticate, requirePro, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const file = req.file;
@@ -322,12 +323,12 @@ router.post('/receipt', authenticate, upload.single('receipt'), async (req: Auth
 });
 
 // Map legacy routes/scan-receipt to receipt scanner
-router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/scan-receipt', authenticate, requirePro, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
   res.redirect(307, '/api/ai/receipt');
 });
 
 // Map legacy GET coach
-router.get('/coach', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/coach', authenticate, requirePro, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;

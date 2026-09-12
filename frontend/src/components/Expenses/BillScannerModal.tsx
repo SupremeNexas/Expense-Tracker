@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Modal from '../UI/Modal';
 import { useToast } from '../UI/Toast';
+import { PaywallModal } from '../UI/PaywallModal';
 import { api } from '../../api/client';
 import useAuthStore from '../../store/authStore';
 import {
@@ -69,6 +70,8 @@ export default function BillScannerModal({ isOpen, onClose }: BillScannerModalPr
 
   // Core scan state
   const [scanState, setScanState] = useState<ScanState>('IDLE');
+  const [showPaywall, setShowPaywall] = useState(false);
+  const isPro = user?.plan === 'PRO' || user?.email?.toLowerCase() === 'demo@example.com';
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showImagePreview, setShowImagePreview] = useState(true);
@@ -133,6 +136,10 @@ export default function BillScannerModal({ isOpen, onClose }: BillScannerModalPr
   const handleDateChange = (v: string) => { setDate(v); setDuplicateConfirmed(false); };
 
   const validateAndSelectFile = (file: File): boolean => {
+    if (!isPro) {
+      setShowPaywall(true);
+      return false;
+    }
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!ALLOWED_TYPES.includes(file.type.toLowerCase()) && !ALLOWED_EXTENSIONS.includes(ext)) {
       showToast('Unsupported file type. Please upload a JPG, PNG, or WEBP image.', 'error'); return false;
@@ -165,6 +172,10 @@ export default function BillScannerModal({ isOpen, onClose }: BillScannerModalPr
 
   const handleScanBill = async () => {
     if (!selectedFile) return;
+    if (!isPro) {
+      setShowPaywall(true);
+      return;
+    }
     setScanState('SCANNING'); setErrorMessage(null); setDuplicateConfirmed(false);
     try {
       const formData = new FormData();
@@ -191,6 +202,11 @@ export default function BillScannerModal({ isOpen, onClose }: BillScannerModalPr
         setScanState('ERROR'); showToast(response.error || 'Failed to analyze receipt', 'error');
       }
     } catch (err: any) {
+      if (err?.message === 'PRO_REQUIRED' || err?.message?.includes('Finova Pro')) {
+        setShowPaywall(true);
+        setScanState('IDLE');
+        return;
+      }
       const msg = err.message === 'UNAVAILABLE' ? 'Receipt scanning is temporarily unavailable.' : (err.message || 'Failed to connect');
       setErrorMessage(msg); setScanState('ERROR'); showToast(msg, 'error');
     }
@@ -620,6 +636,12 @@ export default function BillScannerModal({ isOpen, onClose }: BillScannerModalPr
           </div>
         )}
       </div>
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        featureName="AI Bill & Receipt Scanner"
+      />
     </Modal>
   );
 }

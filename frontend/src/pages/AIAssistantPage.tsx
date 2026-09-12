@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
+import { PaywallModal } from '../components/UI/PaywallModal';
 import useAuthStore from '../store/authStore';
 import { formatCurrency } from '../utils/currency';
 import { 
@@ -40,9 +41,12 @@ export default function AIAssistantPage() {
   const { showToast } = useToast();
   const { user } = useAuthStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const [chatInput, setChatInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  const isPro = user?.plan === 'PRO' || user?.email?.toLowerCase() === 'demo@example.com';
   
   // Persist chat history in localStorage for session permanence
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -96,12 +100,21 @@ export default function AIAssistantPage() {
       ]);
     },
     onError: (err: any) => {
-      showToast(err.message || 'AI Assistant failed to reply', 'error');
+      if (err?.message === 'PRO_REQUIRED' || err?.message?.includes('Finova Pro')) {
+        setShowPaywall(true);
+      } else {
+        showToast(err.message || 'AI Assistant failed to reply', 'error');
+      }
     }
   });
 
   const handleSendMessage = (text: string) => {
     if (!text.trim() || chatMutation.isPending) return;
+
+    if (!isPro) {
+      setShowPaywall(true);
+      return;
+    }
 
     // Add user message
     setMessages(prev => [
@@ -144,6 +157,9 @@ export default function AIAssistantPage() {
           <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
             <Bot className="w-6 h-6 text-emerald-500" />
             AI Assistant
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-indigo-500 text-white font-bold tracking-wider uppercase shadow-sm">
+              PRO
+            </span>
           </h1>
           <p className="text-xs text-muted">Natural language insights grounded in your financial data.</p>
         </div>
@@ -356,6 +372,12 @@ export default function AIAssistantPage() {
           <Send className="w-4 h-4" />
         </button>
       </form>
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        featureName="AI Financial Assistant"
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
+import { PaywallModal } from '../components/UI/PaywallModal';
 import { Button } from '../components/UI/Button';
 import { Input } from '../components/UI/Input';
 import { Select } from '../components/UI/Select';
@@ -20,6 +21,9 @@ export default function CopilotPage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { user } = useAuthStore();
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  const isPro = user?.plan === 'PRO' || user?.email?.toLowerCase() === 'demo@example.com';
 
   // Active section tabs: 'dashboard' | 'chat' | 'receipt'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'receipt'>('dashboard');
@@ -66,7 +70,11 @@ export default function CopilotPage() {
       setChatHistory(prev => [...prev, { role: 'assistant', content: res.reply }]);
     },
     onError: (err: any) => {
-      showToast(err.message || 'Assistant failed to reply', 'error');
+      if (err?.message === 'PRO_REQUIRED' || err?.message?.includes('Finova Pro')) {
+        setShowPaywall(true);
+      } else {
+        showToast(err.message || 'Assistant failed to reply', 'error');
+      }
     },
     onSettled: () => {
       setIsChatSubmitting(false);
@@ -82,7 +90,11 @@ export default function CopilotPage() {
       setScannedResult(res.ocrResult);
     },
     onError: (err: any) => {
-      showToast(err.message || 'Failed to scan receipt', 'error');
+      if (err?.message === 'PRO_REQUIRED' || err?.message?.includes('Finova Pro')) {
+        setShowPaywall(true);
+      } else {
+        showToast(err.message || 'Failed to scan receipt', 'error');
+      }
     },
     onSettled: () => {
       setIsScanning(false);
@@ -109,6 +121,11 @@ export default function CopilotPage() {
   const handleChatSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isChatSubmitting) return;
+
+    if (!isPro) {
+      setShowPaywall(true);
+      return;
+    }
 
     const userMsg = chatInput.trim();
     setChatInput('');
@@ -149,6 +166,10 @@ export default function CopilotPage() {
   };
 
   const processFile = (file: File) => {
+    if (!isPro) {
+      setShowPaywall(true);
+      return;
+    }
     setIsScanning(true);
     const formData = new FormData();
     formData.append('receipt', file);
@@ -189,6 +210,9 @@ export default function CopilotPage() {
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Sparkles className="w-7 h-7 text-emerald-500" />
             AI Financial Copilot
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-indigo-500 text-white font-bold tracking-wider uppercase shadow-sm">
+              PRO
+            </span>
           </h1>
           <p className="text-sm text-muted mt-1">Evaluate health metrics, forecast cycles, and command your ledger.</p>
         </div>
@@ -671,6 +695,12 @@ export default function CopilotPage() {
           </div>
         </div>
       )}
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        featureName="AI Financial Copilot"
+      />
     </div>
   );
 }

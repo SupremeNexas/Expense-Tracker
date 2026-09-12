@@ -18,6 +18,7 @@ import {
 import StaggeredMenu from '../components/StaggeredMenu/StaggeredMenu';
 import SpecularButton from '../components/UI/SpecularButton';
 import FinancialAlertsBanner from '../components/Dashboard/FinancialAlertsBanner';
+import { PaywallModal } from '../components/UI/PaywallModal';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -33,6 +34,9 @@ export default function DashboardPage() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  const isPro = user?.plan === 'PRO' || user?.email?.toLowerCase() === 'demo@example.com';
 
   const [quests, setQuests] = useState([
     { id: 1, title: 'Zero Spend', reward: '150XP', progress: '1/3', completed: false, rewardClaimed: false },
@@ -60,13 +64,23 @@ export default function DashboardPage() {
   const chatMutation = useMutation({
     mutationFn: (data: { message: string; history: any[] }) => api.request('/ai/chat', { method: 'POST', body: data }),
     onSuccess: (data) => setChatHistory(prev => [...prev, { role: 'assistant', content: data.reply }]),
-    onError: (err: any) => showToast(err.message || 'SYS.ERROR', 'error'),
+    onError: (err: any) => {
+      if (err?.message === 'PRO_REQUIRED' || err?.message?.includes('Finova Pro')) {
+        setShowPaywall(true);
+      } else {
+        showToast(err.message || 'SYS.ERROR', 'error');
+      }
+    },
     onSettled: () => setIsSending(false)
   });
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
+    if (!isPro) {
+      setShowPaywall(true);
+      return;
+    }
     setIsSending(true);
     const newMsg = chatMessage;
     setChatHistory(prev => [...prev, { role: 'user', content: newMsg }]);
@@ -445,23 +459,23 @@ export default function DashboardPage() {
           {
             label: 'AI Financial Copilot',
             ariaLabel: 'AI Financial Copilot',
-            link: user?.isPremium ? '/copilot' : '#',
+            link: isPro ? '/copilot' : '#',
             onClick: (e) => {
-                if (!user?.isPremium) {
-                    e.preventDefault();
-                    showToast('This feature is for PRO users only.', 'warning');
-                }
+              if (!isPro) {
+                e.preventDefault();
+                setShowPaywall(true);
+              }
             }
           },
           {
             label: 'AI Assistant',
             ariaLabel: 'AI Assistant',
-            link: user?.isPremium ? '/assistant' : '#',
+            link: isPro ? '/assistant' : '#',
             onClick: (e) => {
-                if (!user?.isPremium) {
-                    e.preventDefault();
-                    showToast('This feature is for PRO users only.', 'warning');
-                }
+              if (!isPro) {
+                e.preventDefault();
+                setShowPaywall(true);
+              }
             }
           },
           {
@@ -477,12 +491,12 @@ export default function DashboardPage() {
           {
             label: 'Receipt Scanner',
             ariaLabel: 'Analyze a receipt',
-            link: user?.isPremium ? '/copilot' : '#',
+            link: isPro ? '/copilot' : '#',
             onClick: (e) => {
-                if (!user?.isPremium) {
-                    e.preventDefault();
-                    showToast('This feature is for PRO users only.', 'warning');
-                }
+              if (!isPro) {
+                e.preventDefault();
+                setShowPaywall(true);
+              }
             }
           }
         ]}
@@ -492,6 +506,12 @@ export default function DashboardPage() {
         accentColor="#111411"
         displaySocials={false}
         displayItemNumbering={false}
+      />
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        featureName="Finova Pro AI Features"
       />
     </div>
   );

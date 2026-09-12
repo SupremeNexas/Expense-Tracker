@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import {
   LayoutDashboard, Receipt, Repeat, CreditCard, CalendarClock, Users,
-  Wallet, Tags, Settings, LogOut, ChevronLeft, ChevronRight, UserPlus, TrendingUp, ArrowLeftRight
+  Wallet, Tags, Settings, LogOut, ChevronLeft, ChevronRight, UserPlus, TrendingUp, ArrowLeftRight,
+  Bot, Sparkles
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
@@ -17,6 +18,8 @@ interface SidebarProps {
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/assistant', label: 'AI Assistant', icon: Bot, isPro: true },
+  { path: '/copilot', label: 'AI Copilot', icon: Sparkles, isPro: true },
   { path: '/income', label: 'Income', icon: TrendingUp },
   { path: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
   { path: '/expenses', label: 'Transactions', icon: Receipt },
@@ -76,9 +79,16 @@ export function Sidebar({ mobileOpen, setMobileOpen, collapsed, setCollapsed }: 
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
-                <NavLink key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-[#8b5cf6]/10 text-[#8b5cf6]' : 'text-[#45464d] hover:bg-[#eff4ff]'}`}>
-                  <Icon className="w-4 h-4" />
-                  {!collapsed && item.label}
+                <NavLink key={item.path} to={item.path} className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-[#8b5cf6]/10 text-[#8b5cf6]' : 'text-[#45464d] hover:bg-[#eff4ff]'}`}>
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-4 h-4" />
+                    {!collapsed && <span>{item.label}</span>}
+                  </div>
+                  {!collapsed && item.isPro && (
+                    <span className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500 to-indigo-500 text-white uppercase shadow-sm">
+                      PRO
+                    </span>
+                  )}
                 </NavLink>
               );
             })}

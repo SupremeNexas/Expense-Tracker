@@ -35,6 +35,9 @@ model User {
   longTermGoal         String?                @map("long_term_goal")
   onboardingComplete   Boolean                @default(false) @map("onboarding_complete")
 
+  // Subscription Plan / Entitlement
+  plan                 String                 @default("FREE") @map("plan")
+
   // Relations
   settings             Settings?
   wallets              Wallet[]

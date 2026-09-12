@@ -109,7 +109,8 @@ router.post('/register', authLimiter, [
         avatar: user.avatar,
         baseCurrency: user.baseCurrency,
         authProvider: user.authProvider,
-        onboardingComplete: user.onboardingComplete
+        onboardingComplete: user.onboardingComplete,
+        plan: user.plan
       }
     });
   } catch (err) {
@@ -161,7 +162,8 @@ router.post('/login', authLimiter, [
         avatar: user.avatar,
         baseCurrency: user.baseCurrency,
         authProvider: user.authProvider,
-        onboardingComplete: user.onboardingComplete
+        onboardingComplete: user.onboardingComplete,
+        plan: user.plan
       }
     });
   } catch (err) {
@@ -350,7 +352,8 @@ router.post('/google', authLimiter, [
         avatar: user.avatar,
         baseCurrency: user.baseCurrency,
         authProvider: user.authProvider,
-        onboardingComplete: user.onboardingComplete
+        onboardingComplete: user.onboardingComplete,
+        plan: user.plan
       }
     });
   } catch (err: any) {
@@ -401,6 +404,7 @@ router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response)
       shortTermGoal: user.shortTermGoal,
       longTermGoal: user.longTermGoal,
       onboardingComplete: user.onboardingComplete,
+      plan: user.plan,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       settings: user.settings
@@ -476,6 +480,7 @@ router.put('/profile', authenticate, [
         shortTermGoal: updatedUser.shortTermGoal,
         longTermGoal: updatedUser.longTermGoal,
         onboardingComplete: updatedUser.onboardingComplete,
+        plan: updatedUser.plan,
         settings: updatedUser.settings
       }
     });

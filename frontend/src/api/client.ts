@@ -221,8 +221,14 @@ export const api = {
     return request(`/analytics/budget-status${query ? `?${query}` : ''}`);
   },
 
-  // AI Scanner
+  // AI Scanner & Services
   scanBill: (formData: FormData) => request('/ai/scan-bill', { method: 'POST', body: formData }),
+  aiChat: (message: string) => request('/ai/chat', { method: 'POST', body: { message } }),
+  aiCategorize: (merchant: string) => request('/ai/categorize', { method: 'POST', body: { merchant } }),
+  aiAnalyze: () => request('/ai/analyze', { method: 'POST' }),
+  aiForecast: () => request('/ai/forecast', { method: 'POST' }),
+  aiSubscriptions: () => request('/ai/subscriptions', { method: 'POST' }),
+  aiInsights: () => request('/ai/insights', { method: 'POST' }),
 
   // Insights & Financial Alerts
   getInsights: () => request('/insights'),
