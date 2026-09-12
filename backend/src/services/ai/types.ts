@@ -1,7 +1,33 @@
-export interface AIProvider {
+export type AITask =
+  | 'RECEIPT_VISION'
+  | 'FINANCIAL_INSIGHTS'
+  | 'CATEGORIZATION'
+  | 'INTENT_DETECTION'
+  | 'COACH_ADVICE';
+
+export interface VisionAIProvider {
+  name: string;
+  generateMultimodalJSON<T>(
+    buffer: Buffer,
+    mimeType: string,
+    prompt: string,
+    systemInstruction?: string
+  ): Promise<T>;
+}
+
+export interface TextAIProvider {
   name: string;
   generateText(prompt: string, systemInstruction?: string): Promise<string>;
   generateJSON<T>(prompt: string, systemInstruction?: string): Promise<T>;
+}
+
+export interface AIProvider extends TextAIProvider {
+  generateMultimodalJSON?<T>(
+    buffer: Buffer,
+    mimeType: string,
+    prompt: string,
+    systemInstruction?: string
+  ): Promise<T>;
 }
 
 export interface CategorizationResult {
@@ -72,7 +98,35 @@ export interface RecommendationResult {
   reasoning: string;
 }
 
-// RAG Intent details
+export interface ChartConfig {
+  type: 'bar' | 'line' | 'pie';
+  title: string;
+  data: { name: string; value: number }[];
+}
+
+export interface KeyNumbersSummary {
+  totalSpend: number;
+  totalIncome: number;
+  netSavings: number;
+  savingsRate: number;
+  averageTransactionAmount?: number;
+  transactionCount?: number;
+}
+
+export interface InternalInsightResponse {
+  answer: string;
+  keyNumbers: KeyNumbersSummary;
+  relevantPeriod: string;
+  contributingCategories: { name: string; value: number; percentage: number }[];
+  supportingTransactions: any[];
+  recommendations: string[];
+  confidence: number;
+  limitations: string | null;
+  charts: ChartConfig[];
+  summary: any;
+}
+
+// RAG / Query Intent details
 export interface RAGFilters {
   category?: string;
   merchant?: string;

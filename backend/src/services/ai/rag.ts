@@ -1,5 +1,5 @@
 import { prisma } from '../../db/prisma';
-import { getAIProvider } from './provider';
+import { getTextAIProvider } from './provider';
 import { RAGFilters } from './types';
 import { 
   RAG_INTENT_SYSTEM_INSTRUCTION, 
@@ -16,7 +16,7 @@ export async function executeRAGQuery(
   history: { role: string; content: string }[] = []
 ): Promise<string> {
   try {
-    const provider = getAIProvider();
+    const provider = getTextAIProvider();
     
     // 1. Detect user intent and extract query filters
     const intentPrompt = getRAGIntentPrompt(userQuery);

@@ -4,11 +4,9 @@ import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { requireWorkspaceRole, WorkspaceRequest } from '../middleware/rbac';
 import multer from 'multer';
 import path from 'path';
-import { Prisma } from '@prisma/client';
 import {
-  getAIProvider,
-  GeminiProvider,
-  executeRAGQuery,
+  getTextAIProvider,
+  getVisionAIProvider,
   getUserMemoryProfile,
   generateSpendingInsights,
   detectSubscriptions,
@@ -17,7 +15,9 @@ import {
   calculateFinancialHealthScore,
   CategorizationResult,
   ReceiptResult,
-  AIService
+  AIService,
+  FinancialInsightsService,
+  VisionAIProvider
 } from '../services/ai';
 import { BillScannerService } from '../services/ai/billScanner';
 import {
@@ -56,20 +56,27 @@ function setCached(key: string, data: any, ttlMs: number = 10 * 60 * 1000) { // 
   cache[key] = { data, expiry: Date.now() + ttlMs };
 }
 
-// POST /api/ai/chat
+// POST /api/ai/chat (Conversational Financial Insights - Text LLM + PostgreSQL Retrieval)
 router.post('/chat', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']), async (req: WorkspaceRequest, res: Response) => {
   try {
     if (!req.user || !req.workspaceId) return res.status(401).json({ error: 'Unauthorized' });
     const { message } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
 
-    const response = await AIService.processChat(req.user.id, req.workspaceId, message);
+    // Executes Intent classification -> Scoped Prisma SQL retrieval -> Authoritative math -> Text LLM explanation
+    const response = await FinancialInsightsService.query(req.user.id, req.workspaceId, message);
     res.json({
       reply: response.answer,
       answer: response.answer,
       charts: response.charts,
-      transactions: response.transactions,
-      summary: response.summary
+      transactions: response.supportingTransactions || response.summary?.transactions || [],
+      summary: response.summary,
+      keyNumbers: response.keyNumbers,
+      relevantPeriod: response.relevantPeriod,
+      contributingCategories: response.contributingCategories,
+      recommendations: response.recommendations,
+      confidence: response.confidence,
+      limitations: response.limitations
     });
   } catch (err) {
     console.error('AI chat endpoint error:', err);
@@ -77,7 +84,7 @@ router.post('/chat', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']
   }
 });
 
-// POST /api/ai/categorize
+// POST /api/ai/categorize (Merchant classification - Text LLM / Memory)
 router.post('/categorize', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -97,8 +104,8 @@ router.post('/categorize', authenticate, async (req: AuthenticatedRequest, res: 
       });
     }
 
-    // 2. Query LLM provider if merchant is unrecognized
-    const provider = getAIProvider();
+    // 2. Query Text LLM provider if merchant is unrecognized (does NOT touch Gemini Vision)
+    const provider = getTextAIProvider();
     const prompt = getCategorizePrompt(merchant);
     const result = await provider.generateJSON<CategorizationResult>(
       prompt,
@@ -112,20 +119,21 @@ router.post('/categorize', authenticate, async (req: AuthenticatedRequest, res: 
   }
 });
 
-// POST /api/ai/analyze
+// POST /api/ai/analyze (Comprehensive financial report feed)
 router.post('/analyze', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
 
-    const cacheKey = `analyze:${req.user.id}`;
+    const cacheKey = `analyze:${req.user.id}:${workspaceId || 'default'}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
     const [score, forecast, recommendations, insights] = await Promise.all([
-      calculateFinancialHealthScore(req.user.id),
-      generateSpendingForecast(req.user.id),
-      generateBudgetRecommendations(req.user.id),
-      generateSpendingInsights(req.user.id)
+      calculateFinancialHealthScore(req.user.id, workspaceId),
+      generateSpendingForecast(req.user.id, workspaceId),
+      generateBudgetRecommendations(req.user.id, workspaceId),
+      generateSpendingInsights(req.user.id, workspaceId)
     ]);
 
     const reportFeed = { score, forecast, recommendations, insights };
@@ -142,12 +150,13 @@ router.post('/analyze', authenticate, async (req: AuthenticatedRequest, res: Res
 router.post('/forecast', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
 
-    const cacheKey = `forecast:${req.user.id}`;
+    const cacheKey = `forecast:${req.user.id}:${workspaceId || 'default'}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
-    const forecast = await generateSpendingForecast(req.user.id);
+    const forecast = await generateSpendingForecast(req.user.id, workspaceId);
     setCached(cacheKey, forecast);
 
     res.json(forecast);
@@ -161,12 +170,13 @@ router.post('/forecast', authenticate, async (req: AuthenticatedRequest, res: Re
 router.post('/subscriptions', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
 
-    const cacheKey = `subscriptions:${req.user.id}`;
+    const cacheKey = `subscriptions:${req.user.id}:${workspaceId || 'default'}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
-    const subscriptions = await detectSubscriptions(req.user.id);
+    const subscriptions = await detectSubscriptions(req.user.id, workspaceId);
     setCached(cacheKey, subscriptions);
 
     res.json(subscriptions);
@@ -180,12 +190,13 @@ router.post('/subscriptions', authenticate, async (req: AuthenticatedRequest, re
 router.post('/insights', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
 
-    const cacheKey = `insights:${req.user.id}`;
+    const cacheKey = `insights:${req.user.id}:${workspaceId || 'default'}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
-    const insights = await generateSpendingInsights(req.user.id);
+    const insights = await generateSpendingInsights(req.user.id, workspaceId);
     setCached(cacheKey, insights);
 
     res.json(insights);
@@ -195,7 +206,7 @@ router.post('/insights', authenticate, async (req: AuthenticatedRequest, res: Re
   }
 });
 
-// POST /api/ai/scan-bill - Extract receipt/bill information into structured draft (ZERO DB WRITES)
+// POST /api/ai/scan-bill - Extract receipt/bill info into structured draft (Gemini Vision 2.5 Flash, ZERO DB WRITES)
 const scanBillUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5 MB max
@@ -264,7 +275,7 @@ router.post('/scan-bill', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIE
   });
 });
 
-// POST /api/ai/receipt (Legacy `/scan-receipt` refactored for strict Gemini Vision)
+// POST /api/ai/receipt (Strict Gemini Vision receipt scanning)
 router.post('/receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -273,16 +284,17 @@ router.post('/receipt', authenticate, upload.single('receipt'), async (req: Auth
       return res.status(400).json({ error: 'No receipt file uploaded' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    let visionProvider: VisionAIProvider;
+    try {
+      visionProvider = getVisionAIProvider();
+    } catch (err: any) {
       return res.status(503).json({ error: 'Receipt scanning is temporarily unavailable. Please configure GEMINI_API_KEY.' });
     }
 
-    const provider = new GeminiProvider(apiKey);
     const prompt = 'You are an expert financial receipt scanner. Extract the following fields from this receipt image as JSON: merchant, amount (total including tax, as number), tax (as number), date (YYYY-MM-DD format), category (one of: Food, Travel, Fuel, Shopping, Bills, Health, Education, Entertainment, Salary, Investment, Gift, Other), items (list of string items), confidence (estimate from 0 to 1). Return ONLY the raw JSON block without markdown formatting or code blocks.';
 
     try {
-      const parsed = await provider.generateMultimodalJSON<ReceiptResult>(
+      const parsed = await visionProvider.generateMultimodalJSON<ReceiptResult>(
         file.buffer,
         file.mimetype,
         prompt
@@ -311,7 +323,6 @@ router.post('/receipt', authenticate, upload.single('receipt'), async (req: Auth
 
 // Map legacy routes/scan-receipt to receipt scanner
 router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
-  // Redirect to standard receipt endpoint
   res.redirect(307, '/api/ai/receipt');
 });
 
@@ -319,7 +330,8 @@ router.post('/scan-receipt', authenticate, upload.single('receipt'), async (req:
 router.get('/coach', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const insights = await generateSpendingInsights(req.user.id);
+    const workspaceId = (req as any).workspaceId || req.user.defaultWorkspaceId;
+    const insights = await generateSpendingInsights(req.user.id, workspaceId);
     const tips = insights.slice(0, 3).map(i => `${i.title}: ${i.text}`);
     res.json({ tips });
   } catch (err) {

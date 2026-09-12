@@ -1,11 +1,11 @@
 import { prisma } from '../../db/prisma';
-import { getAIProvider } from './provider';
-import { 
-  InsightResult, 
-  SubscriptionResult, 
-  ForecastResult, 
-  RecommendationResult, 
-  HealthScoreResult 
+import { getTextAIProvider } from './provider';
+import {
+  InsightResult,
+  SubscriptionResult,
+  ForecastResult,
+  RecommendationResult,
+  HealthScoreResult
 } from './types';
 import {
   INSIGHTS_SYSTEM_INSTRUCTION,
@@ -21,15 +21,17 @@ import {
 } from './prompts';
 
 /**
- * AI Spending Insights Generator
+ * AI Spending Insights Generator (Scoped to User & Workspace)
  */
-export async function generateSpendingInsights(userId: string): Promise<InsightResult[]> {
+export async function generateSpendingInsights(userId: string, workspaceId?: string): Promise<InsightResult[]> {
   try {
-    const provider = getAIProvider();
-    
+    const provider = getTextAIProvider();
+    const where: any = { userId, type: 'EXPENSE' };
+    if (workspaceId) where.workspaceId = workspaceId;
+
     // Fetch last 150 expenses
     const transactions = await prisma.transaction.findMany({
-      where: { userId, type: 'EXPENSE' },
+      where,
       include: { category: true },
       orderBy: { date: 'desc' },
       take: 150
@@ -55,7 +57,7 @@ export async function generateSpendingInsights(userId: string): Promise<InsightR
 
     const prompt = getInsightsPrompt(JSON.stringify(dataContext, null, 2));
     const insights = await provider.generateJSON<InsightResult[]>(prompt, INSIGHTS_SYSTEM_INSTRUCTION);
-    
+
     return Array.isArray(insights) ? insights : [];
   } catch (err) {
     console.error('Error generating spending insights:', err);
@@ -64,15 +66,16 @@ export async function generateSpendingInsights(userId: string): Promise<InsightR
 }
 
 /**
- * AI Subscription Payment Detector
+ * AI Subscription Payment Detector (Scoped to User & Workspace)
  */
-export async function detectSubscriptions(userId: string): Promise<SubscriptionResult[]> {
+export async function detectSubscriptions(userId: string, workspaceId?: string): Promise<SubscriptionResult[]> {
   try {
-    const provider = getAIProvider();
-    
-    // Fetch user transaction history (last 200 items)
+    const provider = getTextAIProvider();
+    const where: any = { userId };
+    if (workspaceId) where.workspaceId = workspaceId;
+
     const transactions = await prisma.transaction.findMany({
-      where: { userId },
+      where,
       include: { category: true },
       orderBy: { date: 'desc' },
       take: 200
@@ -88,7 +91,7 @@ export async function detectSubscriptions(userId: string): Promise<SubscriptionR
 
     const prompt = getSubscriptionPrompt(JSON.stringify(dataContext, null, 2));
     const subs = await provider.generateJSON<SubscriptionResult[]>(prompt, SUBSCRIPTION_SYSTEM_INSTRUCTION);
-    
+
     return Array.isArray(subs) ? subs : [];
   } catch (err) {
     console.error('Error detecting subscriptions:', err);
@@ -97,15 +100,16 @@ export async function detectSubscriptions(userId: string): Promise<SubscriptionR
 }
 
 /**
- * AI Budget Limits Recommendations
+ * AI Budget Limits Recommendations (Scoped to User & Workspace)
  */
-export async function generateBudgetRecommendations(userId: string): Promise<RecommendationResult[]> {
+export async function generateBudgetRecommendations(userId: string, workspaceId?: string): Promise<RecommendationResult[]> {
   try {
-    const provider = getAIProvider();
+    const provider = getTextAIProvider();
+    const where: any = { userId, type: 'EXPENSE' };
+    if (workspaceId) where.workspaceId = workspaceId;
 
-    // Fetch user category spends (grouping sum of amounts)
     const transactions = await prisma.transaction.findMany({
-      where: { userId, type: 'EXPENSE' },
+      where,
       include: { category: true }
     });
 
@@ -136,21 +140,27 @@ export async function generateBudgetRecommendations(userId: string): Promise<Rec
 }
 
 /**
- * AI Month-End Spending Forecast
+ * AI Month-End Spending Forecast (Scoped to User & Workspace)
  */
-export async function generateSpendingForecast(userId: string): Promise<ForecastResult> {
+export async function generateSpendingForecast(userId: string, workspaceId?: string): Promise<ForecastResult> {
   try {
-    const provider = getAIProvider();
+    const provider = getTextAIProvider();
+    const txWhere: any = { userId };
+    const bgWhere: any = { userId };
+    if (workspaceId) {
+      txWhere.workspaceId = workspaceId;
+      bgWhere.workspaceId = workspaceId;
+    }
 
     const transactions = await prisma.transaction.findMany({
-      where: { userId },
+      where: txWhere,
       include: { category: true },
       orderBy: { date: 'desc' },
       take: 100
     });
 
     const budgets = await prisma.budget.findMany({
-      where: { userId },
+      where: bgWhere,
       include: { category: true }
     });
 
@@ -185,23 +195,28 @@ export async function generateSpendingForecast(userId: string): Promise<Forecast
 }
 
 /**
- * AI Financial Health Score Calculator (Blends exact math and LLM suggestions)
+ * AI Financial Health Score Calculator (Blends exact Prisma math and Text LLM suggestions)
  */
-export async function calculateFinancialHealthScore(userId: string): Promise<HealthScoreResult> {
+export async function calculateFinancialHealthScore(userId: string, workspaceId?: string): Promise<HealthScoreResult> {
   try {
-    const provider = getAIProvider();
+    const provider = getTextAIProvider();
+    const txWhere: any = { userId };
+    const bgWhere: any = { userId };
+    if (workspaceId) {
+      txWhere.workspaceId = workspaceId;
+      bgWhere.workspaceId = workspaceId;
+    }
 
-    // 1. Gather numerical variables from the database for precise calculation
     const transactions = await prisma.transaction.findMany({
-      where: { userId }
+      where: txWhere
     });
 
     const budgets = await prisma.budget.findMany({
-      where: { userId },
+      where: bgWhere,
       include: { category: true }
     });
 
-    // Calculate income and expenses
+    // Authoritative math calculations from database records
     const totalIncome = transactions
       .filter(t => t.type === 'INCOME')
       .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -213,11 +228,9 @@ export async function calculateFinancialHealthScore(userId: string): Promise<Hea
     const monthlySurplus = totalIncome - totalExpense;
     const savingsRate = totalIncome > 0 ? (monthlySurplus / totalIncome) * 100 : 0;
 
-    // Calculate budget overruns
     let totalBudgets = 0;
     let violatedBudgets = 0;
-    
-    // Group expenses by category
+
     const expenseByCategory: Record<string, number> = {};
     transactions
       .filter(t => t.type === 'EXPENSE')
@@ -235,7 +248,6 @@ export async function calculateFinancialHealthScore(userId: string): Promise<Hea
 
     const budgetAdherence = totalBudgets > 0 ? ((totalBudgets - violatedBudgets) / totalBudgets) * 100 : 100;
 
-    // 2. Feed precise numerical profile to LLM to receive advice and suggestions
     const metricsPayload = {
       totalIncome,
       totalExpense,

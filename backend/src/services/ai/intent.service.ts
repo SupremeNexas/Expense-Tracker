@@ -1,4 +1,4 @@
-import { getAIProvider } from './provider';
+import { getTextAIProvider } from './provider';
 import { INTENT_SYSTEM_INSTRUCTION, getIntentPrompt } from './prompt.service';
 
 export interface FinanceIntent {
@@ -15,7 +15,7 @@ export interface FinanceIntent {
 
 export class IntentService {
   static async detectIntent(userQuery: string): Promise<FinanceIntent> {
-    const provider = getAIProvider();
+    const provider = getTextAIProvider();
     
     // If the provider is offline/mock or fails, we want a reliable deterministic fallback
     try {

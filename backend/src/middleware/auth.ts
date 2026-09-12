@@ -22,6 +22,7 @@ declare global {
       user?: {
         id: string;
         email: string;
+        defaultWorkspaceId?: string;
       };
       workspaceId?: string;
       workspaceRole?: string;
@@ -39,6 +40,7 @@ export interface AuthenticatedRequest<
   user?: {
     id: string;
     email: string;
+    defaultWorkspaceId?: string;
   };
 }
 

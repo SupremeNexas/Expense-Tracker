@@ -1,25 +1,15 @@
-import { getAIProvider } from './provider';
-import { 
-  RESPONSE_SYSTEM_INSTRUCTION, 
+import { getTextAIProvider } from './provider';
+import {
+  RESPONSE_SYSTEM_INSTRUCTION,
   getResponsePrompt,
   CHART_SYSTEM_INSTRUCTION,
   getChartPrompt
 } from './prompt.service';
 import { AnalysisSummary } from './analysis.service';
 import { FinanceIntent } from './intent.service';
+import { InternalInsightResponse, ChartConfig } from './types';
 
-export interface ChartConfig {
-  type: 'bar' | 'line' | 'pie';
-  title: string;
-  data: { name: string; value: number }[];
-}
-
-export interface ChatResponse {
-  answer: string;
-  charts: ChartConfig[];
-  transactions: any[];
-  summary: any;
-}
+export interface ChatResponse extends InternalInsightResponse {}
 
 export class ResponseService {
   static async generateResponse(
@@ -28,9 +18,9 @@ export class ResponseService {
     summary: AnalysisSummary,
     rawTransactions: any[],
     userCurrency: string
-  ): Promise<ChatResponse> {
-    const provider = getAIProvider();
-    
+  ): Promise<InternalInsightResponse> {
+    const provider = getTextAIProvider();
+
     let answer = '';
     let charts: ChartConfig[] = [];
 
@@ -38,7 +28,7 @@ export class ResponseService {
     // Limit supporting records context to fit tokens nicely
     const rawRecordsJson = JSON.stringify(rawTransactions.slice(0, 15), null, 2);
 
-    // 1. Generate text answer
+    // 1. Generate text answer (LLM explains pre-calculated database stats)
     try {
       if (provider.name !== 'Offline Mock Engine') {
         const textPrompt = getResponsePrompt(userQuery, statsJson, rawRecordsJson, userCurrency);
@@ -73,30 +63,64 @@ export class ResponseService {
       charts = this.getFallbackCharts(intent, summary);
     }
 
+    // 3. Build recommendations array based on DB calculation
+    const recommendations: string[] = [];
+    if (summary.budgetsProgress) {
+      const overruns = summary.budgetsProgress.filter(b => b.overrun);
+      overruns.forEach(b => {
+        recommendations.push(`Reduce spending in ${b.category} category (exceeded limit by ${userCurrency} ${Math.abs(b.remaining).toFixed(2)})`);
+      });
+    }
+    if (summary.savingsRate < 20 && summary.totalIncome > 0) {
+      recommendations.push(`Target raising savings rate above 20% (currently ${summary.savingsRate}%)`);
+    }
+
+    // 4. Construct complete structured internal insight response
+    const supportingTransactions = rawTransactions.slice(0, 10);
+    const contributingCategories = summary.categoryBreakdown.map(c => ({
+      name: c.name,
+      value: c.value,
+      percentage: c.percentage
+    }));
+
     return {
       answer,
+      keyNumbers: {
+        totalSpend: summary.totalSpend,
+        totalIncome: summary.totalIncome,
+        netSavings: summary.netSavings,
+        savingsRate: summary.savingsRate,
+        averageTransactionAmount: summary.averageTransactionAmount,
+        transactionCount: summary.transactionCount
+      },
+      relevantPeriod: intent.filters.timeframe || 'this-month',
+      contributingCategories,
+      supportingTransactions,
+      recommendations,
+      confidence: 1.0, // Derived directly from exact SQL database query results
+      limitations: summary.transactionCount === 0
+        ? 'No matching transaction records found in database for selected criteria'
+        : `Grounded in ${summary.transactionCount} authoritative database records`,
       charts,
-      transactions: rawTransactions.slice(0, 10), // return top 10 relevant transactions for direct UI list view
       summary
     };
   }
 
   private static getFallbackAnswer(intent: FinanceIntent, summary: AnalysisSummary, currency: string): string {
     const cur = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency + ' ';
-    const typeLabel = intent.filters.type === 'INCOME' ? 'income' : 'spending';
-    
+
     switch (intent.type) {
       case 'SUMMARY':
-        return `During this period, your total **outflow** was **${cur}${summary.totalSpend.toLocaleString()}** and total **inflow** was **${cur}${summary.totalIncome.toLocaleString()}**. 
-This results in a net savings of **${cur}${summary.netSavings.toLocaleString()}** (a **${summary.savingsRate}%** savings rate). 
+        return `During this period, your total **outflow** was **${cur}${summary.totalSpend.toLocaleString()}** and total **inflow** was **${cur}${summary.totalIncome.toLocaleString()}**.
+This results in a net savings of **${cur}${summary.netSavings.toLocaleString()}** (a **${summary.savingsRate}%** savings rate).
 You logged **${summary.transactionCount}** transactions during this timeframe.`;
-      
+
       case 'CATEGORY':
         const cat = intent.filters.category || 'Food';
         const catSpend = summary.categoryBreakdown.find(c => c.name.toLowerCase() === cat.toLowerCase())?.value || 0;
         const catPct = summary.categoryBreakdown.find(c => c.name.toLowerCase() === cat.toLowerCase())?.percentage || 0;
         return `You spent **${cur}${catSpend.toLocaleString()}** on **${cat}** during this period, which represents **${catPct}%** of your total monthly outflow.`;
-      
+
       case 'MERCHANT':
         const merch = intent.filters.merchant || 'Amazon';
         const merchSpend = summary.merchantBreakdown.find(m => m.name.toLowerCase() === merch.toLowerCase())?.value || 0;
@@ -122,7 +146,7 @@ You logged **${summary.transactionCount}** transactions during this timeframe.`;
       case 'SUBSCRIPTION':
         if (summary.subscriptionsSummary) {
           const sub = summary.subscriptionsSummary;
-          return `I detected **${sub.activeCount}** active subscription(s) costing you **${cur}${sub.totalActiveSubsCost.toLocaleString()}** per month. Your primary recurring services include Swiggy Super, Spotify, and Netflix.`;
+          return `I detected **${sub.activeCount}** active subscription(s) costing you **${cur}${sub.totalActiveSubsCost.toLocaleString()}** per month.`;
         }
         return `No active recurring subscriptions were found in your ledger.`;
 
@@ -134,7 +158,7 @@ You logged **${summary.transactionCount}** transactions during this timeframe.`;
         return `Your current savings rate is **${summary.savingsRate}%**. Try setting up a **Savings Goal** to monitor targets automatically.`;
 
       case 'FORECAST':
-        return `Based on your average spending pattern of **${cur}${summary.averageTransactionAmount.toLocaleString()}** across **${summary.transactionCount}** transactions, you are expected to save approximately **${cur}${summary.netSavings.toLocaleString()}** this month. You are currently within safe limits.`;
+        return `Based on your average spending pattern of **${cur}${summary.averageTransactionAmount.toLocaleString()}** across **${summary.transactionCount}** transactions, you are expected to save approximately **${cur}${summary.netSavings.toLocaleString()}** this month.`;
 
       case 'BUDGET':
         if (summary.budgetsProgress && summary.budgetsProgress.length > 0) {

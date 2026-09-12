@@ -1,5 +1,5 @@
 import { prisma } from '../../db/prisma';
-import { GeminiProvider } from './provider';
+import { getVisionAIProvider } from './provider';
 
 export interface ScannedItem {
   name: string;
@@ -81,7 +81,7 @@ export class BillScannerService {
       throw new Error('UNAVAILABLE');
     }
 
-    const provider = new GeminiProvider(apiKey);
+    const provider = getVisionAIProvider();
 
     const prompt = `You are an expert financial receipt and bill scanner.
 Extract expense and bill details from this image.

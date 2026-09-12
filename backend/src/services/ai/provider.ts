@@ -1,16 +1,16 @@
 import { GoogleGenAI } from '@google/genai';
-import { AIProvider } from './types';
+import { AIProvider, VisionAIProvider, TextAIProvider, AITask } from './types';
 
 // Mock engine helper to generate structured local calculations based on data context
 function getMockFallbackResponse(prompt: string, systemInstruction?: string): string {
   const cleanPrompt = prompt.toLowerCase();
-  
+
   // 1. Transaction Categorization Mock
   if (cleanPrompt.includes('categorize') || cleanPrompt.includes('merchant')) {
     let merchant = 'Unknown';
     const merchantMatch = prompt.match(/"merchant"\s*:\s*"([^"]+)"/i) || prompt.match(/merchant:\s*([^\n]+)/i);
     if (merchantMatch) merchant = merchantMatch[1];
-    
+
     const mLower = merchant.toLowerCase();
     let category = 'Other';
     let confidence = 0.85;
@@ -41,7 +41,6 @@ function getMockFallbackResponse(prompt: string, systemInstruction?: string): st
 
   // 2. Subscription Detector Mock
   if (cleanPrompt.includes('subscription') || cleanPrompt.includes('recurring')) {
-    // Return a mock result representing standard subscription matches found in typical transaction histories
     return JSON.stringify([
       {
         detected: true,
@@ -129,9 +128,68 @@ function getMockFallbackResponse(prompt: string, systemInstruction?: string): st
 I am currently running in **Local Offline Mode** on the server, but I am still using your active database data to generate these observations. Let me know if you would like me to summarize specific transaction categories!`;
 }
 
-export class GeminiProvider implements AIProvider {
-  name = 'Google Gemini';
-  public client: GoogleGenAI;
+/**
+ * Dedicated Multimodal Gemini Vision Provider.
+ * strictly used for RECEIPT_VISION tasks when an actual receipt image is uploaded.
+ */
+export class GeminiVisionProvider implements VisionAIProvider {
+  name = 'Google Gemini Vision (gemini-2.5-flash)';
+  private client: GoogleGenAI;
+
+  constructor(apiKey: string) {
+    if (!apiKey) {
+      throw new Error('UNAVAILABLE');
+    }
+    this.client = new GoogleGenAI({ apiKey });
+  }
+
+  async generateMultimodalJSON<T>(
+    buffer: Buffer,
+    mimeType: string,
+    prompt: string,
+    systemInstruction?: string
+  ): Promise<T> {
+    if (!buffer || buffer.length === 0) {
+      throw new Error('EXTRACTION_FAILED: Empty image buffer provided');
+    }
+
+    console.log(`[GeminiVisionProvider] Sending ${mimeType} image (${(buffer.length / 1024).toFixed(1)} KB) to gemini-2.5-flash vision model...`);
+    try {
+      const response = await this.client.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          {
+            inlineData: {
+              data: buffer.toString('base64'),
+              mimeType
+            }
+          },
+          prompt
+        ],
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+          systemInstruction
+        }
+      });
+
+      const text = response.text || '{}';
+      console.log('[GeminiVisionProvider] Gemini Vision response received.');
+      const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanText) as T;
+    } catch (e: any) {
+      console.error('[GeminiVisionProvider] Multimodal vision extraction failed:', e?.message || e);
+      throw e;
+    }
+  }
+}
+
+/**
+ * Text LLM Provider using Gemini (for general text / financial insights when configured).
+ */
+export class GeminiTextProvider implements TextAIProvider {
+  name = 'Google Gemini Text (gemini-2.5-flash)';
+  private client: GoogleGenAI;
 
   constructor(apiKey: string) {
     this.client = new GoogleGenAI({ apiKey });
@@ -146,7 +204,7 @@ export class GeminiProvider implements AIProvider {
       });
       return response.text || '';
     } catch (e) {
-      console.warn('Gemini request failed, falling back to mock responses', e);
+      console.warn('[GeminiTextProvider] Request failed, falling back to mock text engine', e);
       return getMockFallbackResponse(prompt, systemInstruction);
     }
   }
@@ -164,49 +222,45 @@ export class GeminiProvider implements AIProvider {
       const text = response.text || '{}';
       return JSON.parse(text) as T;
     } catch (e) {
-      console.warn('Gemini JSON request failed, using mock parser', e);
+      console.warn('[GeminiTextProvider] JSON request failed, using mock parser', e);
       const text = getMockFallbackResponse(prompt, systemInstruction);
       return JSON.parse(text) as T;
     }
   }
+}
 
-  /**
-   * Multimodal vision extraction for receipt images using Gemini 2.5 Flash.
-   * Throws an error on failure instead of falling back to fake data.
-   */
+/**
+ * Legacy GeminiProvider class supporting both Text and Multimodal for backward compatibility
+ */
+export class GeminiProvider implements AIProvider {
+  name = 'Google Gemini';
+  private visionProvider: GeminiVisionProvider;
+  private textProvider: GeminiTextProvider;
+
+  constructor(apiKey: string) {
+    this.visionProvider = new GeminiVisionProvider(apiKey);
+    this.textProvider = new GeminiTextProvider(apiKey);
+  }
+
+  async generateText(prompt: string, systemInstruction?: string): Promise<string> {
+    return this.textProvider.generateText(prompt, systemInstruction);
+  }
+
+  async generateJSON<T>(prompt: string, systemInstruction?: string): Promise<T> {
+    return this.textProvider.generateJSON<T>(prompt, systemInstruction);
+  }
+
   async generateMultimodalJSON<T>(
     buffer: Buffer,
     mimeType: string,
     prompt: string,
     systemInstruction?: string
   ): Promise<T> {
-    console.log(`[GeminiProvider] Sending ${mimeType} image (${(buffer.length / 1024).toFixed(1)} KB) to gemini-2.5-flash vision model...`);
-    const response = await this.client.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          inlineData: {
-            data: buffer.toString('base64'),
-            mimeType
-          }
-        },
-        prompt
-      ],
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.1,
-        systemInstruction
-      }
-    });
-
-    const text = response.text || '{}';
-    console.log('[GeminiProvider] Gemini Vision response received.');
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanText) as T;
+    return this.visionProvider.generateMultimodalJSON<T>(buffer, mimeType, prompt, systemInstruction);
   }
 }
 
-class FetchAIProvider implements AIProvider {
+export class FetchAIProvider implements TextAIProvider {
   constructor(
     public name: string,
     private apiUrl: string,
@@ -250,7 +304,7 @@ class FetchAIProvider implements AIProvider {
   }
 }
 
-class MockProvider implements AIProvider {
+export class MockTextProvider implements TextAIProvider {
   name = 'Offline Mock Engine';
 
   async generateText(prompt: string, systemInstruction?: string): Promise<string> {
@@ -263,12 +317,30 @@ class MockProvider implements AIProvider {
   }
 }
 
-// Factory to resolve provider based on environment config
-export function getAIProvider(): AIProvider {
-  const providerType = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-  
+/**
+ * Returns dedicated Vision Provider (Gemini 2.5 Flash Vision).
+ * Strictly used for RECEIPT_VISION tasks.
+ * Throws UNAVAILABLE if GEMINI_API_KEY is not configured.
+ */
+export function getVisionAIProvider(): VisionAIProvider {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn('[AIProviderFactory] GEMINI_API_KEY is missing. Real receipt scanning unavailable.');
+    throw new Error('UNAVAILABLE');
+  }
+  return new GeminiVisionProvider(apiKey);
+}
+
+/**
+ * Returns Text AI Provider for FINANCIAL_INSIGHTS and conversational queries.
+ * Configurable via TEXT_AI_PROVIDER or AI_PROVIDER environment variables.
+ * Never calls Gemini Vision endpoints.
+ */
+export function getTextAIProvider(): TextAIProvider {
+  const providerType = (process.env.TEXT_AI_PROVIDER || process.env.AI_PROVIDER || 'gemini').toLowerCase();
+
   if (providerType === 'gemini' && process.env.GEMINI_API_KEY) {
-    return new GeminiProvider(process.env.GEMINI_API_KEY);
+    return new GeminiTextProvider(process.env.GEMINI_API_KEY);
   }
 
   if (providerType === 'openai' && process.env.OPENAI_API_KEY) {
@@ -342,7 +414,25 @@ export function getAIProvider(): AIProvider {
     );
   }
 
-  // Fallback to offline rule-based mock provider if no API keys are loaded
-  console.log('AI provider API credentials missing or invalid. Initializing Offline Mock Engine.');
-  return new MockProvider();
+  // Fallback to offline rule-based mock provider if no text API credentials are loaded
+  console.log('[AIProviderFactory] Text AI provider API credentials missing or invalid. Using Offline Mock Engine.');
+  return new MockTextProvider();
+}
+
+/**
+ * Task-Based AI Provider Resolver.
+ * Routes RECEIPT_VISION tasks to Gemini Vision and FINANCIAL_INSIGHTS / text tasks to text LLM.
+ */
+export function getAIProviderForTask(task: AITask): VisionAIProvider | TextAIProvider {
+  if (task === 'RECEIPT_VISION') {
+    return getVisionAIProvider();
+  }
+  return getTextAIProvider();
+}
+
+/**
+ * Default AI Provider getter (returns Text AI Provider).
+ */
+export function getAIProvider(): TextAIProvider {
+  return getTextAIProvider();
 }
