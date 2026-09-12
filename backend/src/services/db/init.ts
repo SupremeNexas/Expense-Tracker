@@ -1,4 +1,49 @@
 import { prisma } from '../../db/prisma';
+import * as bcrypt from 'bcryptjs';
+import { seedCategoriesForUser, seedSampleDataForUser } from '../../../prisma/seed';
+
+/**
+ * Ensures demo@example.com exists with password123 and seeded demo data.
+ */
+export async function ensureDemoUser(): Promise<void> {
+  try {
+    const email = 'demo@example.com';
+    const passwordHash = await bcrypt.hash('password123', 10);
+
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      console.log('🌱 Demo account missing. Creating demo@example.com...');
+      user = await prisma.user.create({
+        data: {
+          name: 'Alex Mercer',
+          email,
+          passwordHash,
+          baseCurrency: 'INR',
+          isVerified: true,
+          authProvider: 'email',
+          settings: {
+            create: {
+              theme: 'light',
+              currency: 'INR',
+              language: 'en',
+            }
+          }
+        }
+      });
+      await seedCategoriesForUser(user.id);
+      await seedSampleDataForUser(user.id, user.email);
+      console.log('✅ Demo account created and seeded successfully.');
+    } else if (!user.passwordHash) {
+      console.log('🌱 Updating passwordHash for existing demo account...');
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash, authProvider: 'email' }
+      });
+    }
+  } catch (err) {
+    console.error('❌ Error ensuring demo user:', err);
+  }
+}
 
 /**
  * Ensures every user has a default Personal Workspace and migrates unassigned data to it.
@@ -7,6 +52,8 @@ import { prisma } from '../../db/prisma';
 export async function ensureDefaultWorkspaces(): Promise<void> {
   try {
     console.log('📦 Commencing Workspace Database Migration Sync...');
+
+    await ensureDemoUser();
 
     const users = await prisma.user.findMany({
       include: {

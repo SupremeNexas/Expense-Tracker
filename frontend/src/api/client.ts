@@ -75,11 +75,11 @@ async function request(endpoint: string, options: any = {}): Promise<any> {
       }
     }
 
-    // Only wipe the token + force-logout on 401s from *protected* endpoints.
-    // Auth endpoints (login, register, google) return 401 for "wrong password"
+    // Only wipe the token + force-logout on 401s from protected endpoints.
+    // Credential endpoints (login, register, google) return 401 for wrong password
     // — we must NOT treat that as a session expiry.
-    const isAuthRoute = endpoint.startsWith('/auth/');
-    if (response.status === 401 && !isAuthRoute) {
+    const isCredentialRoute = endpoint === '/auth/login' || endpoint === '/auth/register' || endpoint === '/auth/google';
+    if (response.status === 401 && !isCredentialRoute) {
       setToken(null);
       throw new Error('UNAUTHORIZED');
     }

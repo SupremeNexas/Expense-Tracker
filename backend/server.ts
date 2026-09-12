@@ -22,7 +22,9 @@ const app = express();
 const PORT = process.env.PORT || 5002;
 
 // ── Security & Hardening ──────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
+}));
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

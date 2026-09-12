@@ -59,13 +59,42 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkAuth: async () => {
     set({ authLoading: true });
 
+    const token = localStorage.getItem('fintech_token');
+    const refreshToken = localStorage.getItem('fintech_refresh_token');
+
+    // If no tokens exist at all, the user is unauthenticated.
+    // Return early without firing an unauthenticated GET /api/auth/me (which causes a 401 in console).
+    if (!token && !refreshToken) {
+      set({ user: null, authLoading: false });
+      return;
+    }
+
+    // If access token is missing but refresh token exists, attempt silent refresh first
+    if (!token && refreshToken) {
+      try {
+        const data = await api.refreshToken(refreshToken);
+        setToken(data.token);
+        if (data.refreshToken) {
+          localStorage.setItem('fintech_refresh_token', data.refreshToken);
+        }
+      } catch (_) {
+        setToken(null);
+        localStorage.removeItem('fintech_refresh_token');
+        set({ user: null, authLoading: false });
+        return;
+      }
+    }
+
     try {
       const user = await api.getMe();
       set({ user, authLoading: false });
     } catch (e: any) {
-      // Network error (server down) — don't wipe the user session
-      if (e?.message !== 'UNAUTHORIZED' && !e?.message?.includes('401')) {
-        console.warn('[Auth] Server unreachable, keeping cached session state');
+      const isUnauthorized = e?.message === 'UNAUTHORIZED' ||
+        e?.message?.toLowerCase().includes('unauthorized') ||
+        e?.message?.includes('401');
+
+      if (!isUnauthorized) {
+        console.warn('[Auth] Server unreachable or network error, keeping cached session state');
         set({ authLoading: false });
         return;
       }
@@ -84,7 +113,9 @@ export const useAuthStore = create<AuthState>((set) => ({
           return;
         } catch (_) {}
       }
+
       setToken(null);
+      localStorage.removeItem('fintech_refresh_token');
       set({ user: null, authLoading: false });
     }
   },

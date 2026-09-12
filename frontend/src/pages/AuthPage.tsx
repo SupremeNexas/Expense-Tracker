@@ -27,7 +27,7 @@ declare global {
   }
 }
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || '357084347273-8405ggecqias20eduh7df8iv04eldtjm.apps.googleusercontent.com';
 
 export default function AuthPage() {
   const { login, register, googleLogin } = useAuthStore();
