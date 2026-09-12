@@ -1,5 +1,5 @@
 export * from './types';
-export { getAIProvider } from './provider';
+export { getAIProvider, GeminiProvider } from './provider';
 export { executeRAGQuery } from './rag';
 export { getUserMemoryProfile } from './memory';
 export { 

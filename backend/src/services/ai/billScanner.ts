@@ -1,5 +1,5 @@
 import { prisma } from '../../db/prisma';
-import { getAIProvider } from './provider';
+import { GeminiProvider } from './provider';
 
 export interface ScannedItem {
   name: string;
@@ -66,6 +66,7 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
 export class BillScannerService {
   /**
    * Process a receipt/bill image buffer safely without writing to disk or DB.
+   * Uses Gemini 2.5 Flash Vision multimodal model for real extraction.
    */
   static async scanBill(
     userId: string,
@@ -74,22 +75,15 @@ export class BillScannerService {
     mimeType: string,
     fileName: string
   ): Promise<ScanBillResult> {
-    let rawResult: any = null;
-    const provider = getAIProvider();
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn('[BillScanner] GEMINI_API_KEY is missing. Real receipt scanning unavailable.');
+      throw new Error('UNAVAILABLE');
+    }
 
-    if (provider.name === 'Google Gemini') {
-      try {
-        const ai = (provider as any).client;
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: [
-            {
-              inlineData: {
-                data: fileBuffer.toString('base64'),
-                mimeType
-              }
-            },
-            `You are an expert financial receipt and bill scanner.
+    const provider = new GeminiProvider(apiKey);
+
+    const prompt = `You are an expert financial receipt and bill scanner.
 Extract expense and bill details from this image.
 Return ONLY raw JSON matching this format (no markdown formatting, no code block backticks):
 {
@@ -120,142 +114,25 @@ Return ONLY raw JSON matching this format (no markdown formatting, no code block
 IMPORTANT INSTRUCTIONS:
 - Do NOT guess or hallucinate values. If a field cannot be determined from the image with reasonable certainty, set it to null and add its field name to "uncertainFields".
 - Ensure date is strictly formatted as YYYY-MM-DD or null.
-- Ensure total, subtotal, tax, tip are numbers or null.`
-          ]
-        });
+- Ensure total, subtotal, tax, tip are numbers or null.`;
 
-        const text = response.text || '';
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        rawResult = JSON.parse(cleanText);
-      } catch (err: any) {
-        console.warn('[BillScanner] Gemini extraction failed or quota exceeded:', err?.message || err);
-        rawResult = this.getMockExtractionFromFileName(fileName);
-      }
-    } else {
-      // Offline / Mock Provider
-      rawResult = this.getMockExtractionFromFileName(fileName);
+    let rawResult: any = null;
+    try {
+      rawResult = await provider.generateMultimodalJSON<any>(
+        fileBuffer,
+        mimeType,
+        prompt
+      );
+    } catch (err: any) {
+      console.error('[BillScanner] Gemini Vision extraction failed:', err?.message || err);
+      throw new Error('EXTRACTION_FAILED');
     }
 
-    if (!rawResult) {
-      throw new Error('UNAVAILABLE');
+    if (!rawResult || typeof rawResult !== 'object') {
+      throw new Error('EXTRACTION_FAILED');
     }
 
     return await this.buildDraftResponse(userId, workspaceId, rawResult);
-  }
-
-  /**
-   * Mock fallback extraction for test mode or offline provider.
-   */
-  static getMockExtractionFromFileName(fileName: string): any {
-    const name = fileName.toLowerCase();
-
-    if (name.includes('unreadable') || name.includes('blurry')) {
-      return {
-        merchant: null,
-        description: null,
-        date: null,
-        time: null,
-        total: null,
-        subtotal: null,
-        tax: null,
-        tip: null,
-        currency: null,
-        category: null,
-        items: [],
-        paymentMethod: null,
-        location: null,
-        confidence: 0.1,
-        uncertainFields: ['merchant', 'date', 'total', 'subtotal', 'category']
-      };
-    }
-
-    if (name.includes('uber') || name.includes('ola')) {
-      return {
-        merchant: 'Uber Rides Inc',
-        description: 'Uber Ride share',
-        date: new Date().toISOString().split('T')[0],
-        time: '14:30',
-        total: 450.00,
-        subtotal: 427.50,
-        tax: 22.50,
-        tip: 0.00,
-        currency: 'INR',
-        category: 'Travel',
-        items: [
-          { name: 'Ride Trip Share', quantity: 1, unitPrice: 427.50, total: 427.50 }
-        ],
-        paymentMethod: 'UPI',
-        location: 'Downtown Office',
-        confidence: 0.98,
-        uncertainFields: []
-      };
-    }
-
-    if (name.includes('amazon') || name.includes('zara')) {
-      return {
-        merchant: 'Zara Retail',
-        description: 'Apparel Purchase',
-        date: new Date().toISOString().split('T')[0],
-        time: '18:15',
-        total: 4299.00,
-        subtotal: 4084.05,
-        tax: 214.95,
-        tip: 0.00,
-        currency: 'INR',
-        category: 'Shopping',
-        items: [
-          { name: 'Denim Jacket', quantity: 1, unitPrice: 4084.05, total: 4084.05 }
-        ],
-        paymentMethod: 'Credit Card',
-        location: 'City Center Mall',
-        confidence: 0.95,
-        uncertainFields: []
-      };
-    }
-
-    if (name.includes('mismatch')) {
-      return {
-        merchant: 'City Diner',
-        description: 'Lunch Special',
-        date: new Date().toISOString().split('T')[0],
-        time: '12:45',
-        total: 1000.00, // Intentional mismatch
-        subtotal: 800.00,
-        tax: 100.00,
-        tip: 50.00,
-        currency: 'USD',
-        category: 'Food',
-        items: [
-          { name: 'Burger Meal', quantity: 1, unitPrice: 500.00, total: 500.00 }
-        ],
-        paymentMethod: 'Cash',
-        location: '123 Main St',
-        confidence: 0.90,
-        uncertainFields: []
-      };
-    }
-
-    // Default sample receipt
-    return {
-      merchant: 'ABC Restaurant',
-      description: 'Dinner Bill',
-      date: new Date().toISOString().split('T')[0],
-      time: '20:00',
-      total: 1416.00,
-      subtotal: 1200.00,
-      tax: 216.00,
-      tip: 0.00,
-      currency: 'INR',
-      category: 'Food',
-      items: [
-        { name: 'Margherita Pizza', quantity: 1, unitPrice: 600.00, total: 600.00 },
-        { name: 'Pasta Arrabbiata', quantity: 1, unitPrice: 600.00, total: 600.00 }
-      ],
-      paymentMethod: 'UPI',
-      location: 'Connaught Place, New Delhi',
-      confidence: 0.96,
-      uncertainFields: []
-    };
   }
 
   /**

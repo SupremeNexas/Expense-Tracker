@@ -2,8 +2,6 @@ import { create } from 'zustand';
 import { User } from '../types';
 import { api, setToken } from '../api/client';
 
-const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5002';
-
 interface AuthState {
   user: User | null;
   authLoading: boolean;
@@ -76,21 +74,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       const rt = localStorage.getItem('fintech_refresh_token');
       if (rt) {
         try {
-          const res = await fetch(`${API_URL}/api/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken: rt })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setToken(data.token);
-            if (data.refreshToken) {
-              localStorage.setItem('fintech_refresh_token', data.refreshToken);
-            }
-            const user = await api.getMe();
-            set({ user, authLoading: false });
-            return;
+          const data = await api.refreshToken(rt);
+          setToken(data.token);
+          if (data.refreshToken) {
+            localStorage.setItem('fintech_refresh_token', data.refreshToken);
           }
+          const user = await api.getMe();
+          set({ user, authLoading: false });
+          return;
         } catch (_) {}
       }
       setToken(null);

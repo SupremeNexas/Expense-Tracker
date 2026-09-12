@@ -98,6 +98,7 @@ export const api = {
   login: (data: any) => request('/auth/login', { method: 'POST', body: data }),
   register: (data: any) => request('/auth/register', { method: 'POST', body: data }),
   googleLogin: (idToken: string, invitedBy?: string | null) => request('/auth/google', { method: 'POST', body: { idToken, invitedBy } }),
+  refreshToken: (refreshToken: string) => request('/auth/refresh', { method: 'POST', body: { refreshToken } }),
   getMe: () => request('/auth/me'),
   updateProfile: (data: any) => request('/auth/profile', { method: 'PUT', body: data }),
   updateCurrency: (currency: string) => request('/auth/currency', { method: 'PUT', body: { currency } }),

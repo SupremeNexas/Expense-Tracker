@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../store/authStore';
 import { useToast } from '../components/UI/Toast';
 import { SUPPORTED_CURRENCIES } from '../utils/currency';
-import { AlertCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 
 // ── Google GSI Type Declarations ──────────────────────────────────────────────
 declare global {
@@ -205,6 +205,19 @@ export default function AuthPage() {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    try {
+      await login({ email: 'demo@example.com', password: 'password123' });
+      showToast('Signed in with Demo Account!', 'success');
+      navigate('/dashboard');
+    } catch (err: any) {
+      showToast(err.message || 'Demo login failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isAnyLoading = isLoading || googleLoading;
 
   return (
@@ -334,6 +347,18 @@ export default function AuthPage() {
           >
             {isLoading ? <span>Working...</span> : <span>{isLogin ? 'Sign in' : 'Create account'}</span>}
           </button>
+
+          {isLogin && (
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={isAnyLoading}
+              className="w-full h-[46px] mt-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 font-semibold text-xs transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span>Try Demo Account (1-Click Login)</span>
+            </button>
+          )}
         </form>
 
         <div className="relative my-7 flex items-center justify-center">

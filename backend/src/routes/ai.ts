@@ -7,6 +7,7 @@ import path from 'path';
 import { Prisma } from '@prisma/client';
 import {
   getAIProvider,
+  GeminiProvider,
   executeRAGQuery,
   getUserMemoryProfile,
   generateSpendingInsights,
@@ -263,7 +264,7 @@ router.post('/scan-bill', requireWorkspaceRole(['OWNER', 'ADMIN', 'EDITOR', 'VIE
   });
 });
 
-// POST /api/ai/receipt (Legacy `/scan-receipt` refactored and duplicated here for compatibility)
+// POST /api/ai/receipt (Legacy `/scan-receipt` refactored for strict Gemini Vision)
 router.post('/receipt', authenticate, upload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -272,163 +273,39 @@ router.post('/receipt', authenticate, upload.single('receipt'), async (req: Auth
       return res.status(400).json({ error: 'No receipt file uploaded' });
     }
 
-    let ocrResult: ReceiptResult = {
-      merchant: 'McDonalds Bistro',
-      amount: 680.00,
-      tax: 34.00,
-      date: new Date().toISOString().split('T')[0],
-      category: 'Food',
-      items: ['Double Cheese Burger', 'Large Fries', 'Choco Lava Cake'],
-      confidence: 0.96
-    };
-
-    const provider = getAIProvider();
-    
-    // If provider is not a MockProvider, scan using model
-    if (provider.name !== 'Offline Mock Engine') {
-      try {
-        console.log(`Processing receipt using AI Provider: ${provider.name}...`);
-        
-        // Multi-modal calls require Gemini provider
-        if (provider.name === 'Google Gemini') {
-          const ai = (provider as any).client;
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [
-              {
-                inlineData: {
-                  data: file.buffer.toString('base64'),
-                  mimeType: file.mimetype
-                }
-              },
-              'You are an expert financial receipt scanner. Extract the following fields from this receipt image as JSON: merchant, amount (total including tax, as number), tax (as number), date (YYYY-MM-DD format), category (one of: Food, Travel, Fuel, Shopping, Bills, Health, Education, Entertainment, Salary, Investment, Gift, Other), items (list of string items), confidence (estimate from 0 to 1). Return ONLY the raw JSON block without markdown formatting or code blocks.'
-            ]
-          });
-          const text = response.text || '';
-          const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleanText);
-          if (parsed.merchant && parsed.amount) {
-            ocrResult = {
-              merchant: parsed.merchant,
-              amount: Number(parsed.amount),
-              tax: Number(parsed.tax || 0),
-              date: parsed.date || new Date().toISOString().split('T')[0],
-              category: parsed.category || 'Other',
-              items: parsed.items || [],
-              confidence: Number(parsed.confidence || 0.9)
-            };
-          }
-        } else {
-          // Other models don't support multi-modal buffers directly in our lightweight client, 
-          // but we can parse metadata or simulate a high-quality analysis.
-          console.warn('Multimodal scans are optimized for Gemini. Simulating provider metadata extraction.');
-        }
-      } catch (geminiErr) {
-        console.warn('OCR processing failed. Falling back to local values.', geminiErr);
-      }
-    } else {
-      // Mock scanner based on filename
-      const name = file.originalname.toLowerCase();
-      if (name.includes('uber') || name.includes('ola')) {
-        ocrResult = {
-          merchant: 'Uber Rides Inc',
-          amount: 450.00,
-          tax: 22.50,
-          date: new Date().toISOString().split('T')[0],
-          category: 'Travel',
-          items: ['Ride Trip share'],
-          confidence: 0.98
-        };
-      } else if (name.includes('amazon') || name.includes('zara')) {
-        ocrResult = {
-          merchant: 'Zara Delhi NCR',
-          amount: 4299.00,
-          tax: 214.95,
-          date: new Date().toISOString().split('T')[0],
-          category: 'Shopping',
-          items: ['Premium Fit Denim', 'Aromatic Cologne'],
-          confidence: 0.94
-        };
-      }
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: 'Receipt scanning is temporarily unavailable. Please configure GEMINI_API_KEY.' });
     }
 
-    // Auto-resolve categories and default wallets
-    const categories = await prisma.category.findMany({
-      where: {
-        OR: [{ userId: req.user.id }, { userId: null }]
-      }
-    });
+    const provider = new GeminiProvider(apiKey);
+    const prompt = 'You are an expert financial receipt scanner. Extract the following fields from this receipt image as JSON: merchant, amount (total including tax, as number), tax (as number), date (YYYY-MM-DD format), category (one of: Food, Travel, Fuel, Shopping, Bills, Health, Education, Entertainment, Salary, Investment, Gift, Other), items (list of string items), confidence (estimate from 0 to 1). Return ONLY the raw JSON block without markdown formatting or code blocks.';
 
-    let category = categories.find(c => c.name.toLowerCase() === ocrResult.category.toLowerCase());
-    if (!category) {
-      category = categories.find(c => c.name === 'Other') || categories[0];
+    try {
+      const parsed = await provider.generateMultimodalJSON<ReceiptResult>(
+        file.buffer,
+        file.mimetype,
+        prompt
+      );
+
+      const ocrResult: ReceiptResult = {
+        merchant: parsed.merchant || 'Unknown Merchant',
+        amount: Number(parsed.amount || 0),
+        tax: Number(parsed.tax || 0),
+        date: parsed.date || new Date().toISOString().split('T')[0],
+        category: parsed.category || 'Other',
+        items: parsed.items || [],
+        confidence: Number(parsed.confidence || 0.9)
+      };
+
+      return res.json(ocrResult);
+    } catch (geminiErr) {
+      console.error('[Receipt] Gemini Vision OCR failed:', geminiErr);
+      return res.status(500).json({ error: 'Failed to process receipt image' });
     }
-
-    const wallet = await prisma.wallet.findFirst({
-      where: { userId: req.user.id }
-    }) || await prisma.wallet.create({
-      data: {
-        userId: req.user.id,
-        name: 'HDFC Bank Account',
-        type: 'BANK',
-        balance: 145000.50,
-        color: '#3B82F6',
-      }
-    });
-
-    const transaction = await prisma.transaction.create({
-      data: {
-        userId: req.user.id,
-        title: `Receipt: ${ocrResult.merchant}`,
-        amount: new Prisma.Decimal(ocrResult.amount),
-        type: 'EXPENSE',
-        categoryId: category.id,
-        walletId: wallet.id,
-        paymentMethod: wallet.type === 'BANK' ? 'UPI' : 'Cash',
-        tags: ['receipt-scan', ocrResult.category.toLowerCase()],
-        notes: `AI Scanned receipt. Items: ${ocrResult.items.join(', ')} (Confidence: ${(ocrResult.confidence * 100).toFixed(0)}%)`,
-        date: new Date(ocrResult.date)
-      },
-      include: { category: true }
-    });
-
-    await prisma.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { decrement: ocrResult.amount } }
-    });
-
-    await prisma.receipt.create({
-      data: {
-        userId: req.user.id,
-        transactionId: transaction.id,
-        imageUrl: file.originalname,
-        merchant: ocrResult.merchant,
-        amount: new Prisma.Decimal(ocrResult.amount),
-        tax: new Prisma.Decimal(ocrResult.tax),
-        date: new Date(ocrResult.date),
-        category: ocrResult.category,
-        confidence: ocrResult.confidence,
-        status: 'PROCESSED',
-        items: ocrResult.items
-      }
-    });
-
-    res.json({
-      success: true,
-      ocrResult,
-      transaction: {
-        id: transaction.id,
-        title: transaction.title,
-        amount: Number(transaction.amount),
-        date: transaction.date,
-        category_name: transaction.category.name,
-        category_color: transaction.category.color,
-        category_icon: transaction.category.icon
-      }
-    });
-  } catch (err) {
-    console.error('Scan receipt error:', err);
-    res.status(500).json({ error: 'Failed to process receipt' });
+  } catch (err: any) {
+    console.error('[Receipt] Endpoint error:', err);
+    return res.status(500).json({ error: 'Failed to process receipt image' });
   }
 });
 

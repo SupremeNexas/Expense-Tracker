@@ -2,28 +2,34 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { useToast } from '../components/UI/Toast';
+import useAuthStore from '../store/authStore';
+import { formatCurrency, SUPPORTED_CURRENCIES } from '../utils/currency';
+import Modal from '../components/UI/Modal';
+import Input from '../components/UI/Input';
+import Select from '../components/UI/Select';
+import Button from '../components/UI/Button';
+import EmptyState from '../components/UI/EmptyState';
+import { SkeletonList } from '../components/UI/Skeleton';
+import SpecularButton from '../components/UI/SpecularButton';
 import type { Wallet, Transaction } from '../types';
 import {
-  ArrowLeftRight,
   Plus,
   Search,
-  ArrowRight,
-  Calendar,
-  DollarSign,
   Edit2,
   Trash2,
-  X,
   Building2,
   CreditCard as CardIcon,
   Banknote,
   Wallet as WalletIcon,
-  CheckCircle2,
   AlertCircle
 } from 'lucide-react';
 
 export default function TransfersPage() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === (user?.baseCurrency || 'INR'))?.symbol || '₹';
 
   const [search, setSearch] = useState('');
   const [selectedSourceWallet, setSelectedSourceWallet] = useState('');
@@ -110,8 +116,10 @@ export default function TransfersPage() {
   const openCreateModal = () => {
     setEditingTransfer(null);
     setFormAmount('');
-    setFormSourceWallet(wallets[0]?.id || '');
-    setFormDestWallet(wallets[1]?.id || '');
+    const sourceId = wallets[0]?.id || '';
+    const destId = wallets.find(w => w.id !== sourceId)?.id || '';
+    setFormSourceWallet(sourceId);
+    setFormDestWallet(destId);
     setFormTitle('');
     setFormNotes('');
     setFormDate(new Date().toISOString().substring(0, 10));
@@ -191,72 +199,77 @@ export default function TransfersPage() {
   const totalVolume = transfers.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 text-white p-6 rounded-2xl shadow-xl">
+    <div className="space-y-6 fade-in-up">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-black/[0.04] dark:border-white/[0.04] gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <ArrowLeftRight className="w-6 h-6 text-indigo-300" />
-            <h1 className="text-2xl font-bold">Account Transfers</h1>
-          </div>
-          <p className="text-indigo-200 text-sm mt-1">
+          <h1 className="text-3xl font-bold tracking-tight">Account Transfers</h1>
+          <p className="text-sm text-gray-400 mt-1">
             Move funds seamlessly between accounts without altering income or expense analytics.
           </p>
         </div>
-        <button
+        <SpecularButton
+          size="sm"
+          radius={14}
+          tint="#ffffff"
+          tintOpacity={0.1}
+          blur={0}
+          textColor="#111411"
+          lineColor="#111411"
+          baseColor="#fdf1e1"
+          intensity={1.2}
+          shineSize={12}
+          shineFade={35}
+          thickness={1}
+          speed={0.3}
+          followMouse
+          proximity={200}
           onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-indigo-900 hover:bg-indigo-50 font-semibold rounded-xl transition shadow-lg shrink-0"
         >
-          <Plus className="w-5 h-5" />
-          <span>New Transfer</span>
-        </button>
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Add Transfer
+        </SpecularButton>
       </div>
 
       {/* Bento Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-5 rounded-2xl shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Total Transfers Volume</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-            ${totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Net position remains 100% unchanged</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="premium-card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Transfers Volume</div>
+          <div className="text-3xl font-bold mt-2 font-sans">{formatCurrency(totalVolume, user?.baseCurrency)}</div>
+          <span className="text-[10px] text-gray-400 font-medium mt-1 inline-block">Net position remains 100% unchanged</span>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-5 rounded-2xl shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Transfer Count</p>
-          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
-            {transfers.length} {transfers.length === 1 ? 'Record' : 'Records'}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Atomic debit/credit ledger</p>
+        <div className="premium-card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Transfer Count</div>
+          <div className="text-3xl font-bold mt-2 font-sans">{transfers.length} {transfers.length === 1 ? 'Record' : 'Records'}</div>
+          <span className="text-[10px] text-gray-400 font-medium mt-1 inline-block">Atomic debit/credit ledger</span>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-5 rounded-2xl shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Available Accounts</p>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-            {wallets.length} Connected
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Bank, Cash, Credit Card, Wallets</p>
+        <div className="premium-card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Available Accounts</div>
+          <div className="text-3xl font-bold mt-2 font-sans">{wallets.length} Connected</div>
+          <span className="text-[10px] text-gray-400 font-medium mt-1 inline-block">Bank, Cash, Credit Card, Wallets</span>
         </div>
       </div>
 
       {/* Toolbar & Filters */}
-      <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+      <div className="premium-card p-4 flex flex-col md:flex-row gap-4 items-center justify-between border-black/[0.05] dark:border-white/[0.05]">
+        <div className="relative w-full md:w-80 flex items-center">
+          <Search className="absolute left-3 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search transfers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="input-premium pl-9 pr-4 py-2 text-xs w-full"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           <select
             value={selectedSourceWallet}
             onChange={(e) => setSelectedSourceWallet(e.target.value)}
-            className="px-3 py-2 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="input-premium py-1.5 px-3 text-xs cursor-pointer min-w-[150px]"
           >
             <option value="">All Source Accounts</option>
             {wallets.map(w => (
@@ -267,7 +280,7 @@ export default function TransfersPage() {
           <select
             value={selectedDestWallet}
             onChange={(e) => setSelectedDestWallet(e.target.value)}
-            className="px-3 py-2 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="input-premium py-1.5 px-3 text-xs cursor-pointer min-w-[150px]"
           >
             <option value="">All Destination Accounts</option>
             {wallets.map(w => (
@@ -278,40 +291,46 @@ export default function TransfersPage() {
       </div>
 
       {/* Transfers List */}
-      <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="p-12 text-center text-gray-400">Loading transfers...</div>
-        ) : transfers.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <ArrowLeftRight className="w-12 h-12 text-gray-300 dark:text-zinc-700 mx-auto" />
-            <h3 className="text-lg font-medium text-gray-800 dark:text-zinc-200">No transfers found</h3>
-            <p className="text-sm text-gray-500 max-w-md mx-auto">
-              You haven't recorded any transfers matching your active filters. Click "New Transfer" to transfer funds between accounts.
-            </p>
-          </div>
-        ) : (
+      {isLoading ? (
+        <SkeletonList count={3} />
+      ) : transfers.length === 0 ? (
+        <EmptyState
+          iconName="ArrowLeftRight"
+          title="No transfers found"
+          description="You haven't recorded any transfers matching your active filters. Click 'Add Transfer' to transfer funds between accounts."
+          action={
+            <button
+              onClick={openCreateModal}
+              className="btn-premium btn-premium-primary text-xs py-1.5 px-4 cursor-pointer"
+            >
+              Add First Transfer
+            </button>
+          }
+        />
+      ) : (
+        <div className="premium-card p-0 overflow-hidden border-black/[0.05] dark:border-white/[0.05]">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
-                <tr>
-                  <th className="px-6 py-3.5 font-medium">Date</th>
-                  <th className="px-6 py-3.5 font-medium">Description</th>
-                  <th className="px-6 py-3.5 font-medium">Source Account</th>
-                  <th className="px-6 py-3.5 font-medium">Destination Account</th>
-                  <th className="px-6 py-3.5 font-medium text-right">Amount</th>
-                  <th className="px-6 py-3.5 font-medium text-center">Actions</th>
+            <table className="w-full text-left border-collapse text-xs md:text-sm">
+              <thead>
+                <tr className="border-b border-black/[0.04] dark:border-white/[0.04] text-gray-400 uppercase tracking-wider text-[10px] font-bold">
+                  <th className="p-4 pl-6">Date</th>
+                  <th className="p-4">Description</th>
+                  <th className="p-4">Source Account</th>
+                  <th className="p-4">Destination Account</th>
+                  <th className="p-4 text-right">Amount</th>
+                  <th className="p-4 pr-6 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+              <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                 {transfers.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/30 transition">
-                    <td className="px-6 py-4 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
+                  <tr key={t.id} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
+                    <td className="p-4 pl-6 text-gray-400 whitespace-nowrap">
                       {new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <span>{t.title}</span>
-                        <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-200 dark:border-indigo-800">
+                    <td className="p-4">
+                      <div className="font-semibold flex items-center gap-2">
+                        <span>{t.title || 'Account Transfer'}</span>
+                        <span className="px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider bg-indigo-500/10 text-indigo-500 rounded-full">
                           Transfer
                         </span>
                       </div>
@@ -319,26 +338,26 @@ export default function TransfersPage() {
                         <p className="text-xs text-gray-400 truncate max-w-xs mt-0.5">{t.notes}</p>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-300 font-medium">
-                        {getWalletIcon()}
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 font-medium">
+                        {getWalletIcon(wallets.find(w => w.id === (t.wallet_id || t.walletId))?.type)}
                         <span>{t.sourceWalletName || t.wallet_name || 'Source Wallet'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-300 font-medium">
-                        {getWalletIcon()}
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 font-medium">
+                        {getWalletIcon(wallets.find(w => w.id === (t.to_wallet_id || t.toWalletId))?.type)}
                         <span>{t.destinationWalletName || t.destination_wallet_name || 'Destination Wallet'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                      ${Number(t.amount).toFixed(2)}
+                    <td className="p-4 text-right font-bold font-sans whitespace-nowrap">
+                      {formatCurrency(Number(t.amount), user?.baseCurrency)}
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="p-4 pr-6 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openEditModal(t)}
-                          className="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition"
+                          className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-gray-400 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
                           title="Edit Transfer"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -349,7 +368,7 @@ export default function TransfersPage() {
                               deleteMutation.mutate(t.id);
                             }
                           }}
-                          className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition"
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 cursor-pointer transition-colors"
                           title="Delete Transfer"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -361,162 +380,125 @@ export default function TransfersPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-
-      {/* New / Edit Transfer Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/30">
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="font-bold text-gray-900 dark:text-white">
-                  {editingTransfer ? 'Edit Transfer' : 'Record New Transfer'}
-                </h3>
-              </div>
-              <button
-                onClick={closeModal}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {formError && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              {/* Amount */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Transfer Amount ($)
-                </label>
-                <div className="relative">
-                  <DollarSign className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    placeholder="0.00"
-                    value={formAmount}
-                    onChange={(e) => setFormAmount(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 text-lg font-bold bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-
-              {/* Source & Destination Selectors */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                    From (Source Account)
-                  </label>
-                  <select
-                    required
-                    value={formSourceWallet}
-                    onChange={(e) => setFormSourceWallet(e.target.value)}
-                    className="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="" disabled>Select Source</option>
-                    {wallets.map(w => (
-                      <option key={w.id} value={w.id}>
-                        {w.name} (${Number(w.balance).toFixed(2)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                    To (Destination Account)
-                  </label>
-                  <select
-                    required
-                    value={formDestWallet}
-                    onChange={(e) => setFormDestWallet(e.target.value)}
-                    className="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="" disabled>Select Destination</option>
-                    {wallets
-                      .filter(w => w.id !== formSourceWallet)
-                      .map(w => (
-                        <option key={w.id} value={w.id}>
-                          {w.name} (${Number(w.balance).toFixed(2)})
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Title / Description */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Reference / Description (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. ATM Cash Withdrawal, Card Payment"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Date */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Transfer Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formDate}
-                  onChange={(e) => setFormDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Notes / Memo (Optional)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Additional transfer details..."
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl transition shadow-sm disabled:opacity-50"
-                >
-                  {createMutation.isPending || updateMutation.isPending ? 'Processing...' : (editingTransfer ? 'Save Changes' : 'Confirm Transfer')}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
+
+      {/* New / Edit Transfer Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={editingTransfer ? 'Edit Transfer' : 'Record New Transfer'}
+        description="Move funds between source and destination accounts."
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {formError && (
+            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-xs font-semibold">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
+
+          {/* Amount */}
+          <Input
+            label={`Transfer Amount (${currencySymbol})`}
+            type="number"
+            step="0.01"
+            min="0.01"
+            required
+            placeholder="0.00"
+            value={formAmount}
+            onChange={(e) => setFormAmount(e.target.value)}
+            icon={<span className="text-sm font-semibold text-gray-400 dark:text-gray-500">{currencySymbol}</span>}
+          />
+
+          {/* Source & Destination Selectors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Select
+              label="From (Source Account)"
+              required
+              value={formSourceWallet}
+              onChange={(e) => {
+                const selectedSource = e.target.value;
+                setFormSourceWallet(selectedSource);
+                if (formDestWallet === selectedSource) {
+                  const nextDest = wallets.find(w => w.id !== selectedSource)?.id || '';
+                  setFormDestWallet(nextDest);
+                }
+              }}
+            >
+              <option value="" disabled>Select Source</option>
+              {wallets.map(w => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({formatCurrency(Number(w.balance), user?.baseCurrency)})
+                </option>
+              ))}
+            </Select>
+
+            <Select
+              label="To (Destination Account)"
+              required
+              value={formDestWallet}
+              onChange={(e) => setFormDestWallet(e.target.value)}
+            >
+              <option value="" disabled>Select Destination</option>
+              {wallets
+                .filter(w => w.id !== formSourceWallet)
+                .map(w => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({formatCurrency(Number(w.balance), user?.baseCurrency)})
+                  </option>
+                ))}
+            </Select>
+          </div>
+
+          {/* Title / Description */}
+          <Input
+            label="Reference / Description (Optional)"
+            type="text"
+            placeholder="e.g. ATM Cash Withdrawal, Card Payment"
+            value={formTitle}
+            onChange={(e) => setFormTitle(e.target.value)}
+          />
+
+          {/* Date */}
+          <Input
+            label="Transfer Date"
+            type="date"
+            required
+            value={formDate}
+            onChange={(e) => setFormDate(e.target.value)}
+          />
+
+          {/* Notes */}
+          <div className="flex flex-col text-left">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5 font-sans">
+              Notes / Memo (Optional)
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Additional transfer details..."
+              value={formNotes}
+              onChange={(e) => setFormNotes(e.target.value)}
+              className="w-full p-4 min-h-[80px] rounded-[14px] bg-black/[0.02] dark:bg-white/[0.02] border border-border text-sm outline-none transition-all duration-200 resize-none hover:border-black/[0.12] dark:hover:border-white/[0.12] focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 font-sans"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-6 border-t border-border">
+            <Button type="button" variant="secondary" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              className="bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-emerald-500/20"
+            >
+              {createMutation.isPending || updateMutation.isPending ? 'Processing...' : (editingTransfer ? 'Save Changes' : 'Confirm Transfer')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

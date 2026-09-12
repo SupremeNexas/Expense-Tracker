@@ -1,4 +1,4 @@
-import { describe, it, before, after, beforeEach } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { BillScannerService } from '../services/ai/billScanner';
 import { prisma } from '../db/prisma';
@@ -21,14 +21,7 @@ function createValidPngBuffer(): Buffer {
   return buf;
 }
 
-function createValidWebpBuffer(): Buffer {
-  const buf = Buffer.alloc(100);
-  buf.write('RIFF', 0, 4, 'utf8');
-  buf.write('WEBP', 8, 4, 'utf8');
-  return buf;
-}
-
-describe('BillScannerService - Final Production & Security Audit Test Suite', () => {
+describe('BillScannerService - Production Multimodal Gemini Vision Test Suite', () => {
   const testUserId = 'test-user-scan-123';
   const testWorkspaceId = 'test-workspace-scan-456';
   const otherWorkspaceId = 'other-workspace-isolation-789';
@@ -42,15 +35,51 @@ describe('BillScannerService - Final Production & Security Audit Test Suite', ()
     }
   });
 
-  it('should successfully extract draft from valid JPEG receipt buffer', async () => {
-    const jpegBuf = createValidJpegBuffer();
-    const result = await BillScannerService.scanBill(
-      testUserId,
-      testWorkspaceId,
-      jpegBuf,
-      'image/jpeg',
-      'uber_receipt.jpg'
-    );
+  it('should throw UNAVAILABLE error when GEMINI_API_KEY environment variable is not configured', async () => {
+    const originalKey = process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+
+    try {
+      const jpegBuf = createValidJpegBuffer();
+      await assert.rejects(
+        async () => {
+          await BillScannerService.scanBill(
+            testUserId,
+            testWorkspaceId,
+            jpegBuf,
+            'image/jpeg',
+            'receipt.jpg'
+          );
+        },
+        (err: any) => err.message === 'UNAVAILABLE'
+      );
+    } finally {
+      if (originalKey) process.env.GEMINI_API_KEY = originalKey;
+    }
+  });
+
+  it('should format raw multimodal AI response into valid draft correctly', async () => {
+    const mockRaw = {
+      merchant: 'Uber Rides Inc',
+      description: 'Trip Share',
+      date: '2026-09-10',
+      time: '14:30',
+      total: 450.00,
+      subtotal: 427.50,
+      tax: 22.50,
+      tip: 0.00,
+      currency: 'INR',
+      category: 'Travel',
+      items: [
+        { name: 'Ride Trip Share', quantity: 1, unitPrice: 427.50, total: 427.50 }
+      ],
+      paymentMethod: 'UPI',
+      location: 'Downtown Office',
+      confidence: 0.98,
+      uncertainFields: []
+    };
+
+    const result = await BillScannerService.buildDraftResponse(testUserId, testWorkspaceId, mockRaw);
 
     assert.equal(result.success, true);
     assert.ok(result.draft);
@@ -60,32 +89,26 @@ describe('BillScannerService - Final Production & Security Audit Test Suite', ()
     assert.equal(result.draft.paymentMethod, 'UPI');
   });
 
-  it('should successfully extract draft from valid PNG receipt buffer', async () => {
-    const pngBuf = createValidPngBuffer();
-    const result = await BillScannerService.scanBill(
-      testUserId,
-      testWorkspaceId,
-      pngBuf,
-      'image/png',
-      'zara_invoice.png'
-    );
+  it('should handle missing and uncertain fields gracefully in draft building', async () => {
+    const mockRaw = {
+      merchant: null,
+      description: null,
+      date: null,
+      time: null,
+      total: null,
+      subtotal: null,
+      tax: null,
+      tip: null,
+      currency: null,
+      category: null,
+      items: [],
+      paymentMethod: null,
+      location: null,
+      confidence: 0.1,
+      uncertainFields: ['merchant', 'date', 'total']
+    };
 
-    assert.equal(result.success, true);
-    assert.ok(result.draft);
-    assert.equal(result.draft.merchant, 'Zara Retail');
-    assert.equal(result.draft.total, '4299.00');
-    assert.equal(result.draft.category, 'Shopping');
-  });
-
-  it('should handle missing and uncertain fields gracefully', async () => {
-    const jpegBuf = createValidJpegBuffer();
-    const result = await BillScannerService.scanBill(
-      testUserId,
-      testWorkspaceId,
-      jpegBuf,
-      'image/jpeg',
-      'blurry_receipt.jpg'
-    );
+    const result = await BillScannerService.buildDraftResponse(testUserId, testWorkspaceId, mockRaw);
 
     assert.equal(result.success, true);
     assert.equal(result.draft.merchant, null);
@@ -95,14 +118,20 @@ describe('BillScannerService - Final Production & Security Audit Test Suite', ()
   });
 
   it('should generate TOTAL_MISMATCH warning when subtotal + tax + tip != total', async () => {
-    const jpegBuf = createValidJpegBuffer();
-    const result = await BillScannerService.scanBill(
-      testUserId,
-      testWorkspaceId,
-      jpegBuf,
-      'image/jpeg',
-      'mismatch_bill.jpg'
-    );
+    const mockRaw = {
+      merchant: 'City Diner',
+      date: '2026-09-10',
+      total: 1000.00, // Intentional discrepancy: 800 + 100 + 50 = 950 != 1000
+      subtotal: 800.00,
+      tax: 100.00,
+      tip: 50.00,
+      category: 'Food',
+      items: [
+        { name: 'Burger Meal', quantity: 1, unitPrice: 500.00, total: 500.00 } // 500 != subtotal 800
+      ]
+    };
+
+    const result = await BillScannerService.buildDraftResponse(testUserId, testWorkspaceId, mockRaw);
 
     assert.equal(result.success, true);
     assert.ok(result.warnings.some(w => w.code === 'TOTAL_MISMATCH'));
@@ -178,23 +207,25 @@ describe('BillScannerService - Final Production & Security Audit Test Suite', ()
       // Ignore if DB connection not present
     }
 
-    const mockRaw = {
-      merchant: 'UBER RIDES INC',
-      date: new Date().toISOString().split('T')[0],
-      total: 450.00,
-      items: []
-    };
+    try {
+      const mockRaw = {
+        merchant: 'UBER RIDES INC',
+        date: new Date().toISOString().split('T')[0],
+        total: 450.00,
+        items: []
+      };
 
-    const result = await BillScannerService.buildDraftResponse(testUserId, testWorkspaceId, mockRaw);
+      const result = await BillScannerService.buildDraftResponse(testUserId, testWorkspaceId, mockRaw);
 
-    if (dummyTxId) {
-      assert.ok(result.duplicateWarning);
-      assert.equal(result.duplicateWarning?.possibleDuplicate, true);
-      assert.equal(result.duplicateWarning?.matches.length, 1);
-      assert.equal(result.duplicateWarning?.matches[0].id, dummyTxId);
-
-      await prisma.transaction.delete({ where: { id: dummyTxId } });
-      if (otherTxId) await prisma.transaction.delete({ where: { id: otherTxId } });
+      if (dummyTxId) {
+        assert.ok(result.duplicateWarning);
+        assert.equal(result.duplicateWarning?.possibleDuplicate, true);
+        assert.equal(result.duplicateWarning?.matches.length, 1);
+        assert.equal(result.duplicateWarning?.matches[0].id, dummyTxId);
+      }
+    } finally {
+      if (dummyTxId) await prisma.transaction.delete({ where: { id: dummyTxId } }).catch(() => {});
+      if (otherTxId) await prisma.transaction.delete({ where: { id: otherTxId } }).catch(() => {});
     }
   });
 
@@ -230,15 +261,13 @@ describe('BillScannerService - Final Production & Security Audit Test Suite', ()
   });
 
   it('SECURITY: Ensure response payloads never expose internal keys or secrets', async () => {
-    const jpegBuf = createValidJpegBuffer();
-    const result = await BillScannerService.scanBill(
-      testUserId,
-      testWorkspaceId,
-      jpegBuf,
-      'image/jpeg',
-      'test.jpg'
-    );
-
+    const mockRaw = {
+      merchant: 'Safe Retail',
+      date: '2026-09-10',
+      total: 150.00,
+      items: []
+    };
+    const result = await BillScannerService.buildDraftResponse(testUserId, testWorkspaceId, mockRaw);
     const jsonStr = JSON.stringify(result);
     assert.equal(jsonStr.includes('GEMINI_API_KEY'), false);
     assert.equal(jsonStr.includes('JWT_SECRET'), false);
@@ -247,15 +276,13 @@ describe('BillScannerService - Final Production & Security Audit Test Suite', ()
   it('CONFIRMATION: scanning a bill does NOT create any expense or transaction record in database', async () => {
     const initialTxCount = await prisma.transaction.count().catch(() => 0);
 
-    const jpegBuf = createValidJpegBuffer();
-    const result = await BillScannerService.scanBill(
-      testUserId,
-      testWorkspaceId,
-      jpegBuf,
-      'image/jpeg',
-      'zara_invoice.png'
-    );
-
+    const mockRaw = {
+      merchant: 'Zara Retail',
+      date: '2026-09-10',
+      total: 4299.00,
+      items: []
+    };
+    const result = await BillScannerService.buildDraftResponse(testUserId, testWorkspaceId, mockRaw);
     assert.equal(result.success, true);
 
     const finalTxCount = await prisma.transaction.count().catch(() => 0);

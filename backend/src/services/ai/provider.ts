@@ -129,9 +129,9 @@ function getMockFallbackResponse(prompt: string, systemInstruction?: string): st
 I am currently running in **Local Offline Mode** on the server, but I am still using your active database data to generate these observations. Let me know if you would like me to summarize specific transaction categories!`;
 }
 
-class GeminiProvider implements AIProvider {
+export class GeminiProvider implements AIProvider {
   name = 'Google Gemini';
-  private client: GoogleGenAI;
+  public client: GoogleGenAI;
 
   constructor(apiKey: string) {
     this.client = new GoogleGenAI({ apiKey });
@@ -168,6 +168,41 @@ class GeminiProvider implements AIProvider {
       const text = getMockFallbackResponse(prompt, systemInstruction);
       return JSON.parse(text) as T;
     }
+  }
+
+  /**
+   * Multimodal vision extraction for receipt images using Gemini 2.5 Flash.
+   * Throws an error on failure instead of falling back to fake data.
+   */
+  async generateMultimodalJSON<T>(
+    buffer: Buffer,
+    mimeType: string,
+    prompt: string,
+    systemInstruction?: string
+  ): Promise<T> {
+    console.log(`[GeminiProvider] Sending ${mimeType} image (${(buffer.length / 1024).toFixed(1)} KB) to gemini-2.5-flash vision model...`);
+    const response = await this.client.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        {
+          inlineData: {
+            data: buffer.toString('base64'),
+            mimeType
+          }
+        },
+        prompt
+      ],
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+        systemInstruction
+      }
+    });
+
+    const text = response.text || '{}';
+    console.log('[GeminiProvider] Gemini Vision response received.');
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanText) as T;
   }
 }
 
