@@ -1,14 +1,22 @@
 const getApiBase = (): string => {
-  if (import.meta.env.VITE_API_URL) {
-    const raw = import.meta.env.VITE_API_URL.trim().replace(/\/$/, '');
-    if (raw.endsWith('/api') || /\/api\/v\d+$/i.test(raw)) {
-      return raw;
-    }
-    return `${raw}/api`;
+  const envUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.trim().replace(/\/$/, '') : '';
+
+  // Override stale/deprecated backend domain if set in environment variables
+  if (envUrl.includes('fintech-expense-tracker-backend.onrender.com')) {
+    return 'https://fintech-finova-backend.onrender.com/api';
   }
+
+  if (envUrl) {
+    if (envUrl.endsWith('/api') || /\/api\/v\d+$/i.test(envUrl)) {
+      return envUrl;
+    }
+    return `${envUrl}/api`;
+  }
+
   if (typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) {
     return 'https://fintech-finova-backend.onrender.com/api';
   }
+
   return '/api';
 };
 
